@@ -1,0 +1,20 @@
+---
+description: Use official Arc docs (MCP + llms.txt) when building on Arc
+alwaysApply: true
+---
+
+# Arc documentation
+
+This project targets Circle's Arc chain. Before writing Arc RPC, wallet, gas, USDC, or deploy code:
+
+1. Prefer the **arc-docs MCP** (`https://docs.arc.io/mcp`) — Search then Get page.
+2. Use the local index at `docs/llms.txt` (synced from https://docs.arc.io/llms.txt).
+3. Follow `.cursor/skills/use-arc/SKILL.md` for chain IDs, USDC decimals, and gas rules.
+
+Hard rules from Arc docs:
+
+- Gas is **USDC**, not ETH. Native view is 18 decimals; USDC ERC-20 is 6 decimals at `0x3600000000000000000000000000000000000000`. Same asset, two views — never double-count.
+- Testnet chain ID `5042002`. RPC `https://rpc.testnet.arc.network`. Explorer https://testnet.arcscan.app. Faucet https://faucet.circle.com.
+- Mempool `maxFeePerGas` floor is 20 Gwei. Sub-second finality — no multi-block waits.
+- Read EVM differences before touching USDC balances, gas, or `address(0)` sends: https://docs.arc.io/arc/references/evm-differences.md
+- Confirm contract addresses: https://docs.arc.io/arc/references/contract-addresses.md

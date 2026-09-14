@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "header": "Dev buy · ARCX",
+    "type": "Hard lock",
+    "status": "Sealed",
+    "target": "12 Jun 2027",
+    "limit": "1,250,000",
+    "reviewer": "0x3Afa…0cbB"
+  },
+  {
+    "id": 2,
+    "header": "Team vest · ARCX",
+    "type": "Linear vest",
+    "status": "Unlocking",
+    "target": "01 Jan 2027",
+    "limit": "500,000",
+    "reviewer": "0x91c2…a11E"
+  },
+  {
+    "id": 3,
+    "header": "Advisor cliff · MOON",
+    "type": "Linear vest",
+    "status": "Sealed",
+    "target": "15 Mar 2027",
+    "limit": "75,000",
+    "reviewer": "0xBb10…44dF"
+  },
+  {
+    "id": 4,
+    "header": "Treasury reserve · USDC",
+    "type": "Hard lock",
+    "status": "Sealed",
+    "target": "30 Sep 2026",
+    "limit": "100,000",
+    "reviewer": "0x3Afa…0cbB"
+  },
+  {
+    "id": 5,
+    "header": "Investor round · BEAN",
+    "type": "Linear vest",
+    "status": "Claimable",
+    "target": "01 Aug 2026",
+    "limit": "220,000",
+    "reviewer": "0xDeF1…9901"
+  },
+  {
+    "id": 6,
+    "header": "Dev buy · WARP",
+    "type": "Hard lock",
+    "status": "Sealed",
+    "target": "20 Dec 2026",
+    "limit": "2,000,000",
+    "reviewer": "0x71aa…c0De"
+  },
+  {
+    "id": 7,
+    "header": "Ops payroll · USDC",
+    "type": "Linear vest",
+    "status": "Unlocking",
+    "target": "01 Nov 2026",
+    "limit": "48,000",
+    "reviewer": "0xAa12…7788"
+  },
+  {
+    "id": 8,
+    "header": "Marketing bag · CAT",
+    "type": "Hard lock",
+    "status": "Done",
+    "target": "01 Jun 2026",
+    "limit": "150,000",
+    "reviewer": "0x3Afa…0cbB"
+  },
+  {
+    "id": 9,
+    "header": "KOL vest · RADR",
+    "type": "Linear vest",
+    "status": "Unlocking",
+    "target": "10 Oct 2026",
+    "limit": "35,000",
+    "reviewer": "0xCe99…1122"
+  },
+  {
+    "id": 10,
+    "header": "Seed allocation · FLOW",
+    "type": "Linear vest",
+    "status": "Sealed",
+    "target": "01 Feb 2027",
+    "limit": "800,000",
+    "reviewer": "0xFf00…aabb"
+  },
+  {
+    "id": 11,
+    "header": "LP companion · ARCX",
+    "type": "Hard lock",
+    "status": "Sealed",
+    "target": "Forever*",
+    "limit": "0",
+    "reviewer": "pad locker"
+  },
+  {
+    "id": 12,
+    "header": "Community airdrop · ARC",
+    "type": "Linear vest",
+    "status": "Claimable",
+    "target": "14 Sep 2026",
+    "limit": "12,500",
+    "reviewer": "0x9900…55ee"
+  }
+]
