@@ -8,7 +8,10 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {TokenLib} from "./lib/TokenLib.sol";
 
 /// @title ArcFlowStaking
-/// @notice Staking-as-a-service: anyone creates a pool, funds rewards, users stake (Streamflow Staking).
+/// @notice Permissionless staking pools: stake, lock, earn, claim (Synthetix-style).
+/// @dev Pool fields and contract storage are append-only so the existing UUPS proxy can upgrade.
+///      The protocol owner can still replace this implementation — treat that key as able to
+///      reach every balance. Do not use a hot wallet as owner.
 contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     struct Pool {
         address stakeToken;
@@ -21,6 +24,16 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         uint64 lastUpdate;
         uint64 periodFinish;
         uint64 minLock;
+        /// @dev Rewards credited to users but not yet paid. Recoverable unused = reserves - pending.
+        uint256 pendingRewards;
+        /// @dev 0 = no cap.
+        uint128 cap;
+        /// @dev 0 = no expiry. After this, new stakes revert; unstake/claim still work.
+        uint64 expiresAt;
+        bool paused;
+        /// @dev False on pre-upgrade pools. Recover is disabled there so leftover accounting
+        ///      cannot skim unclaimed user rewards that were never added to `pendingRewards`.
+        bool rewardAccounting;
     }
 
     struct Stake {
@@ -31,10 +44,18 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     }
 
     uint256 public constant PRECISION = 1e18;
+    /// @dev Two years. Long enough for real lock staking, short enough to block a forever-rug.
+    uint64 public constant MAX_MIN_LOCK = 730 days;
+    uint64 public constant MAX_FUND_DURATION = 3650 days;
 
     uint256 public nextId;
     mapping(uint256 => Pool) public pools;
     mapping(uint256 => mapping(address => Stake)) public stakes;
+
+    bool public protocolPaused;
+    mapping(address => uint256[]) public poolsByCreator;
+    mapping(address => uint256[]) public poolsByStaker;
+    mapping(uint256 => mapping(address => bool)) private _stakerIndexed;
 
     error ZeroAddress();
     error ZeroAmount();
@@ -42,6 +63,14 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     error Locked();
     error NothingToWithdraw();
     error NothingToClaim();
+    error InsufficientStake();
+    error InvalidLock();
+    error InvalidDuration();
+    error Paused();
+    error CapExceeded();
+    error PoolExpired();
+    error NothingToRecover();
+    error SameTokenOnly();
 
     event PoolCreated(
         uint256 indexed id, address indexed stakeToken, address indexed rewardToken, address owner, uint64 minLock
@@ -50,6 +79,13 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     event Staked(uint256 indexed id, address indexed account, uint128 amount);
     event Unstaked(uint256 indexed id, address indexed account, uint128 amount);
     event RewardPaid(uint256 indexed id, address indexed account, uint256 amount);
+    event RewardsRecovered(uint256 indexed id, address indexed to, uint256 amount);
+    event PoolPaused(uint256 indexed id, bool paused);
+    event ProtocolPaused(bool paused);
+    event CapSet(uint256 indexed id, uint128 cap);
+    event ExpirySet(uint256 indexed id, uint64 expiresAt);
+    event PoolTransferred(uint256 indexed id, address indexed from, address indexed to);
+    event Compounded(uint256 indexed id, address indexed account, uint256 amount);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -64,6 +100,7 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
 
     function createPool(address stakeToken, address rewardToken, uint64 minLock) external returns (uint256 id) {
         if (stakeToken == address(0) || rewardToken == address(0)) revert ZeroAddress();
+        if (minLock > MAX_MIN_LOCK) revert InvalidLock();
 
         id = nextId++;
         pools[id] = Pool({
@@ -76,8 +113,14 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
             rewardReserves: 0,
             lastUpdate: uint64(block.timestamp),
             periodFinish: 0,
-            minLock: minLock
+            minLock: minLock,
+            pendingRewards: 0,
+            cap: 0,
+            expiresAt: 0,
+            paused: false,
+            rewardAccounting: true
         });
+        poolsByCreator[msg.sender].push(id);
         emit PoolCreated(id, stakeToken, rewardToken, msg.sender, minLock);
     }
 
@@ -85,6 +128,9 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         Pool storage p = pools[id];
         if (msg.sender != p.owner) revert NotOwner();
         if (amount == 0 || duration == 0) revert ZeroAmount();
+        if (duration > MAX_FUND_DURATION) revert InvalidDuration();
+        uint256 finish = uint256(block.timestamp) + uint256(duration);
+        if (finish > type(uint64).max) revert InvalidDuration();
 
         _update(id, address(0));
         uint256 received = TokenLib.pull(p.rewardToken, msg.sender, amount);
@@ -99,37 +145,32 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         if (p.rewardRate == 0) revert ZeroAmount();
 
         p.lastUpdate = uint64(block.timestamp);
-        p.periodFinish = uint64(block.timestamp + duration);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        p.periodFinish = uint64(finish);
         emit RewardFunded(id, received, duration, p.rewardRate, p.periodFinish);
     }
 
     function stake(uint256 id, uint128 amount) external nonReentrant {
         if (amount == 0) revert ZeroAmount();
         Pool storage p = pools[id];
+        _assertCanEnter(p);
+
         Stake storage u = stakes[id][msg.sender];
         _update(id, msg.sender);
 
         uint128 received = TokenLib.pull128(p.stakeToken, msg.sender, amount);
-        u.amount += received;
-        p.totalStaked += received;
-        uint64 unlockAt = uint64(block.timestamp) + p.minLock;
-        if (unlockAt > u.unlockAt) u.unlockAt = unlockAt;
-
+        _creditStake(p, u, id, msg.sender, received);
         emit Staked(id, msg.sender, received);
     }
 
+    /// @notice Unstakes and claims rewards (Streamflow-style unstakeAndClaim).
     function unstake(uint256 id, uint128 amount) external nonReentrant {
-        if (amount == 0) revert ZeroAmount();
-        Pool storage p = pools[id];
-        Stake storage u = stakes[id][msg.sender];
-        if (block.timestamp < u.unlockAt) revert Locked();
-        if (amount > u.amount) revert NothingToWithdraw();
+        _unstake(id, amount, true);
+    }
 
-        _update(id, msg.sender);
-        u.amount -= amount;
-        p.totalStaked -= amount;
-        TokenLib.push(p.stakeToken, msg.sender, amount);
-        emit Unstaked(id, msg.sender, amount);
+    /// @notice Unstakes without claiming. Use if the reward token cannot be received (denylist).
+    function unstakeOnly(uint256 id, uint128 amount) external nonReentrant {
+        _unstake(id, amount, false);
     }
 
     function getReward(uint256 id) external nonReentrant returns (uint256 amount) {
@@ -154,6 +195,85 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         if (stakedAmount == 0 && reward == 0) revert NothingToWithdraw();
     }
 
+    /// @notice Restakes claimed rewards in place. Only when stake token == reward token.
+    /// @dev Tokens never leave the contract — reserves become staked principal.
+    function compound(uint256 id) external nonReentrant returns (uint256 amount) {
+        Pool storage p = pools[id];
+        if (p.stakeToken != p.rewardToken) revert SameTokenOnly();
+        _assertCanEnter(p);
+
+        amount = _settleRewards(id, msg.sender);
+        if (amount == 0) revert NothingToClaim();
+        if (amount > type(uint128).max) revert CapExceeded();
+
+        Stake storage u = stakes[id][msg.sender];
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint128 add = uint128(amount);
+        _creditStake(p, u, id, msg.sender, add);
+
+        emit Staked(id, msg.sender, add);
+        emit Compounded(id, msg.sender, amount);
+    }
+
+    /// @notice Returns unused emissions. Never takes rewards already credited to stakers.
+    /// @dev Requires `totalStaked == 0` so lazy `pendingRewards` is complete (every leaver was updated).
+    function recoverRewards(uint256 id) external nonReentrant returns (uint256 amount) {
+        Pool storage p = pools[id];
+        if (msg.sender != p.owner) revert NotOwner();
+        if (!p.rewardAccounting) revert NothingToRecover();
+
+        _update(id, address(0));
+        if (p.totalStaked != 0) revert Locked();
+
+        p.rewardRate = 0;
+        p.periodFinish = uint64(block.timestamp);
+
+        if (p.rewardReserves <= p.pendingRewards) revert NothingToRecover();
+        amount = p.rewardReserves - p.pendingRewards;
+        p.rewardReserves -= amount;
+        TokenLib.push(p.rewardToken, p.owner, amount);
+        emit RewardsRecovered(id, p.owner, amount);
+    }
+
+    function setPaused(uint256 id, bool paused_) external {
+        Pool storage p = pools[id];
+        if (msg.sender != p.owner) revert NotOwner();
+        p.paused = paused_;
+        emit PoolPaused(id, paused_);
+    }
+
+    function setProtocolPaused(bool paused_) external onlyOwner {
+        protocolPaused = paused_;
+        emit ProtocolPaused(paused_);
+    }
+
+    function setCap(uint256 id, uint128 cap) external {
+        Pool storage p = pools[id];
+        if (msg.sender != p.owner) revert NotOwner();
+        if (cap != 0 && cap < p.totalStaked) revert CapExceeded();
+        p.cap = cap;
+        emit CapSet(id, cap);
+    }
+
+    function setExpiry(uint256 id, uint64 expiresAt) external {
+        Pool storage p = pools[id];
+        if (msg.sender != p.owner) revert NotOwner();
+        if (p.totalStaked != 0) revert Locked();
+        if (expiresAt != 0 && expiresAt <= block.timestamp) revert PoolExpired();
+        p.expiresAt = expiresAt;
+        emit ExpirySet(id, expiresAt);
+    }
+
+    function transferPool(uint256 id, address newOwner) external {
+        if (newOwner == address(0) || newOwner == msg.sender) revert ZeroAddress();
+        Pool storage p = pools[id];
+        if (msg.sender != p.owner) revert NotOwner();
+        address from = p.owner;
+        p.owner = newOwner;
+        poolsByCreator[newOwner].push(id);
+        emit PoolTransferred(id, from, newOwner);
+    }
+
     function earned(uint256 id, address account) public view returns (uint256) {
         Pool storage p = pools[id];
         Stake storage u = stakes[id][account];
@@ -164,28 +284,80 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         return _rewardPerToken(pools[id]);
     }
 
+    function creatorPoolCount(address creator) external view returns (uint256) {
+        return poolsByCreator[creator].length;
+    }
+
+    function stakerPoolCount(address staker) external view returns (uint256) {
+        return poolsByStaker[staker].length;
+    }
+
+    function _unstake(uint256 id, uint128 amount, bool claimRewards) private {
+        if (amount == 0) revert ZeroAmount();
+        Pool storage p = pools[id];
+        Stake storage u = stakes[id][msg.sender];
+        if (block.timestamp < u.unlockAt) revert Locked();
+        if (amount > u.amount) revert InsufficientStake();
+
+        _update(id, msg.sender);
+        u.amount -= amount;
+        p.totalStaked -= amount;
+        TokenLib.push(p.stakeToken, msg.sender, amount);
+        emit Unstaked(id, msg.sender, amount);
+
+        if (claimRewards) _payout(id, msg.sender);
+    }
+
     function _payout(uint256 id, address account) private returns (uint256 amount) {
+        amount = _settleRewards(id, account);
+        if (amount == 0) return 0;
+        TokenLib.push(pools[id].rewardToken, account, amount);
+        emit RewardPaid(id, account, amount);
+    }
+
+    function _settleRewards(uint256 id, address account) private returns (uint256 amount) {
         Pool storage p = pools[id];
         Stake storage u = stakes[id][account];
         _update(id, account);
 
         amount = u.rewards;
         if (amount == 0) return 0;
-        // Pay at most what is funded and keep the shortfall owed, never silently burn it.
         if (amount > p.rewardReserves) amount = p.rewardReserves;
         if (amount == 0) return 0;
         u.rewards -= amount;
+        if (p.rewardAccounting) {
+            p.pendingRewards = p.pendingRewards < amount ? 0 : p.pendingRewards - amount;
+        }
         p.rewardReserves -= amount;
-        TokenLib.push(p.rewardToken, account, amount);
-        emit RewardPaid(id, account, amount);
+    }
+
+    function _creditStake(Pool storage p, Stake storage u, uint256 id, address account, uint128 received) private {
+        uint256 nextTotal = uint256(p.totalStaked) + uint256(received);
+        if (nextTotal > type(uint128).max) revert CapExceeded();
+        if (p.cap != 0 && nextTotal > p.cap) revert CapExceeded();
+
+        if (u.amount == 0 && !_stakerIndexed[id][account]) {
+            _stakerIndexed[id][account] = true;
+            poolsByStaker[account].push(id);
+        }
+
+        u.amount += received;
+        // forge-lint: disable-next-line(unsafe-typecast)
+        p.totalStaked = uint128(nextTotal);
+
+        uint64 unlockAt = _addLock(p.minLock);
+        if (unlockAt > u.unlockAt) u.unlockAt = unlockAt;
+    }
+
+    function _assertCanEnter(Pool storage p) private view {
+        if (protocolPaused || p.paused) revert Paused();
+        if (p.expiresAt != 0 && block.timestamp >= p.expiresAt) revert PoolExpired();
     }
 
     function _update(uint256 id, address account) private {
         Pool storage p = pools[id];
         uint64 applicable = uint64(_lastTimeRewardApplicable(p));
 
-        // With no stakers nobody can accrue, so push the schedule out by the idle window instead of
-        // letting those rewards become permanently unallocated.
         if (p.totalStaked == 0 && applicable > p.lastUpdate) {
             p.periodFinish += applicable - p.lastUpdate;
         }
@@ -194,8 +366,9 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         if (applicable > p.lastUpdate) p.lastUpdate = applicable;
         if (account != address(0)) {
             Stake storage u = stakes[id][account];
-            u.rewards =
-                u.rewards + (uint256(u.amount) * (p.rewardPerTokenStored - u.userRewardPerTokenPaid)) / PRECISION;
+            uint256 delta = (uint256(u.amount) * (p.rewardPerTokenStored - u.userRewardPerTokenPaid)) / PRECISION;
+            u.rewards += delta;
+            if (p.rewardAccounting) p.pendingRewards += delta;
             u.userRewardPerTokenPaid = p.rewardPerTokenStored;
         }
     }
@@ -211,8 +384,15 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         return p.rewardPerTokenStored + ((last - p.lastUpdate) * p.rewardRate * PRECISION) / p.totalStaked;
     }
 
+    function _addLock(uint64 minLock) private view returns (uint64) {
+        uint256 end = uint256(block.timestamp) + uint256(minLock);
+        if (end > type(uint64).max) revert InvalidLock();
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint64(end);
+    }
+
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    /// @dev Reserved so later versions can add state without shifting existing slots.
-    uint256[46] private __gap;
+    /// @dev Was 46. Four slots used: protocolPaused, poolsByCreator, poolsByStaker, _stakerIndexed.
+    uint256[42] private __gap;
 }

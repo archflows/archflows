@@ -1,6 +1,34 @@
 export const arcFlowAbi = [
   {
     type: "function",
+    name: "MIN_DURATION",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint64" }],
+  },
+  {
+    type: "function",
+    name: "LOCK_FEE",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint128" }],
+  },
+  {
+    type: "function",
+    name: "usdc",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "treasury",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
     name: "lock",
     stateMutability: "nonpayable",
     inputs: [
@@ -113,6 +141,15 @@ export const arcFlowAbi = [
       { name: "start", type: "uint64", indexed: false },
       { name: "cliff", type: "uint64", indexed: false },
       { name: "end", type: "uint64", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "FeePaid",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "from", type: "address", indexed: true },
+      { name: "amount", type: "uint128", indexed: false },
     ],
   },
 ] as const;

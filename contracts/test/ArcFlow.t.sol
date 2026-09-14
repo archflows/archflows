@@ -8,19 +8,29 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 contract ArcFlowTest is Test {
     ArcFlow flow;
     MockERC20 token;
+    MockERC20 usdc;
 
     address dev = makeAddr("dev");
     address stranger = makeAddr("stranger");
+    address treasury = makeAddr("treasury");
 
     uint128 constant AMOUNT = 1_000_000e18;
 
     function setUp() public {
         vm.warp(1_700_000_000);
-        flow = new ArcFlow();
+        usdc = new MockERC20(0);
+        flow = new ArcFlow(address(usdc), treasury);
         token = new MockERC20(0);
         token.mint(dev, AMOUNT * 10);
         vm.prank(dev);
         token.approve(address(flow), type(uint256).max);
+        _fundFee(dev, 400);
+    }
+
+    function _fundFee(address who, uint256 locks) internal {
+        usdc.mint(who, uint256(flow.LOCK_FEE()) * locks);
+        vm.prank(who);
+        usdc.approve(address(flow), type(uint256).max);
     }
 
     function _hardLock(uint64 duration) internal returns (uint256 id) {
@@ -94,6 +104,58 @@ contract ArcFlowTest is Test {
         flow.claim(id);
     }
 
+    /// @dev Same calldata the create form sends for Linear vest: start=0, cliff=0.
+    function test_Vest_UiPath_StartCliffZeroPartialThenFinalClaim() public {
+        uint256 walletBefore = token.balanceOf(dev);
+
+        vm.prank(dev);
+        uint256 id = flow.lock(address(token), dev, AMOUNT, 0, 0, uint64(block.timestamp) + 100 days);
+
+        (,,,,, uint64 start, uint64 cliff, uint64 end) = flow.positions(id);
+        assertEq(start, block.timestamp);
+        assertEq(cliff, start);
+        assertEq(end - start, 100 days);
+        assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
+        assertEq(flow.claimable(id), 0, "nothing vested at t0");
+
+        skip(25 days);
+        assertEq(flow.claimable(id), AMOUNT / 4);
+
+        vm.prank(dev);
+        assertEq(flow.claim(id), AMOUNT / 4);
+        assertEq(token.balanceOf(dev), walletBefore - AMOUNT + AMOUNT / 4);
+        assertEq(flow.claimable(id), 0);
+
+        skip(75 days);
+        assertEq(flow.claimable(id), (AMOUNT * 3) / 4);
+        vm.prank(dev);
+        assertEq(flow.claim(id), (AMOUNT * 3) / 4);
+        assertEq(token.balanceOf(dev), walletBefore);
+        assertEq(flow.totalLocked(address(token)), 0);
+    }
+
+    function test_Vest_CustomDuration_17Days8Hours() public {
+        uint64 duration = uint64(17 days + 8 hours);
+        uint256 id = _vest(duration);
+
+        skip(duration / 2);
+        assertEq(flow.claimable(id), AMOUNT / 2);
+
+        skip(duration - duration / 2);
+        assertEq(flow.claimable(id), AMOUNT);
+        vm.prank(dev);
+        assertEq(flow.claim(id), AMOUNT);
+    }
+
+    function test_Vest_OnlyBeneficiaryCanClaimMidStream() public {
+        uint256 id = _vest(40 days);
+        skip(10 days);
+        assertGt(flow.claimable(id), 0);
+        vm.prank(stranger);
+        vm.expectRevert(ArcFlow.NotBeneficiary.selector);
+        flow.claim(id);
+    }
+
     // --- access control and immutability ---
 
     function test_OnlyBeneficiaryCanClaim() public {
@@ -128,6 +190,69 @@ contract ArcFlowTest is Test {
         flow.lock(address(token), dev, AMOUNT, nowTs, nowTs + 10 days, nowTs + 1 days);
     }
 
+    function test_RejectsBackdatedStart() public {
+        uint64 nowTs = uint64(block.timestamp);
+        // Looks like a 90-day vest, but 89 days already elapsed — instantly ~99% claimable.
+        vm.prank(dev);
+        vm.expectRevert(ArcFlow.InvalidSchedule.selector);
+        flow.lock(address(token), dev, AMOUNT, nowTs - 89 days, nowTs - 89 days, nowTs + 1 days);
+        assertEq(flow.claimable(0), 0);
+        assertEq(token.balanceOf(dev), AMOUNT * 10);
+    }
+
+    function test_RejectsDurationBelowMinimum() public {
+        uint64 nowTs = uint64(block.timestamp);
+        uint64 tooShort = nowTs + flow.MIN_DURATION() - 1;
+        vm.prank(dev);
+        vm.expectRevert(ArcFlow.InvalidSchedule.selector);
+        flow.lock(address(token), dev, AMOUNT, nowTs, nowTs, tooShort);
+    }
+
+    function test_StartZeroUsesBlockTimestamp() public {
+        vm.prank(dev);
+        uint256 id = flow.lock(address(token), dev, AMOUNT, 0, 0, uint64(block.timestamp) + 30 days);
+        (,,,,, uint64 start, uint64 cliff, uint64 end) = flow.positions(id);
+        assertEq(start, block.timestamp);
+        assertEq(cliff, start);
+        assertEq(end, start + 30 days);
+        assertEq(flow.claimable(id), 0);
+    }
+
+    // --- lock fee ---
+
+    function test_LockChargesFlatTenUsdc() public {
+        _hardLock(30 days);
+        assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
+        assertEq(flow.totalLocked(address(usdc)), 0, "fee must not be counted as locked");
+        assertEq(usdc.balanceOf(address(flow)), 0);
+        assertEq(usdc.balanceOf(dev), uint256(flow.LOCK_FEE()) * 399);
+    }
+
+    function test_RejectsLockWithoutUsdcFee() public {
+        vm.prank(dev);
+        usdc.approve(address(flow), 0);
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        vm.expectRevert(ArcFlow.TransferFailed.selector);
+        flow.lock(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days);
+        assertEq(token.balanceOf(address(flow)), 0);
+        assertEq(usdc.balanceOf(treasury), 0);
+    }
+
+    function test_LockingUsdcDoesNotMixFeeIntoPosition() public {
+        uint128 lockAmount = 100e6;
+        usdc.mint(dev, lockAmount);
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        uint256 id = flow.lock(address(usdc), dev, lockAmount, nowTs, nowTs + 30 days, nowTs + 30 days);
+
+        (,,, uint128 credited,,,,) = flow.positions(id);
+        assertEq(credited, lockAmount);
+        assertEq(flow.totalLocked(address(usdc)), lockAmount);
+        assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
+        assertEq(usdc.balanceOf(address(flow)), lockAmount);
+    }
+
     // --- taxed tokens ---
 
     function test_TaxedToken_CreditsOnlyWhatArrived() public {
@@ -152,6 +277,7 @@ contract ArcFlowTest is Test {
         MockERC20 taxed = new MockERC20(500);
         taxed.mint(dev, AMOUNT * 2);
         taxed.mint(stranger, AMOUNT);
+        _fundFee(stranger, 1);
         uint64 nowTs = uint64(block.timestamp);
 
         vm.startPrank(dev);
@@ -185,7 +311,7 @@ contract ArcFlowTest is Test {
     }
 
     function testFuzz_ReleaseIsMonotonicAndBounded(uint64 duration, uint64 elapsed) public {
-        duration = uint64(bound(duration, 1, 3650 days));
+        duration = uint64(bound(duration, flow.MIN_DURATION(), 3650 days));
         elapsed = uint64(bound(elapsed, 0, 3650 days));
         uint256 id = _vest(duration);
 

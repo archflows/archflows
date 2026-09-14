@@ -23,6 +23,17 @@ contract ArcFlow {
         uint64 end;
     }
 
+    /// @notice Floor against a lock that is already over when it lands. Callers pick any longer schedule.
+    uint64 public constant MIN_DURATION = 1 minutes;
+
+    /// @notice Flat lock fee, 10 USDC in the ERC-20 6-decimal view. Never native 18-dec units.
+    uint128 public constant LOCK_FEE = 10 * 1e6;
+
+    /// @dev Arc USDC ERC-20 interface. Same asset as gas; do not send `msg.value` for the fee.
+    address public immutable usdc;
+    /// @dev Immutable fee sink. There is no owner, so this cannot be rotated later.
+    address public immutable treasury;
+
     uint256 public nextId;
     mapping(uint256 => Position) public positions;
     mapping(address => uint256[]) public locksByCreator;
@@ -51,6 +62,7 @@ contract ArcFlow {
         uint64 cliff,
         uint64 end
     );
+    event FeePaid(uint256 indexed id, address indexed from, uint128 amount);
     event Claimed(uint256 indexed id, address indexed beneficiary, uint128 amount);
 
     uint256 private _entered;
@@ -62,8 +74,19 @@ contract ArcFlow {
         _entered = 0;
     }
 
+    constructor(address usdc_, address treasury_) {
+        if (usdc_ == address(0) || treasury_ == address(0) || treasury_ == address(this)) revert ZeroAddress();
+        usdc = usdc_;
+        treasury = treasury_;
+    }
+
     /// @notice Lock `amount` of `token` for `beneficiary`.
     /// @dev Hard lock: set cliff == end. Linear vest: start <= cliff < end.
+    ///      Pass `start = 0` (and `cliff = 0` for a vest) to use `block.timestamp`.
+    ///      `start` in the past is rejected: a backdated vest looks locked on a proof page
+    ///      while most of the bag is already claimable.
+    ///      Each lock charges `LOCK_FEE` USDC to `treasury` up front. The fee never sits in
+    ///      `totalLocked` and cannot be claimed out of a position.
     ///      `amount` is the amount pulled from the caller. For tokens that take a transfer fee,
     ///      the position is credited with what actually arrived, never more.
     function lock(address token, address beneficiary, uint128 amount, uint64 start, uint64 cliff, uint64 end)
@@ -74,10 +97,14 @@ contract ArcFlow {
         if (token == address(0) || beneficiary == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
         if (start == 0) start = uint64(block.timestamp);
+        else if (start < block.timestamp) revert InvalidSchedule();
+        if (cliff == 0) cliff = start;
         if (cliff < start || end < cliff) revert InvalidSchedule();
         // A lock that is already fully unlocked is not proof of anything.
         if (end <= block.timestamp) revert InvalidSchedule();
+        if (end - start < MIN_DURATION) revert InvalidSchedule();
 
+        _takeFee();
         uint128 received = _pull(token, msg.sender, amount);
 
         id = nextId++;
@@ -98,6 +125,7 @@ contract ArcFlow {
         totalLocked[token] += received;
 
         emit Locked(id, token, beneficiary, msg.sender, received, start, cliff, end);
+        emit FeePaid(id, msg.sender, LOCK_FEE);
     }
 
     function claim(uint256 id) external nonReentrant returns (uint128 amount) {
@@ -142,6 +170,12 @@ contract ArcFlow {
         // Elapsed is strictly below duration here, so the product stays under p.amount.
         // forge-lint: disable-next-line(unsafe-typecast)
         return uint128((uint256(p.amount) * (uint256(timestamp) - uint256(p.start))) / duration);
+    }
+
+    function _takeFee() internal {
+        uint256 before = IERC20(usdc).balanceOf(treasury);
+        _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, treasury, LOCK_FEE)));
+        if (IERC20(usdc).balanceOf(treasury) - before != LOCK_FEE) revert TransferFailed();
     }
 
     /// @return received Balance actually gained by this contract, which is what the position is credited.

@@ -206,6 +206,43 @@ contract SecurityTest is Test {
         assertApproxEqAbs(paid, 100e18, 1e10, "idle time is pushed out, not burned");
     }
 
+    // --- S-I3: a blocked reward token must not trap the staked principal ---
+
+    function test_BlockedRewardDoesNotTrapStake() public {
+        MockERC20 stakeTok = new MockERC20(0);
+        BlocklistERC20 rewardTok = new BlocklistERC20();
+        stakeTok.mint(alice, 100e18);
+        rewardTok.mint(funder, 100e18);
+
+        vm.prank(alice);
+        stakeTok.approve(address(staking), type(uint256).max);
+        vm.prank(funder);
+        rewardTok.approve(address(staking), type(uint256).max);
+
+        vm.prank(funder);
+        uint256 id = staking.createPool(address(stakeTok), address(rewardTok), 0);
+        vm.prank(funder);
+        staking.fund(id, 100e18, 100 days);
+        vm.prank(alice);
+        staking.stake(id, 100e18);
+
+        skip(10 days);
+        rewardTok.setBlocked(alice, true);
+
+        vm.prank(alice);
+        vm.expectRevert();
+        staking.unstake(id, 100e18);
+
+        vm.prank(alice);
+        staking.unstakeOnly(id, 100e18);
+        assertEq(stakeTok.balanceOf(alice), 100e18);
+
+        rewardTok.setBlocked(alice, false);
+        vm.prank(alice);
+        staking.getReward(id);
+        assertGt(rewardTok.balanceOf(alice), 0);
+    }
+
     // --- M-4: the buyer must always keep a way out ---
 
     function test_EscrowRejectsMissingTimeout() public {

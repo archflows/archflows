@@ -74,7 +74,7 @@ contract UpgradeableTest is Test {
 
     /// @dev The anti-dump lock is deployed raw, so it must not expose any upgrade hook.
     function test_LockContractHasNoUpgradePath() public {
-        ArcFlow locks = new ArcFlow();
+        ArcFlow locks = new ArcFlow(address(1), address(2));
         (bool ok,) = address(locks).call(abi.encodeWithSignature("upgradeToAndCall(address,bytes)", address(1), ""));
         assertFalse(ok, "lock contract must not be upgradeable");
 

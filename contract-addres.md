@@ -5,7 +5,7 @@
 **Explorer:** https://testnet.arcscan.app
 **Deployer / owner:** `0x63B2614f9AE9eAe20483aD24718B419891A2657D`
 **Deploy script:** `contracts/script/Deploy.s.sol`
-**Deployed at block:** 62053385 – 62053417
+**Deployed at block:** 62053385 – 62053417 (original suite); **ArcFlow v2 lock** at block `62092286`
 
 Gas on Arc is paid in USDC. Fund the deployer from https://faucet.circle.com before broadcasting.
 
@@ -15,13 +15,27 @@ These are the addresses the frontend reads. Proxy addresses stay stable across u
 
 | Contract | Type | Address | Frontend env var |
 |---|---|---|---|
-| `ArcFlow` | Immutable, no owner, no upgrade path | `0x003DE5DF8609E37b89EC91bF1cFDD65096cA98ee` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
+| `ArcFlow` | Immutable, no owner, no upgrade path | `0xeAA89395055b4A044645067E38cDd49c37C5538F` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
 | `ArcFlowStream` | ERC1967 / UUPS proxy | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` | `NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS` |
 | `ArcFlowDistributor` | ERC1967 / UUPS proxy | `0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8` | `NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS` |
 | `ArcFlowEscrow` | ERC1967 / UUPS proxy | `0x528b3E0e78CbD1a4f9aFA011aE374ba12996B2C2` | `NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS` |
 | `ArcFlowStaking` | ERC1967 / UUPS proxy | `0x2627e3f07574F47b2B5bc3EfD774576357658063` | `NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS` |
 
 `ArcFlow` is deployed raw on purpose: a lock an owner could upgrade would not prove anything to holders.
+
+**Current lock vault (14 Sep 2026)** — fee $10 USDC, anti-backdate, manual duration. Treasury = deployer.
+
+| | |
+|---|---|
+| Address | [`0xeAA89395055b4A044645067E38cDd49c37C5538F`](https://testnet.arcscan.app/address/0xeAA89395055b4A044645067E38cDd49c37C5538F) |
+| Tx | [`0x4eef43b8558dc5c109dcd5a2e0587aaee14e9da5f91f1186977d3eaa02d6234e`](https://testnet.arcscan.app/tx/0x4eef43b8558dc5c109dcd5a2e0587aaee14e9da5f91f1186977d3eaa02d6234e) |
+| Block | 62092286 |
+| `LOCK_FEE` | 10 USDC (6 decimals) |
+| `MIN_DURATION` | 60 seconds |
+| `usdc` | `0x3600000000000000000000000000000000000000` |
+| `treasury` | `0x63B2614f9AE9eAe20483aD24718B419891A2657D` |
+
+Previous lock (no fee): `0x003DE5DF8609E37b89EC91bF1cFDD65096cA98ee` — leave it; old positions stay there.
 
 ## Implementations behind the proxies
 

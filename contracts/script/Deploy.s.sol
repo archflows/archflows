@@ -23,10 +23,13 @@ contract Deploy is Script {
 
     function run() external returns (Deployment memory d) {
         address owner = vm.envOr("ARCFLOW_OWNER", msg.sender);
+        address treasury = vm.envOr("ARCFLOW_TREASURY", owner);
+        // Arc USDC ERC-20 view (6 decimals). Same asset as gas — never send native value as the lock fee.
+        address usdc = 0x3600000000000000000000000000000000000000;
 
         vm.startBroadcast();
 
-        d.locks = address(new ArcFlow());
+        d.locks = address(new ArcFlow(usdc, treasury));
 
         d.stream = _proxy(address(new ArcFlowStream()), abi.encodeCall(ArcFlowStream.initialize, (owner)));
         d.distributor = _proxy(
@@ -39,6 +42,7 @@ contract Deploy is Script {
         vm.stopBroadcast();
 
         console2.log("owner                       ", owner);
+        console2.log("treasury                    ", treasury);
         console2.log("ArcFlow (locks, immutable)  ", d.locks);
         console2.log("ArcFlowStream (proxy)       ", d.stream);
         console2.log("ArcFlowDistributor (proxy)  ", d.distributor);
