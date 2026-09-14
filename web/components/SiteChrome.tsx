@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { LogoMark } from "@/components/Icons";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -20,66 +21,55 @@ export function SiteChrome({ children }: { children: ReactNode }) {
     <div className="flex min-h-svh flex-col">
       <SiteHeader />
       <div className="flex-1">{children}</div>
-      <footer className="border-t">
-        <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-          <div className="space-y-2">
-            <div className="text-sm font-semibold tracking-tight">ArcFlow</div>
-            <p className="text-sm text-muted-foreground">
-              Token locks and vesting on Arc — public proof, USDC gas.
-            </p>
+
+      <footer className="footer">
+        <div className="shell">
+          <div className="footer-grid">
+            <div>
+              <Link href="/" className="brand" style={{ marginBottom: "0.75rem" }}>
+                <span className="brand-glyph">
+                  <LogoMark size={14} />
+                </span>
+                ArcFlow
+              </Link>
+              <p className="dim" style={{ maxWidth: "24rem", margin: "0.75rem 0 0" }}>
+                Token locks and vesting in orbit around Arc. Immutable schedules, public proof,
+                gas paid in USDC.
+              </p>
+            </div>
+
+            <div className="footer-col">
+              <div className="footer-col-title">// Flight deck</div>
+              <Link href="/app">New lock</Link>
+              <Link href="/app/locks">My orbit</Link>
+              <Link href="/auth">Sign in</Link>
+            </div>
+
+            <div className="footer-col">
+              <div className="footer-col-title">// Arc network</div>
+              <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">
+                USDC faucet
+              </a>
+              <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">
+                Arcscan
+              </a>
+              <a href="https://docs.arc.io" target="_blank" rel="noreferrer">
+                Arc docs
+              </a>
+            </div>
+
+            <div className="footer-col">
+              <div className="footer-col-title">// Ground control</div>
+              <a href="/#launch">Launch sequence</a>
+              <a href="/#faq">FAQ</a>
+              <a href="/#modules">Modules</a>
+            </div>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Product</div>
-            <Link className="block text-sm hover:underline" href="/auth">
-              Sign in
-            </Link>
-            <Link className="block text-sm hover:underline" href="/dashboard">
-              Dashboard
-            </Link>
-            <a className="block text-sm hover:underline" href="/#modules">
-              Modules
-            </a>
+
+          <div className="footer-bottom">
+            <span>© {new Date().getFullYear()} ArcFlow — Lock. Vest. Stream. On Arc.</span>
+            <span>Arc Testnet · chain 5042002 · gas in USDC</span>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Network</div>
-            <a
-              className="block text-sm hover:underline"
-              href="https://faucet.circle.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Faucet
-            </a>
-            <a
-              className="block text-sm hover:underline"
-              href="https://testnet.arcscan.app"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Arcscan
-            </a>
-            <a
-              className="block text-sm hover:underline"
-              href="https://docs.arc.io"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Arc docs
-            </a>
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Help</div>
-            <a className="block text-sm hover:underline" href="/#how">
-              How it works
-            </a>
-            <a className="block text-sm hover:underline" href="/#faq">
-              FAQ
-            </a>
-          </div>
-        </div>
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between border-t px-4 py-4 text-xs text-muted-foreground sm:px-6">
-          <span>© {new Date().getFullYear()} ArcFlow</span>
-          <span className="font-mono">Arc Testnet · 5042002</span>
         </div>
       </footer>
     </div>

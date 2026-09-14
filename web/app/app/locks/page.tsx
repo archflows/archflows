@@ -4,19 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, useReadContract } from "wagmi";
-import { ArrowRight, Loader2, Lock } from "lucide-react";
+import { ArrowRight, Satellite } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_ADDRESS } from "@/lib/chain";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
@@ -31,7 +22,7 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
 
 type Tab = "created" | "receiving";
 
-function LockCard({ id }: { id: bigint }) {
+function LockRow({ id }: { id: bigint }) {
   const { data: position } = useReadContract({
     address: ARCFLOW_ADDRESS,
     abi: arcFlowAbi,
@@ -62,9 +53,11 @@ function LockCard({ id }: { id: bigint }) {
 
   if (!position) {
     return (
-      <div className="border-b px-4 py-4">
-        <div className="h-4 w-40 animate-pulse rounded bg-muted" />
-        <div className="mt-2 h-2 w-64 animate-pulse rounded bg-muted" />
+      <div className="row-link" style={{ pointerEvents: "none" }}>
+        <div style={{ display: "grid", gap: "0.5rem" }}>
+          <div className="skeleton" style={{ width: "10rem", height: "0.85rem" }} />
+          <div className="skeleton" style={{ width: "16rem", height: "0.55rem" }} />
+        </div>
       </div>
     );
   }
@@ -83,16 +76,11 @@ function LockCard({ id }: { id: bigint }) {
   const ticker = symbol ?? "Token";
 
   return (
-    <Link
-      href={`/lock/${id.toString()}`}
-      className="flex flex-col gap-3 border-b px-4 py-4 transition-colors last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div className="min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-md border bg-muted font-mono text-[10px] font-semibold">
-            {ticker.slice(0, 3).toUpperCase()}
-          </span>
-          <span className="font-medium">
+    <Link href={`/lock/${id.toString()}`} className="row-link">
+      <div style={{ minWidth: 0, display: "grid", gap: "0.55rem" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.55rem" }}>
+          <span className="token-glyph">{ticker.slice(0, 3).toUpperCase()}</span>
+          <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
             {amount !== undefined
               ? Number(formatUnits(amount, dec)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
@@ -100,19 +88,17 @@ function LockCard({ id }: { id: bigint }) {
               : "—"}{" "}
             {ticker}
           </span>
-          {isDone ? (
-            <Badge>Unlocked</Badge>
-          ) : isHardLock ? (
-            <Badge variant="secondary">Hard locked</Badge>
-          ) : (
-            <Badge variant="outline">Vesting</Badge>
-          )}
+          <span className={cn("live", isDone ? "live-accent" : undefined)}>
+            {isDone ? "Unlocked" : isHardLock ? "Hard locked" : "Vesting"}
+          </span>
         </div>
-        <div className="h-1.5 max-w-xs overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${Math.min(timePct, 100)}%` }} />
+
+        <div className="meter" style={{ maxWidth: "18rem" }}>
+          <div className="meter-fill" style={{ width: `${Math.min(timePct, 100)}%` }} />
         </div>
-        <p className="text-xs text-muted-foreground">
-          Lock #{id.toString()} · {isDone ? "unlocked" : "unlocks"}{" "}
+
+        <p className="mono dim" style={{ margin: 0, fontSize: "0.72rem" }}>
+          LOCK #{id.toString()} · {isDone ? "unlocked" : "unlocks"}{" "}
           {end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"}
           {claimed !== undefined && claimed > 0n
             ? ` · claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
@@ -121,9 +107,10 @@ function LockCard({ id }: { id: bigint }) {
             : ""}
         </p>
       </div>
-      <span className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "shrink-0")}>
-        Open proof
-        <ArrowRight className="size-4" />
+
+      <span className="box-link" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+        Proof
+        <ArrowRight className="size-3.5" />
       </span>
     </Link>
   );
@@ -137,7 +124,7 @@ function IndexedLock({ owner, index, tab }: { owner: `0x${string}`; index: numbe
     args: [owner, BigInt(index)],
   });
   if (id === undefined) return null;
-  return <LockCard id={id} />;
+  return <LockRow id={id} />;
 }
 
 function Locks({ owner }: { owner: `0x${string}` }) {
@@ -162,58 +149,52 @@ function Locks({ owner }: { owner: `0x${string}` }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Locks created</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{created}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Locks receiving</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{received}</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="stat-grid stat-grid-2">
+        <div className="stat">
+          <span>Locks launched</span>
+          <strong>{created}</strong>
+        </div>
+        <div className="stat">
+          <span>Vesting to you</span>
+          <strong>{received}</strong>
+        </div>
       </div>
 
-      <div className="grid max-w-sm grid-cols-2 gap-1 rounded-lg border p-1">
-        <Button
+      <div className="seg seg-2" style={{ maxWidth: "22rem" }}>
+        <button
           type="button"
-          size="sm"
-          variant={tab === "created" ? "secondary" : "ghost"}
+          className={cn("seg-btn", tab === "created" && "on")}
           onClick={() => setTab("created")}
         >
           Created ({created})
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          size="sm"
-          variant={tab === "receiving" ? "secondary" : "ghost"}
+          className={cn("seg-btn", tab === "receiving" && "on")}
           onClick={() => setTab("receiving")}
         >
           Receiving ({received})
-        </Button>
+        </button>
       </div>
 
-      <Card className="overflow-hidden p-0">
+      <div className="panel">
         {count === 0 ? (
-          <div className="flex flex-col items-start gap-3 p-6">
-            <div className="flex size-9 items-center justify-center rounded-md border bg-muted">
-              <Lock className="size-4" />
-            </div>
+          <div className="panel-body" style={{ display: "grid", gap: "0.85rem", justifyItems: "start" }}>
+            <span className="box-icon">
+              <Satellite className="size-4" />
+            </span>
             <div>
-              <h2 className="font-medium">
-                {tab === "created" ? "No locks yet" : "Nothing vesting to you"}
+              <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 650 }}>
+                {tab === "created" ? "Empty orbit" : "Nothing vesting to you"}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="dim" style={{ margin: "0.4rem 0 0", fontSize: "0.9rem" }}>
                 {tab === "created"
-                  ? "Create a lock after your token launch, then share the proof link."
-                  : "When someone locks tokens to your wallet, it shows up here."}
+                  ? "Lock tokens after your launch, then paste the proof link under the CA."
+                  : "When someone locks tokens to your wallet, the position shows up here."}
               </p>
             </div>
             {tab === "created" ? (
-              <Link href="/app" className={cn(buttonVariants())}>
+              <Link href="/app" className="btn sm">
                 Create lock
               </Link>
             ) : null}
@@ -225,7 +206,7 @@ function Locks({ owner }: { owner: `0x${string}` }) {
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
@@ -233,25 +214,23 @@ function Locks({ owner }: { owner: `0x${string}` }) {
 export default function MyLocksPage() {
   const { address, isConnected } = useAccount();
 
-  return (
-    <div className="space-y-6">
-      {!isConnected || !address ? (
-        <Card className="max-w-md">
-          <CardHeader>
-            <Badge variant="outline" className="w-fit gap-1">
-              <Lock className="size-3" />
-              Wallet required
-            </Badge>
-            <CardTitle>Connect to see your locks</CardTitle>
-            <CardDescription>ArcFlow reads positions straight from the contract.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WalletConnectButton />
-          </CardContent>
-        </Card>
-      ) : (
-        <Locks owner={address} />
-      )}
-    </div>
-  );
+  if (!isConnected || !address) {
+    return (
+      <div className="panel" style={{ maxWidth: "26rem" }}>
+        <div className="panel-head">
+          <span>Wallet required</span>
+          <span className="live live-accent">Read-only</span>
+        </div>
+        <div className="panel-body" style={{ display: "grid", gap: "0.9rem" }}>
+          <p className="dim" style={{ margin: 0, fontSize: "0.9rem" }}>
+            ArcFlow reads positions straight from the contract — connect to see the ones tied to
+            your address.
+          </p>
+          <WalletConnectButton />
+        </div>
+      </div>
+    );
+  }
+
+  return <Locks owner={address} />;
 }

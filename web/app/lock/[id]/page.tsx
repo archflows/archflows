@@ -4,19 +4,9 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
-import { Clock, Copy, Loader2, Lock } from "lucide-react";
+import { Clock, Copy, Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_ADDRESS, EXPLORER_URL, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -161,109 +151,169 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
 
   if (position && !enabled) {
     return (
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lock #{id} does not exist</CardTitle>
-            <CardDescription>Nothing locked under this id on this contract.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/app" className={cn(buttonVariants())}>
+      <main className="shell" style={{ maxWidth: "46rem", padding: "3rem 0" }}>
+        <div className="panel">
+          <div className="panel-head">
+            <span>Lock #{id} does not exist</span>
+            <span className="live">Empty</span>
+          </div>
+          <div className="panel-body" style={{ display: "grid", gap: "1rem", justifyItems: "start" }}>
+            <p className="dim" style={{ margin: 0 }}>
+              Nothing is locked under this id on this contract. Check the URL, or launch a new
+              position.
+            </p>
+            <Link href="/app" className="btn sm">
               Create a lock
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     );
   }
 
-  const statusBadge = isDone ? (
-    <Badge>Fully unlocked</Badge>
-  ) : isHardLock ? (
-    <Badge variant="secondary" className="gap-1">
-      <Lock className="size-3" />
-      Hard locked
-    </Badge>
-  ) : (
-    <Badge variant="outline">Vesting</Badge>
-  );
+  const status = isDone ? "Fully unlocked" : isHardLock ? "Hard locked" : "Vesting";
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <main className="shell" style={{ maxWidth: "52rem", padding: "2.5rem 0 4rem" }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "start",
+          justifyContent: "space-between",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+        }}
+      >
         <div>
-          <p className="text-sm text-muted-foreground">Proof of lock</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <p className="tag tag-accent">// PROOF OF LOCK · ARC TESTNET</p>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(1.5rem, 3vw, 2rem)",
+                letterSpacing: "-0.03em",
+                fontWeight: 700,
+              }}
+            >
               {symbol ? `${symbol} ` : ""}Lock #{id}
             </h1>
-            {statusBadge}
+            <span className={isDone ? "live live-accent" : "live"}>
+              {!isDone ? <span className="pulse-dot" /> : null}
+              {status}
+            </span>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={copyLink}>
-          <Copy className="size-4" />
-          {copied ? "Copied" : "Copy link"}
-        </Button>
+        <button type="button" className="btn ghost sm" onClick={copyLink}>
+          <Copy className="size-3.5" />
+          {copied ? "Copied" : "Copy proof link"}
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="grid gap-6 pt-6 sm:grid-cols-[auto_1fr] sm:items-center">
-          <div className="flex size-24 flex-col items-center justify-center rounded-xl border bg-muted/40 text-center">
-            <div className="text-2xl font-semibold tabular-nums">
-              {unlockedPct.toFixed(unlockedPct > 0 && unlockedPct < 1 ? 2 : 0)}%
-            </div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Unlocked</div>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <div className="text-sm text-muted-foreground">Locked amount</div>
-              <div className="text-3xl font-semibold tracking-tight tabular-nums">
-                {amountText(amount, dec)}{" "}
-                <span className="text-base font-medium text-muted-foreground">{symbol ?? ""}</span>
+      <div className="panel">
+        <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem" }}>
+          <div className="dial">
+            <div className="dial-ring" />
+            <div style={{ textAlign: "center", position: "relative" }}>
+              <div
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  fontVariantNumeric: "tabular-nums",
+                  color: "var(--beam)",
+                }}
+              >
+                {unlockedPct.toFixed(unlockedPct > 0 && unlockedPct < 1 ? 2 : 0)}%
+              </div>
+              <div
+                className="mono dim"
+                style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.08em" }}
+              >
+                Unlocked
               </div>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary" style={{ width: `${Math.min(timePct, 100)}%` }} />
+          </div>
+
+          <div style={{ flex: "1 1 18rem", minWidth: 0, display: "grid", gap: "0.85rem" }}>
+            <div>
+              <div
+                className="mono dim"
+                style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em" }}
+              >
+                Locked amount
+              </div>
+              <div
+                style={{
+                  fontSize: "clamp(1.6rem, 4vw, 2.1rem)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                  fontVariantNumeric: "tabular-nums",
+                  marginTop: "0.2rem",
+                }}
+              >
+                {amountText(amount, dec)}{" "}
+                <span className="dim" style={{ fontSize: "1rem", fontWeight: 500 }}>
+                  {symbol ?? ""}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+
+            <div className="meter">
+              <div className="meter-fill" style={{ width: `${Math.min(timePct, 100)}%` }} />
+            </div>
+
+            <div
+              className="mono dim"
+              style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem" }}
+            >
               <span>{start ? dateFmt.format(new Date(Number(start) * 1000)) : "—"}</span>
-              <span className="inline-flex items-center gap-1">
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
                 <Clock className="size-3.5" />
                 {end !== undefined ? countdown(end - now) : "—"}
               </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="stat-grid stat-grid-2" style={{ marginTop: "1rem" }}>
         {[
-          ["Claimed", amountText(claimed, dec)],
-          ["Claimable now", amountText(claimable, dec)],
-          ["Still locked", amount !== undefined ? amountText(amount - released, dec) : "—"],
-          ["Fully unlocks", end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"],
-        ].map(([label, value]) => (
-          <Card key={label}>
-            <CardHeader className="pb-2">
-              <CardDescription>{label}</CardDescription>
-              <CardTitle className="text-lg tabular-nums">{value}</CardTitle>
-              <p className="text-xs text-muted-foreground">{label === "Fully unlocks" ? "UTC" : symbol ?? ""}</p>
-            </CardHeader>
-          </Card>
+          ["Claimed", amountText(claimed, dec), symbol ?? ""],
+          ["Claimable now", amountText(claimable, dec), symbol ?? ""],
+          [
+            "Still locked",
+            amount !== undefined ? amountText(amount - released, dec) : "—",
+            symbol ?? "",
+          ],
+          ["Fully unlocks", end ? dateFmt.format(new Date(Number(end) * 1000)) : "—", "UTC"],
+        ].map(([label, value, unit], i) => (
+          <div
+            className="stat"
+            key={label}
+            style={i > 1 ? { borderTop: "1px solid var(--line)" } : undefined}
+          >
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <span style={{ marginTop: "0.25rem", marginBottom: 0 }}>{unit}</span>
+          </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          {[
-            [
-              "Token",
-              token && token !== ZERO ? (
+      <div className="panel" style={{ marginTop: "1rem" }}>
+        <div className="panel-head">
+          <span>On-chain details</span>
+          <span className="mono dim" style={{ fontSize: "0.72rem" }}>
+            // IMMUTABLE
+          </span>
+        </div>
+        <div>
+          <div className="kv">
+            <span className="kv-key">Token</span>
+            <span className="kv-val">
+              {token && token !== ZERO ? (
                 <a
-                  className="font-mono text-xs text-primary hover:underline"
+                  className="mono"
+                  style={{ fontSize: "0.78rem", color: "var(--beam)" }}
                   href={`${EXPLORER_URL}/address/${token}`}
                   target="_blank"
                   rel="noreferrer"
@@ -273,50 +323,71 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                 </a>
               ) : (
                 "—"
-              ),
-            ],
-            ["Beneficiary", <span className="font-mono text-xs">{short(beneficiary)}</span>],
-            ["Locked by", <span className="font-mono text-xs">{short(creator)}</span>],
-            ["Release", isHardLock ? "Hard lock" : "Linear vest"],
-            ["Cliff", cliff ? dateFmt.format(new Date(Number(cliff) * 1000)) : "—"],
-          ].map(([label, value]) => (
-            <div key={String(label)} className="flex items-center justify-between gap-3 border-b pb-2 last:border-b-0 last:pb-0">
-              <span className="text-muted-foreground">{label}</span>
-              <span className="text-right font-medium">{value}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+              )}
+            </span>
+          </div>
+          <div className="kv">
+            <span className="kv-key">Beneficiary</span>
+            <span className="kv-val mono" style={{ fontSize: "0.78rem" }}>
+              {short(beneficiary)}
+            </span>
+          </div>
+          <div className="kv">
+            <span className="kv-key">Locked by</span>
+            <span className="kv-val mono" style={{ fontSize: "0.78rem" }}>
+              {short(creator)}
+            </span>
+          </div>
+          <div className="kv">
+            <span className="kv-key">Release</span>
+            <span className="kv-val">{isHardLock ? "Hard lock" : "Linear vest"}</span>
+          </div>
+          <div className="kv">
+            <span className="kv-key">Cliff</span>
+            <span className="kv-val">
+              {cliff ? dateFmt.format(new Date(Number(cliff) * 1000)) : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {error ? (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="alert alert-error" style={{ marginTop: "1rem" }}>
           {error}
         </div>
       ) : null}
 
       {isBeneficiary ? (
-        <Card>
-          <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
-            <div>
-              <p className="text-sm font-medium">Your position</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {claimable && claimable > 0n
-                  ? `${amountText(claimable, dec)} ${symbol ?? "tokens"} ready to claim.`
-                  : "Nothing unlocked yet. Come back after the cliff."}
-              </p>
-            </div>
-            <Button disabled={busy || !claimable || claimable === 0n} onClick={claim}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {busy ? "Claiming…" : "Claim unlocked"}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="cta-box" style={{ marginTop: "1.25rem", padding: "1.25rem" }}>
+          <div className="cta-orb" />
+          <div>
+            <p className="tag tag-accent" style={{ marginBottom: "0.3rem" }}>
+              // YOUR POSITION
+            </p>
+            <p className="dim" style={{ margin: 0, fontSize: "0.9rem" }}>
+              {claimable && claimable > 0n
+                ? `${amountText(claimable, dec)} ${symbol ?? "tokens"} have left the lock and are ready to claim.`
+                : "Nothing unlocked yet. Come back after the cliff."}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn"
+            disabled={busy || !claimable || claimable === 0n}
+            onClick={claim}
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            {busy ? "Claiming…" : "Claim unlocked"}
+          </button>
+        </div>
       ) : (
-        <p className="text-center text-sm text-muted-foreground">
-          Only the beneficiary can claim after unlock. Creator cannot pull early.
+        <p
+          className="mono dim"
+          style={{ textAlign: "center", marginTop: "1.5rem", fontSize: "0.76rem" }}
+        >
+          // only the beneficiary can claim after unlock — the creator cannot pull early
         </p>
       )}
     </main>
   );
 }
-

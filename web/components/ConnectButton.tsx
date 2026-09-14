@@ -3,7 +3,6 @@
 import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
 import { ARC_TESTNET } from "@/lib/chain";
 import { useMounted } from "@/hooks/useMounted";
-import { Button } from "@/components/ui/button";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 
 export function ConnectButton() {
@@ -14,34 +13,32 @@ export function ConnectButton() {
 
   if (!mounted) {
     return (
-      <button
-        type="button"
-        disabled
-        className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium opacity-50"
-      >
+      <button type="button" disabled className="btn ghost sm">
         Connect
       </button>
     );
   }
 
   if (!isConnected) {
-    return <WalletConnectButton size="sm" label="Connect" className="w-auto px-2.5" />;
+    return <WalletConnectButton size="sm" label="Connect" compact />;
   }
 
-  const short = `${address?.slice(0, 6)}…${address?.slice(-4)}`;
-  const wrongChain = chainId !== ARC_TESTNET.id;
-
-  if (wrongChain) {
+  if (chainId !== ARC_TESTNET.id) {
     return (
-      <Button size="sm" onClick={() => switchChain({ chainId: ARC_TESTNET.id })}>
+      <button type="button" className="btn sm" onClick={() => switchChain({ chainId: ARC_TESTNET.id })}>
         Switch to Arc
-      </Button>
+      </button>
     );
   }
 
   return (
-    <Button size="sm" variant="secondary" onClick={() => disconnect()} title="Disconnect">
-      {short}
-    </Button>
+    <button
+      type="button"
+      className="btn ghost sm mono"
+      title="Disconnect"
+      onClick={() => disconnect()}
+    >
+      {address?.slice(0, 6)}…{address?.slice(-4)}
+    </button>
   );
 }

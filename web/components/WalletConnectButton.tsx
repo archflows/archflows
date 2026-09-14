@@ -62,12 +62,15 @@ type Props = {
   className?: string;
   size?: "default" | "sm" | "lg";
   label?: string;
+  /** Button only — no helper text. For tight spots like the nav bar. */
+  compact?: boolean;
 };
 
 export function WalletConnectButton({
   className,
   size = "lg",
   label = "Connect wallet",
+  compact = false,
 }: Props) {
   const mounted = useMounted();
   const { connectAsync, connectors, isPending } = useConnect();
@@ -154,6 +157,27 @@ export function WalletConnectButton({
 
   const loading = busy || isPending;
 
+  const trigger = (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={onConnect}
+      title={compact && error ? error : undefined}
+      className={cn(
+        "btn",
+        size === "sm" && "sm",
+        size === "lg" && "lg block",
+        size === "default" && "block",
+        className,
+      )}
+    >
+      {loading ? <Loader2 className="size-4 animate-spin" /> : null}
+      {loading ? "Connecting…" : label}
+    </button>
+  );
+
+  if (compact) return trigger;
+
   return (
     <div className="space-y-2">
       <button
@@ -161,8 +185,10 @@ export function WalletConnectButton({
         disabled={loading}
         onClick={onConnect}
         className={cn(
-          "inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:pointer-events-none disabled:opacity-50",
-          size === "sm" && "h-7 w-auto px-2.5 text-[0.8rem]",
+          "btn",
+          size === "sm" && "sm",
+          size === "lg" && "lg block",
+          size === "default" && "block",
           className,
         )}
       >
@@ -170,7 +196,7 @@ export function WalletConnectButton({
         {loading ? "Connecting…" : label}
       </button>
       {mounted && !hasInjected ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="field-hint">
           Need a wallet extension.{" "}
           <a
             href="https://metamask.io/download/"
@@ -182,7 +208,7 @@ export function WalletConnectButton({
           </a>
         </p>
       ) : null}
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="field-error">{error}</p> : null}
     </div>
   );
 }

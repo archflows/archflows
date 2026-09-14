@@ -8,9 +8,7 @@ import { Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_ADDRESS, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const DURATIONS = [
   { label: "7d", seconds: 7 * 86400 },
@@ -159,187 +157,211 @@ export default function CreateLockPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {notDeployed ? (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Contract not deployed yet. Form works for preview — set{" "}
-          <code className="font-mono text-xs">NEXT_PUBLIC_ARCFLOW_ADDRESS</code> to enable
-          transactions.
+        <div className="alert alert-warn">
+          Contract not deployed yet — the console runs in preview mode. Set{" "}
+          <code className="mono">NEXT_PUBLIC_ARCFLOW_ADDRESS</code> to arm transactions.
         </div>
       ) : null}
 
-      {!isConnected ? (
-        <div className="flex justify-end">
-          <WalletConnectButton size="sm" label="Connect wallet" className="w-auto" />
-        </div>
-      ) : null}
-
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
-        <div className="space-y-5 rounded-xl border bg-card/40 p-5 sm:p-6">
-          <div className="space-y-2">
-            <Label htmlFor="token">Token contract</Label>
-            <Input
-              id="token"
-              placeholder="0x…"
-              autoComplete="off"
-              spellCheck={false}
-              className="font-mono"
-              value={token}
-              onChange={(e) => setToken(e.target.value.trim())}
-            />
-            {token && !tokenAddress ? (
-              <p className="text-sm text-destructive">Invalid address.</p>
-            ) : symbol ? (
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{symbol}</span>
-                {balance !== undefined && decimals !== undefined
-                  ? ` · balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
-                      maximumFractionDigits: 4,
-                    })}`
-                  : null}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">Paste the ERC-20 after your pad create.</p>
-            )}
+      <div className="create-grid">
+        <div className="panel">
+          <div className="panel-head">
+            <span>Lock parameters</span>
+            <span className="live live-accent">Arc Testnet</span>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <div className="relative">
-              <Input
-                id="amount"
-                placeholder="0.0"
-                inputMode="decimal"
+          <div className="panel-body">
+            <div className="field">
+              <label className="field-label" htmlFor="token">
+                Token contract
+              </label>
+              <input
+                id="token"
+                className="af-input mono"
+                placeholder="0x…"
                 autoComplete="off"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className={balance !== undefined ? "pr-28" : undefined}
+                spellCheck={false}
+                value={token}
+                onChange={(e) => setToken(e.target.value.trim())}
               />
-              {balance !== undefined && decimals !== undefined ? (
-                <div className="absolute inset-y-0 right-2 flex items-center gap-2">
-                  {symbol ? (
-                    <span className="font-mono text-xs text-muted-foreground">{symbol}</span>
-                  ) : null}
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="outline"
-                    onClick={() => setAmount(formatUnits(balance, decimals))}
+              {token && !tokenAddress ? (
+                <p className="field-error">Invalid address.</p>
+              ) : symbol ? (
+                <p className="field-hint">
+                  <span style={{ color: "var(--beam)" }}>{symbol}</span>
+                  {balance !== undefined && decimals !== undefined
+                    ? ` · balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
+                        maximumFractionDigits: 4,
+                      })}`
+                    : null}
+                </p>
+              ) : (
+                <p className="field-hint">Paste the ERC-20 straight after your pad create.</p>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="field-label" htmlFor="amount">
+                Amount
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="amount"
+                  className="af-input"
+                  placeholder="0.0"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  style={balance !== undefined ? { paddingRight: "7rem" } : undefined}
+                />
+                {balance !== undefined && decimals !== undefined ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: "0 0.4rem 0 auto",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
                   >
-                    MAX
-                  </Button>
-                </div>
-              ) : null}
+                    {symbol ? (
+                      <span className="mono dim" style={{ fontSize: "0.72rem" }}>
+                        {symbol}
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      onClick={() => setAmount(formatUnits(balance, decimals))}
+                    >
+                      MAX
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              {overBalance ? <p className="field-error">Exceeds wallet balance.</p> : null}
             </div>
-            {overBalance ? (
-              <p className="text-sm text-destructive">Exceeds wallet balance.</p>
-            ) : null}
-          </div>
 
-          <div className="space-y-2">
-            <Label>Duration</Label>
-            <div className="grid grid-cols-5 gap-1 rounded-lg border p-1">
-              {DURATIONS.map((d) => (
-                <Button
-                  key={d.label}
+            <div className="field">
+              <span className="field-label">Orbit duration</span>
+              <div className="seg seg-5">
+                {DURATIONS.map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    className={cn("seg-btn", days === d.seconds && "on")}
+                    onClick={() => setDays(d.seconds)}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <span className="field-label">Release curve</span>
+              <div className="seg seg-2">
+                <button
                   type="button"
-                  size="sm"
-                  variant={days === d.seconds ? "secondary" : "ghost"}
-                  onClick={() => setDays(d.seconds)}
+                  className={cn("seg-btn", mode === "lock" && "on")}
+                  onClick={() => setMode("lock")}
                 >
-                  {d.label}
-                </Button>
-              ))}
+                  Hard lock
+                </button>
+                <button
+                  type="button"
+                  className={cn("seg-btn", mode === "vest" && "on")}
+                  onClick={() => setMode("vest")}
+                >
+                  Linear vest
+                </button>
+              </div>
+              <p className="field-hint">
+                {mode === "lock"
+                  ? "Nothing claimable until the end date — full stop."
+                  : "Per-second release from now until the end date. Claim anytime."}
+              </p>
+            </div>
+
+            {error ? <div className="alert alert-error">{error}</div> : null}
+
+            <div style={{ marginTop: "1.25rem" }}>
+              {!isConnected ? (
+                <WalletConnectButton label="Connect to continue" />
+              ) : (
+                <button
+                  type="button"
+                  className="btn lg block"
+                  disabled={!ready || busy || notDeployed}
+                  onClick={submit}
+                >
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  {step === "approving"
+                    ? "Approving…"
+                    : step === "locking"
+                      ? "Locking…"
+                      : needsApprove
+                        ? "Approve & lock"
+                        : "Lock tokens"}
+                </button>
+              )}
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label>Release</Label>
-            <div className="grid grid-cols-2 gap-1 rounded-lg border p-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "lock" ? "secondary" : "ghost"}
-                onClick={() => setMode("lock")}
-              >
-                Hard lock
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "vest" ? "secondary" : "ghost"}
-                onClick={() => setMode("vest")}
-              >
-                Linear vest
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {mode === "lock"
-                ? "Nothing claimable until the end date."
-                : "Linear release after start — claim anytime."}
-            </p>
-          </div>
-
-          {error ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          ) : null}
-
-          {!isConnected ? (
-            <WalletConnectButton label="Connect to continue" />
-          ) : (
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={!ready || busy || notDeployed}
-              onClick={submit}
-            >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {step === "approving"
-                ? "Approving…"
-                : step === "locking"
-                  ? "Locking…"
-                  : needsApprove
-                    ? "Approve & lock"
-                    : "Lock tokens"}
-            </Button>
-          )}
         </div>
 
-        <aside className="space-y-6 lg:pt-1">
-          <div className="rounded-xl border">
-            <div className="border-b px-4 py-3 text-sm font-medium">Summary</div>
-            <dl className="divide-y text-sm">
-              <div className="flex justify-between gap-3 px-4 py-3">
-                <dt className="text-muted-foreground">Mode</dt>
-                <dd className="font-medium">{mode === "lock" ? "Hard lock" : "Linear vest"}</dd>
+        <aside className="space-y-4">
+          <div className="panel">
+            <div className="panel-head">
+              <span>Flight plan</span>
+              <span className="mono dim" style={{ fontSize: "0.72rem" }}>
+                // PREVIEW
+              </span>
+            </div>
+            <dl style={{ margin: 0 }}>
+              <div className="kv">
+                <dt>Release</dt>
+                <dd>{mode === "lock" ? "Hard lock" : "Linear vest"}</dd>
               </div>
-              <div className="flex justify-between gap-3 px-4 py-3">
-                <dt className="text-muted-foreground">Unlocks</dt>
-                <dd className="text-right font-medium">{dateFmt.format(unlockDate)} UTC</dd>
+              <div className="kv">
+                <dt>Unlocks</dt>
+                <dd>{dateFmt.format(unlockDate)} UTC</dd>
               </div>
-              <div className="flex justify-between gap-3 px-4 py-3">
-                <dt className="text-muted-foreground">Beneficiary</dt>
-                <dd className="font-mono text-xs">
+              <div className="kv">
+                <dt>Beneficiary</dt>
+                <dd className="mono" style={{ fontSize: "0.78rem" }}>
                   {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Connect wallet"}
                 </dd>
               </div>
-              <div className="flex justify-between gap-3 px-4 py-3">
-                <dt className="text-muted-foreground">Amount</dt>
-                <dd className="font-medium tabular-nums">
+              <div className="kv">
+                <dt>Amount</dt>
+                <dd style={{ fontVariantNumeric: "tabular-nums" }}>
                   {amount || "—"}
                   {symbol ? ` ${symbol}` : ""}
                 </dd>
               </div>
+              <div className="kv">
+                <dt>Gas</dt>
+                <dd>USDC · 20 gwei floor</dd>
+              </div>
             </dl>
           </div>
 
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            If the pad already locked LP, lock your{" "}
-            <span className="font-medium text-foreground">dev buy</span> here. LP lock ≠ wallet
-            lock. Once confirmed, nobody can cancel — including you.
-          </p>
+          <div className="panel">
+            <div className="panel-head">
+              <span className="mono" style={{ fontSize: "0.78rem" }}>
+                // POINT OF NO RETURN
+              </span>
+            </div>
+            <div className="panel-body dim" style={{ fontSize: "0.88rem", lineHeight: 1.7 }}>
+              If the pad already locked LP, lock your{" "}
+              <span style={{ color: "var(--ink)" }}>dev buy</span> here — LP lock is not a wallet
+              lock. Once the transaction confirms, nobody can cancel or shorten the schedule,
+              including you.
+            </div>
+          </div>
         </aside>
       </div>
     </div>

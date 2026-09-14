@@ -7,11 +7,9 @@ import { Loader2, Wallet } from "lucide-react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { LogoMark } from "@/components/Icons";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
+import { HeroOrbit } from "@/components/HeroOrbit";
 import { ARC_TESTNET } from "@/lib/chain";
 import { useMounted } from "@/hooks/useMounted";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 export default function AuthClient() {
   const mounted = useMounted();
@@ -31,112 +29,136 @@ export default function AuthClient() {
   }, [ready, next, router]);
 
   return (
-    <div className="relative flex min-h-svh flex-col overflow-hidden lg:flex-row">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/auth-hero-bg.png')" }}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,oklch(0.14_0_0/0.82)_0%,oklch(0.14_0_0/0.55)_42%,oklch(0.12_0_0/0.72)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_40%,oklch(1_0_0/0.08),transparent)]" />
-      </div>
-
-      <aside className="relative hidden w-full flex-col justify-between border-r border-white/10 bg-black/20 p-10 backdrop-blur-[2px] lg:flex lg:max-w-md xl:max-w-lg">
-        <Link href="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <LogoMark size={18} />
+    <div className="auth-shell">
+      <aside className="auth-aside">
+        <Link href="/" className="brand">
+          <span className="brand-glyph">
+            <LogoMark size={14} />
+          </span>
           ArcFlow
         </Link>
-        <div className="space-y-4">
-          <Badge variant="secondary">Admin console</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">
-            Sign in to manage locks on Arc
+
+        <div className="auth-aside-visual">
+          <HeroOrbit />
+        </div>
+
+        <div>
+          <p className="tag tag-accent">// GROUND CONTROL</p>
+          <h1
+            style={{
+              margin: "0 0 0.75rem",
+              fontSize: "clamp(1.5rem, 2.6vw, 2rem)",
+              letterSpacing: "-0.03em",
+              fontWeight: 700,
+            }}
+          >
+            Dock your wallet to manage orbits
           </h1>
-          <p className="max-w-sm text-sm leading-relaxed text-white/70">
-            Connect a wallet on Arc Testnet. Gas is USDC. After auth you land in the SaaS-style
-            admin dashboard — overview, locks, and create flows.
+          <p className="dim" style={{ margin: 0, maxWidth: "24rem", fontSize: "0.92rem", lineHeight: 1.7 }}>
+            Connect on Arc Testnet — gas is USDC. After auth you land in the console: overview,
+            positions, and the create flow.
           </p>
         </div>
-        <p className="text-xs text-white/50">Arc Testnet · chain 5042002</p>
+
+        <p className="mono dim" style={{ fontSize: "0.72rem", margin: 0 }}>
+          // arc testnet · chain 5042002 · rpc rpc.testnet.arc.network
+        </p>
       </aside>
 
-      <main className="relative flex flex-1 items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm space-y-8">
-          <div className="space-y-2 text-center lg:text-left">
-            <Link
-              href="/"
-              className="mb-6 inline-flex items-center gap-2 text-sm font-semibold tracking-tight lg:hidden"
-            >
-              <LogoMark size={18} />
-              ArcFlow
-            </Link>
-            <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-            <p className="text-sm text-muted-foreground">
-              Authenticate with your wallet to open the admin dashboard.
-            </p>
-          </div>
+      <main className="auth-main">
+        <div style={{ width: "100%", maxWidth: "24rem" }}>
+          <Link href="/" className="brand auth-brand-mobile">
+            <span className="brand-glyph">
+              <LogoMark size={14} />
+            </span>
+            ArcFlow
+          </Link>
 
-          <div className="rounded-xl border border-white/10 bg-card/85 p-6 shadow-lg backdrop-blur-md">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg border bg-muted/40">
-                <Wallet className="size-4" />
-              </div>
-              <div>
-                <div className="text-sm font-medium">Wallet auth</div>
-                <div className="text-xs text-muted-foreground">MetaMask / Rabby / injected</div>
-              </div>
+          <p className="tag">// AUTHENTICATION</p>
+          <h2
+            style={{
+              margin: "0 0 0.4rem",
+              fontSize: "1.5rem",
+              letterSpacing: "-0.03em",
+              fontWeight: 700,
+            }}
+          >
+            Welcome back, operator
+          </h2>
+          <p className="dim" style={{ margin: "0 0 1.5rem", fontSize: "0.9rem" }}>
+            No password, no email. Your wallet is the key.
+          </p>
+
+          <div className="panel">
+            <div className="panel-head">
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.55rem" }}>
+                <span className="box-icon" style={{ width: 30, height: 30, marginBottom: 0 }}>
+                  <Wallet className="size-3.5" />
+                </span>
+                Wallet auth
+              </span>
+              <span className="live">Injected</span>
             </div>
 
-            {/* Stable SSR/client tree: always render connect slot until mounted+connected */}
-            {!mounted ? (
-              <button
-                type="button"
-                disabled
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground opacity-50"
-              >
-                Connect wallet
-              </button>
-            ) : !isConnected ? (
-              <WalletConnectButton />
-            ) : wrongChain ? (
-              <Button
-                className="w-full"
-                size="lg"
-                disabled={switching}
-                onClick={() => switchChain({ chainId: ARC_TESTNET.id })}
-              >
-                {switching ? <Loader2 className="size-4 animate-spin" /> : null}
-                Switch to Arc Testnet
-              </Button>
-            ) : (
-              <Button className="w-full" size="lg" disabled>
-                <Loader2 className="size-4 animate-spin" />
-                Opening dashboard…
-              </Button>
-            )}
+            <div className="panel-body">
+              {/* Stable SSR/client tree: always render a connect slot until mounted+connected */}
+              {!mounted ? (
+                <button type="button" disabled className="btn lg block">
+                  Connect wallet
+                </button>
+              ) : !isConnected ? (
+                <WalletConnectButton />
+              ) : wrongChain ? (
+                <button
+                  type="button"
+                  className="btn lg block"
+                  disabled={switching}
+                  onClick={() => switchChain({ chainId: ARC_TESTNET.id })}
+                >
+                  {switching ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Switch to Arc Testnet
+                </button>
+              ) : (
+                <button type="button" className="btn lg block" disabled>
+                  <Loader2 className="size-4 animate-spin" />
+                  Opening console…
+                </button>
+              )}
 
-            {mounted && address ? (
-              <p className="mt-3 text-center font-mono text-xs text-muted-foreground">
-                {address.slice(0, 6)}…{address.slice(-4)}
+              {mounted && address ? (
+                <p
+                  className="mono dim"
+                  style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.76rem" }}
+                >
+                  {address.slice(0, 6)}…{address.slice(-4)}
+                </p>
+              ) : null}
+
+              <div
+                style={{
+                  margin: "1.15rem 0",
+                  height: 1,
+                  background: "var(--line)",
+                }}
+              />
+
+              <p className="field-hint" style={{ textAlign: "center", lineHeight: 1.7 }}>
+                Chrome or Brave with MetaMask / Rabby. Need gas?{" "}
+                <a
+                  href="https://faucet.circle.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "var(--beam)" }}
+                >
+                  Circle faucet
+                </a>
               </p>
-            ) : null}
-
-            <Separator className="my-5" />
-            <p className="text-center text-xs leading-relaxed text-muted-foreground">
-              Use Chrome/Brave with MetaMask installed. Need USDC?{" "}
-              <a
-                href="https://faucet.circle.com"
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Circle faucet
-              </a>
-            </p>
+            </div>
           </div>
 
-          <p className="text-center text-xs text-white/60">
-            <Link href="/" className="hover:text-white hover:underline">
-              ← Back to marketing site
+          <p style={{ textAlign: "center", marginTop: "1.25rem" }}>
+            <Link href="/" className="box-link">
+              ← Back to launch site
             </Link>
           </p>
         </div>
