@@ -10,6 +10,8 @@ const { Pool } = pg;
 pg.types.setTypeParser(20, (value) => value);
 pg.types.setTypeParser(1700, (value) => value);
 
+// Railway / PgBouncer reject startup params like `-c statement_timeout=…` in `options`.
+// Timeouts are enforced in `withStatementTimeout()` instead.
 export const pool = new Pool({
   connectionString: config.databaseUrl,
   max: config.poolMax,
@@ -18,16 +20,30 @@ export const pool = new Pool({
   keepAlive: true,
   allowExitOnIdle: false,
   application_name: "arcflow-api",
-  options: `-c statement_timeout=${config.statementTimeoutMs}`,
 });
 
 pool.on("error", (error) => {
   console.error("[pg] idle client error", error);
 });
 
+function withStatementTimeout(promise, timeoutMs = config.statementTimeoutMs) {
+  if (!timeoutMs || timeoutMs <= 0) return promise;
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(Object.assign(new Error(`query timeout after ${timeoutMs}ms`), { code: "QUERY_TIMEOUT" }));
+      }, timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 export async function query(text, params) {
   try {
-    return await pool.query(text, params);
+    return await withStatementTimeout(pool.query(text, params));
   } catch (error) {
     throw wrapPgError(error);
   }
@@ -47,7 +63,7 @@ export async function withClient(fn) {
 export async function migrate() {
   const schemaPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "sql", "schema.sql");
   const sql = await readFile(schemaPath, "utf8");
-  await pool.query(sql);
+  await withStatementTimeout(pool.query(sql), Math.max(config.statementTimeoutMs, 60_000));
 }
 
 export async function pingDb(timeoutMs = 3_000) {
