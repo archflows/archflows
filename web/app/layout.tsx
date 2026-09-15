@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Providers } from "@/lib/providers";
@@ -7,9 +7,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const sans = Space_Grotesk({
+const sans = Inter({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-inter",
 });
 
 const mono = IBM_Plex_Mono({

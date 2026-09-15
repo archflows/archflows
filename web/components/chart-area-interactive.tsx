@@ -132,7 +132,7 @@ const chartConfig = {
   },
   locks: {
     label: "Locks created",
-    color: "var(--primary)",
+    color: "#0050e0",
   },
   claims: {
     label: "Claims",
@@ -165,7 +165,7 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="@container/card shadow-none">
+    <Card className="@container/card shadow-none ring-0">
       <CardHeader>
         <CardTitle>Lock activity</CardTitle>
         <CardDescription>
@@ -225,28 +225,12 @@ export function ChartAreaInteractive() {
           <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="fillLocks" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-locks)"
-                  stopOpacity={1.0}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-locks)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="0%" stopColor="#0050e0" stopOpacity={0.55} />
+                <stop offset="100%" stopColor="#0050e0" stopOpacity={0.04} />
               </linearGradient>
               <linearGradient id="fillClaims" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-claims)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-claims)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="0%" stopColor="#6b7280" stopOpacity={0.22} />
+                <stop offset="100%" stopColor="#6b7280" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -282,14 +266,16 @@ export function ChartAreaInteractive() {
               dataKey="claims"
               type="natural"
               fill="url(#fillClaims)"
-              stroke="var(--color-claims)"
+              stroke="#6b7280"
+              strokeWidth={1.5}
               stackId="a"
             />
             <Area
               dataKey="locks"
               type="natural"
               fill="url(#fillLocks)"
-              stroke="var(--color-locks)"
+              stroke="#0050e0"
+              strokeWidth={2}
               stackId="a"
             />
           </AreaChart>

@@ -30,12 +30,18 @@ export function ScrollReveal() {
       pathname.startsWith("/auth") ||
       pathname.startsWith("/login");
 
+    const root = document.documentElement;
+
+    // Skip DOM work entirely on app routes — pathname changes on every nav.
+    if (bare) {
+      root.classList.remove("reveal-on");
+      return;
+    }
+
     const skip =
-      bare ||
       window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const root = document.documentElement;
     root.querySelectorAll(".reveal").forEach((el) => {
       el.classList.remove("reveal", "is-in");
       (el as HTMLElement).style.removeProperty("--ri");

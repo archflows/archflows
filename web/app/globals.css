@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --font-heading: var(--font-sans);
 
@@ -50,62 +50,74 @@
   --radius-4xl: 2rem;
 }
 
-/* ── Space tokens — soft slate + electric accent ──────────────── */
+/* ── Brand tokens — near-black dark + royal blue accent ───────── */
 :root,
 .dark {
   --radius: 0.875rem;
 
-  /* Surfaces: clear step from page → card (not all the same black) */
-  --void: #0e141d;
-  --deep: #151c28;
-  --ink: #f2f5fa;
-  --dim: #94a3b8;
-  --line: rgba(148, 163, 184, 0.12);
-  --line-strong: rgba(148, 163, 184, 0.22);
-  --panel: #1c2533;
-  --panel-solid: #1c2533;
-  --glass: rgba(148, 163, 184, 0.06);
-  --glass-strong: rgba(148, 163, 184, 0.12);
-  --beam: #2b9bff;
-  --beam-dim: rgba(43, 155, 255, 0.35);
-  --ion: #6ec1ff;
-  --glow: rgba(43, 155, 255, 0.45);
+  /* Surfaces: page → card (near-black charcoal) */
+  --void: #08090c;
+  --deep: #0c0d12;
+  --ink: #ffffff;
+  --dim: #9ca3af;
+  --line: rgba(148, 163, 184, 0.1);
+  --line-strong: rgba(148, 163, 184, 0.18);
+  --panel: #12131a;
+  --panel-solid: #12131a;
+  --glass: rgba(148, 163, 184, 0.05);
+  --glass-strong: rgba(148, 163, 184, 0.1);
+  --beam: var(--brand);
+  --beam-dim: rgba(0, 80, 224, 0.28);
+  --ion: #4d8aff;
+  --glow: rgba(0, 80, 224, 0.28);
+  /* ArcFlow mark — sampled from logo-arc-png.png */
+  --brand: #0050e0;
+  --brand-hover: #1a64e8;
+  --bloom:
+    radial-gradient(
+      120% 160% at 108% 50%,
+      #3b7aff 0%,
+      #0050e0 26%,
+      rgba(0, 48, 176, 0.4) 52%,
+      transparent 74%
+    ),
+    #070b14;
   --blur: 16px;
   --shell: min(1280px, calc(100% - 2.5rem));
   --af-control-h: 2.25rem;
 
-  /* shadcn surfaces — soft charcoal slate, blue only as accent */
-  --background: #151c28;
+  /* shadcn surfaces */
+  --background: #0c0d12;
   --foreground: var(--ink);
-  --card: #1e2838;
+  --card: #12131a;
   --card-foreground: var(--ink);
-  --popover: #1e2838;
+  --popover: #14151d;
   --popover-foreground: var(--ink);
   --primary: var(--beam);
-  --primary-foreground: #041018;
-  --secondary: rgba(148, 163, 184, 0.1);
+  --primary-foreground: #ffffff;
+  --secondary: rgba(148, 163, 184, 0.08);
   --secondary-foreground: var(--ink);
-  --muted: rgba(148, 163, 184, 0.08);
+  --muted: rgba(148, 163, 184, 0.07);
   --muted-foreground: var(--dim);
-  --accent: rgba(43, 155, 255, 0.12);
+  --accent: rgba(0, 80, 224, 0.1);
   --accent-foreground: var(--ink);
   --destructive: #f87171;
   --border: var(--line);
   --input: var(--line-strong);
-  --ring: rgba(43, 155, 255, 0.55);
-  --chart-1: #2b9bff;
-  --chart-2: #6ec1ff;
-  --chart-3: #a5d8ff;
-  --chart-4: #334155;
-  --chart-5: #1e293b;
-  --sidebar: #121821;
+  --ring: rgba(0, 80, 224, 0.45);
+  --chart-1: #0050e0;
+  --chart-2: #4d8aff;
+  --chart-3: #a5b8ff;
+  --chart-4: #2a2d3a;
+  --chart-5: #1a1c24;
+  --sidebar: #08090c;
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--beam);
-  --sidebar-primary-foreground: #041018;
-  --sidebar-accent: rgba(43, 155, 255, 0.1);
-  --sidebar-accent-foreground: var(--ink);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(0, 80, 224, 0.1);
+  --sidebar-accent-foreground: var(--beam);
   --sidebar-border: var(--line);
-  --sidebar-ring: rgba(43, 155, 255, 0.45);
+  --sidebar-ring: rgba(0, 80, 224, 0.4);
 }
 
 @layer base {
@@ -128,171 +140,26 @@
   }
 
   ::selection {
-    background: rgba(0, 136, 255, 0.35);
+    background: rgba(0, 80, 224), 0.28);
   }
 }
 
-/* ── Deep space backdrop — navy → electric bloom → sky ────────── */
+/* ── Page wash — near-black, one soft indigo bloom ───────────── */
 .space-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 38%, rgba(0, 120, 255, 0.38), transparent 58%),
-    radial-gradient(ellipse 55% 40% at 82% 8%, rgba(0, 160, 255, 0.2), transparent 62%),
-    radial-gradient(ellipse 50% 36% at 12% 22%, rgba(0, 100, 255, 0.14), transparent 60%),
-    radial-gradient(ellipse 95% 55% at 50% 108%, rgba(40, 160, 255, 0.28), transparent 62%),
-    linear-gradient(180deg, #00040a 0%, #001028 42%, #001a3a 72%, #062a52 100%);
+  background: #09090b;
 }
 
-.space-stars,
-.space-stars-far,
-.space-stars-mid {
-  position: absolute;
-  inset: -50%;
-  background-repeat: repeat;
-}
-
-/* three parallax star layers, pure CSS — no extra requests */
-.space-stars-far {
-  background-image:
-    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 120px 80px, rgba(255, 255, 255, 0.55), transparent),
-    radial-gradient(1px 1px at 200px 160px, rgba(210, 225, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 90px 220px, rgba(255, 255, 255, 0.45), transparent),
-    radial-gradient(1px 1px at 260px 60px, rgba(255, 255, 255, 0.5), transparent);
-  background-size: 300px 300px;
-  opacity: 0.55;
-  animation: star-drift 240s linear infinite;
-}
-
-.space-stars-mid {
-  background-image:
-    radial-gradient(1.4px 1.4px at 40px 60px, rgba(255, 255, 255, 0.95), transparent),
-    radial-gradient(1.4px 1.4px at 180px 20px, rgba(0, 160, 255, 0.85), transparent),
-    radial-gradient(1.2px 1.2px at 300px 200px, rgba(255, 255, 255, 0.75), transparent),
-    radial-gradient(1.2px 1.2px at 140px 300px, rgba(120, 210, 255, 0.85), transparent);
-  background-size: 420px 420px;
-  opacity: 0.55;
-  animation: star-drift 150s linear infinite reverse, star-twinkle 6s ease-in-out infinite;
-}
-
-.space-stars {
-  background-image:
-    radial-gradient(2px 2px at 60px 120px, rgba(255, 255, 255, 1), transparent),
-    radial-gradient(1.8px 1.8px at 420px 260px, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1.8px 1.8px at 240px 420px, rgba(0, 180, 255, 0.95), transparent);
-  background-size: 620px 620px;
-  opacity: 0.65;
-  animation: star-drift 90s linear infinite, star-twinkle 4.5s ease-in-out infinite alternate;
-}
-
-/* electric bloom band — center glow like the brand plate */
-.space-nebula {
+.space-wash {
   position: absolute;
   inset: 0;
-  opacity: 0.72;
   background:
-    radial-gradient(ellipse 48% 22% at 50% 42%, rgba(0, 136, 255, 0.45), transparent 70%),
-    radial-gradient(ellipse 36% 14% at 68% 28%, rgba(0, 180, 255, 0.22), transparent 72%),
-    radial-gradient(ellipse 30% 12% at 28% 48%, rgba(0, 100, 255, 0.18), transparent 70%);
-  filter: blur(10px);
-}
-
-/* horizon grid — the "surface" the app sits on */
-.space-floor {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 46vh;
-  opacity: 0.4;
-  background-image:
-    linear-gradient(rgba(0, 160, 255, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 160, 255, 0.14) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: linear-gradient(180deg, transparent, #000 75%);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 75%);
-}
-
-/* planet limb sitting just below the fold, with atmosphere glow */
-.space-limb {
-  position: absolute;
-  left: 50%;
-  bottom: -132vw;
-  width: 220vw;
-  height: 220vw;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  border-top: 1px solid rgba(0, 180, 255, 0.4);
-  background: radial-gradient(circle at 50% 0%, rgba(0, 140, 255, 0.22), rgba(0, 5, 13, 0) 34%);
-  box-shadow:
-    0 -30px 90px rgba(0, 136, 255, 0.28),
-    0 -8px 40px rgba(77, 184, 255, 0.18);
-  opacity: 0.9;
-}
-
-.space-comet {
-  position: absolute;
-  top: 12%;
-  left: -12%;
-  width: 180px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
-  opacity: 0;
-  animation: comet 17s linear infinite;
-}
-
-.space-comet-2 {
-  top: 46%;
-  width: 120px;
-  animation: comet 26s linear 9s infinite;
-}
-
-@keyframes star-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-300px, 160px, 0);
-  }
-}
-
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes comet {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(14deg);
-  }
-  4% {
-    opacity: 0.9;
-  }
-  14% {
-    opacity: 0;
-    transform: translate3d(120vw, 34vh, 0) rotate(14deg);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(120vw, 34vh, 0) rotate(14deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .space-stars,
-  .space-stars-mid,
-  .space-stars-far,
-  .space-comet {
-    animation: none !important;
-  }
+    radial-gradient(ellipse 70% 46% at 78% -8%, rgba(0, 80, 224), 0.14), transparent 58%),
+    radial-gradient(ellipse 55% 36% at 6% 108%, rgba(0, 80, 224), 0.07), transparent 55%);
 }
 
 /* ── Layout ───────────────────────────────────────────────────── */
@@ -343,7 +210,7 @@
   position: absolute;
   width: 8px;
   height: 8px;
-  border: solid rgba(0, 136, 255, 0.55);
+  border: solid rgba(0, 80, 224, 0.55);
   pointer-events: none;
 }
 
@@ -375,7 +242,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 64px;
+  min-height: 56px;
 }
 
 .brand {
@@ -396,9 +263,15 @@
 .brand-logo {
   display: block;
   width: auto;
-  max-width: min(380px, 78vw);
+  max-width: min(148px, 52vw);
+  height: auto;
   object-fit: contain;
   object-position: left center;
+}
+
+.nav .brand-logo {
+  height: 26px;
+  max-width: 132px;
 }
 
 .brand-glyph {
@@ -507,19 +380,19 @@
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--beam);
-  color: #041018;
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.84rem;
   cursor: pointer;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 16px rgba(43, 155, 255, 0.18);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:hover {
   background: color-mix(in srgb, var(--beam) 88%, white);
-  color: #041018;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 0 22px rgba(43, 155, 255, 0.3);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
 .btn.ghost {
@@ -606,7 +479,7 @@
   position: absolute;
   width: 6px;
   height: 6px;
-  border: solid rgba(0, 150, 255, 0.55);
+  border: solid rgba(0, 80, 224, 0.55);
   pointer-events: none;
 }
 
@@ -638,9 +511,9 @@
 }
 
 .live-accent {
-  border-color: rgba(43, 155, 255, 0.35);
+  border-color: rgba(0, 80, 224, 0.35);
   color: var(--ion);
-  background: rgba(43, 155, 255, 0.1);
+  background: rgba(0, 80, 224, 0.1);
 }
 
 .pulse-dot {
@@ -687,21 +560,6 @@
   overflow: hidden;
 }
 
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.4;
-  background-image:
-    linear-gradient(rgba(0, 150, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 150, 255, 0.05) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 75% 70% at 50% 40%, #000 20%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 40%, #000 20%, transparent 78%);
-}
-
 .hero > * {
   position: relative;
   z-index: 1;
@@ -719,7 +577,7 @@
   margin: 0 0 0.9rem;
   font-size: clamp(2.35rem, 5vw, 3.75rem);
   line-height: 1.06;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
   font-weight: 700;
   max-width: 13ch;
 }
@@ -773,7 +631,7 @@
   position: absolute;
   inset: 10%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 160, 255, 0.32), rgba(0, 100, 255, 0.08), transparent 68%);
+  background: radial-gradient(circle, rgba(0, 80, 224, 0.28), rgba(37, 70, 200, 0.08), transparent 68%);
   filter: blur(22px);
   z-index: 0;
 }
@@ -781,7 +639,7 @@
 .orbit-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 150, 255, 0.16);
+  border: 1px solid rgba(0, 80, 224, 0.16);
   pointer-events: none;
   z-index: 0;
 }
@@ -808,7 +666,7 @@
   width: min(100%, 420px);
   aspect-ratio: 1;
   border: 1px solid var(--line);
-  background: rgba(0, 150, 255, 0.02);
+  background: rgba(0, 80, 224, 0.02);
 }
 
 @keyframes ring-drift {
@@ -834,15 +692,27 @@
   margin-bottom: 0;
 }
 
+.lp .btn:not(.ghost),
+.nav .btn:not(.ghost),
+.lp-mock-cta {
+  background: var(--brand);
+}
+
+.lp .btn:not(.ghost):hover,
+.nav .btn:not(.ghost):hover {
+  background: var(--brand-hover);
+  color: #ffffff;
+}
+
 .lp-kicker {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   margin: 0 0 1.15rem;
   padding: 0.32rem 0.7rem 0.32rem 0.55rem;
-  border: 1px solid rgba(43, 155, 255, 0.32);
+  border: 1px solid rgba(0, 80, 224), 0.22);
   border-radius: 999px;
-  background: rgba(43, 155, 255, 0.1);
+  background: rgba(0, 80, 224), 0.08);
   color: var(--ion);
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -856,29 +726,27 @@
   margin: 0;
   padding: 1.05rem 1.15rem;
   list-style: none;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--card) 55%, transparent);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
+  background: var(--bloom);
 }
 
 .lp-rail li {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: var(--dim);
+  color: #fff;
   font-size: 0.84rem;
 }
 
 .lp-rail svg {
-  color: var(--beam);
+  color: #fff;
   flex-shrink: 0;
 }
 
 .lp-mock {
   width: min(100%, 420px);
-  border: 1px solid var(--line-strong);
+  border: 0;
   border-radius: 1.25rem;
   background: color-mix(in srgb, var(--card) 92%, transparent);
   box-shadow:
@@ -955,8 +823,8 @@
 }
 
 .lp-mock-modes .is-on {
-  border-color: rgba(43, 155, 255, 0.45);
-  background: rgba(43, 155, 255, 0.12);
+  border-color: rgba(0, 80, 224), 0.38);
+  background: rgba(0, 80, 224), 0.1);
   color: var(--ink);
 }
 
@@ -969,8 +837,8 @@
   place-items: center;
   height: 2.5rem;
   border-radius: var(--radius-lg);
-  background: var(--beam);
-  color: #041018;
+  background: var(--brand);
+  color: #ffffff;
   font-weight: 650;
   font-size: 0.88rem;
 }
@@ -1009,38 +877,35 @@
 .lp-card {
   display: block;
   padding: 1.35rem 1.3rem 1.25rem;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 1.2rem;
-  background: color-mix(in srgb, var(--card) 74%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--bloom);
+  overflow: hidden;
+  box-shadow: none;
   text-decoration: none;
-  color: inherit;
+  color: #fff;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,
-    background 0.2s ease,
     box-shadow 0.2s ease;
 }
 
 a.lp-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(43, 155, 255, 0.38);
-  background: color-mix(in srgb, var(--card) 86%, rgba(43, 155, 255, 0.1));
-  box-shadow: 0 16px 40px rgba(0, 8, 22, 0.28);
+  transform: translateY(-1px);
+  background: var(--bloom);
+  box-shadow: 0 16px 40px rgba(0, 16, 64, 0.28);
 }
 
 .lp-icon {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   margin-bottom: 0.95rem;
-  border-radius: 0.7rem;
-  border: 1px solid rgba(43, 155, 255, 0.28);
-  color: var(--ion);
-  background: rgba(43, 155, 255, 0.1);
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .lp-card h3 {
@@ -1048,11 +913,12 @@ a.lp-card:hover {
   font-size: 1.05rem;
   font-weight: 650;
   letter-spacing: -0.025em;
+  color: #fff;
 }
 
 .lp-card p {
   margin: 0;
-  color: var(--dim);
+  color: #fff;
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -1079,14 +945,14 @@ a.lp-card:hover {
 }
 
 .lp-card-arrow {
-  color: var(--dim);
+  color: #fff;
   flex-shrink: 0;
   margin-top: 0.15rem;
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
 a.lp-card:hover .lp-card-arrow {
-  color: var(--beam);
+  color: #fff;
   transform: translate(1px, -1px);
 }
 
@@ -1095,7 +961,7 @@ a.lp-card:hover .lp-card-arrow {
   margin-top: 0.95rem;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: var(--ion);
+  color: #fff;
 }
 
 .lp-proof {
@@ -1129,7 +995,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .lp-proof-panel {
-  border: 1px solid var(--line-strong);
+  border: 0;
   border-radius: 1.35rem;
   overflow: hidden;
   background: color-mix(in srgb, var(--card) 88%, transparent);
@@ -1263,19 +1129,42 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .lp-faq-list {
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 1.2rem;
   overflow: hidden;
+  background: var(--bloom);
 }
 
 .lp-faq-list .faq-item {
-  background: color-mix(in srgb, var(--card) 78%, transparent);
+  background: transparent;
+}
+
+.lp-faq-list .faq-item summary,
+.lp-faq-list .faq-item p,
+.lp-faq-list .faq-item summary::after {
+  color: #fff;
 }
 
 .lp-cta {
   border-radius: 1.4rem;
   padding: 2rem 2.1rem;
   align-items: center;
+  border: 0;
+  background: var(--bloom);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fff;
+}
+
+.lp-cta .lp-eyebrow,
+.lp-cta h2,
+.lp-cta .lead {
+  color: #fff;
+}
+
+.lp-cta::before,
+.lp-cta::after {
+  display: none;
 }
 
 /* ── Stat strips ──────────────────────────────────────────────── */
@@ -1333,7 +1222,7 @@ a.lp-card:hover .lp-card-arrow {
   position: absolute;
   width: 7px;
   height: 7px;
-  border: solid rgba(0, 136, 255, 0.6);
+  border: solid rgba(0, 80, 224, 0.6);
   pointer-events: none;
 }
 
@@ -1351,8 +1240,8 @@ a.lp-card:hover .lp-card-arrow {
 
 .box:hover .box-icon,
 .mini-stat:hover .box-icon {
-  border-color: rgba(0, 136, 255, 0.5);
-  background: rgba(0, 136, 255, 0.1);
+  border-color: rgba(0, 80, 224, 0.5);
+  background: rgba(0, 80, 224, 0.1);
   color: var(--beam);
 }
 
@@ -1386,7 +1275,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .box:hover {
-  background: rgba(0, 150, 255, 0.06);
+  background: rgba(0, 80, 224, 0.06);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
@@ -1449,6 +1338,10 @@ a.lp-card:hover .lp-card-arrow {
   border: 1px solid var(--line);
 }
 
+.faq-list.lp-faq-list {
+  border: 0;
+}
+
 .faq-item {
   border-bottom: 1px solid var(--line);
   background: var(--panel);
@@ -1501,7 +1394,7 @@ a.lp-card:hover .lp-card-arrow {
   gap: 1.25rem;
   flex-wrap: wrap;
   padding: 1.75rem;
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--panel);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
@@ -1515,7 +1408,7 @@ a.lp-card:hover .lp-card-arrow {
   position: absolute;
   width: 12px;
   height: 12px;
-  border: solid rgba(0, 136, 255, 0.6);
+  border: solid rgba(0, 80, 224, 0.6);
   pointer-events: none;
   z-index: 1;
 }
@@ -1547,8 +1440,8 @@ a.lp-card:hover .lp-card-arrow {
   width: 280px;
   height: 280px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 136, 255, 0.18);
-  background: radial-gradient(circle at 35% 30%, rgba(0, 136, 255, 0.12), transparent 60%);
+  border: 1px solid rgba(0, 80, 224, 0.18);
+  background: radial-gradient(circle at 35% 30%, rgba(0, 80, 224, 0.12), transparent 60%);
   pointer-events: none;
 }
 
@@ -1609,6 +1502,21 @@ a.lp-card:hover .lp-card-arrow {
   container-name: dashboard-main;
   min-width: 0;
   width: 100%;
+}
+
+/* Home stat cards — Streamflow-style right bloom */
+[data-slot="card"].dash-stat-card {
+  background: var(--bloom);
+  color: #fff;
+  border: 0;
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+[data-slot="card"].dash-stat-card [data-slot="card-description"],
+[data-slot="card"].dash-stat-card .text-muted-foreground {
+  color: #fff;
 }
 
 /* ── Panels / forms ───────────────────────────────────────────── */
@@ -1681,7 +1589,7 @@ a.lp-card:hover .lp-card-arrow {
 .af-input:focus {
   border-color: color-mix(in srgb, var(--beam) 70%, transparent);
   background: rgba(10, 14, 22, 0.75);
-  box-shadow: 0 0 0 2px rgba(43, 155, 255, 0.16);
+  box-shadow: 0 0 0 2px rgba(0, 80, 224, 0.16);
 }
 
 .af-input::placeholder {
@@ -1771,10 +1679,10 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .seg-btn.on {
-  color: #041018;
+  color: #ffffff;
   background: var(--beam);
   font-weight: 600;
-  box-shadow: 0 0 12px rgba(43, 155, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 80, 224, 0.2);
 }
 
 .alert {
@@ -1793,9 +1701,9 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .alert-warn {
-  border-color: rgba(43, 155, 255, 0.22);
+  border-color: rgba(0, 80, 224, 0.22);
   color: #bfdbfe;
-  background: rgba(43, 155, 255, 0.08);
+  background: rgba(0, 80, 224, 0.08);
 }
 
 .form-notice {
@@ -1835,7 +1743,7 @@ a.lp-card:hover .lp-card-arrow {
   padding: 0 0.75rem;
   border-radius: var(--radius-md);
   background: var(--beam);
-  color: #041018;
+  color: #ffffff;
   font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
@@ -1844,12 +1752,12 @@ a.lp-card:hover .lp-card-arrow {
 
 .form-notice-action:hover {
   background: color-mix(in srgb, var(--beam) 88%, white);
-  color: #041018;
+  color: #ffffff;
 }
 
 .form-notice-warn {
-  border-color: rgba(43, 155, 255, 0.2);
-  background: rgba(43, 155, 255, 0.07);
+  border-color: rgba(0, 80, 224, 0.2);
+  background: rgba(0, 80, 224, 0.07);
 }
 
 .form-notice-error {
@@ -1895,9 +1803,9 @@ a.lp-card:hover .lp-card-arrow {
   min-width: 0;
   height: 248px;
   border-radius: 16px;
-  border: 1px solid rgba(43, 155, 255, 0.26);
+  border: 1px solid rgba(0, 80, 224, 0.26);
   background:
-    radial-gradient(ellipse 80% 70% at 8% 0%, rgba(43, 155, 255, 0.22), transparent 55%),
+    radial-gradient(ellipse 80% 70% at 8% 0%, rgba(0, 80, 224, 0.22), transparent 55%),
     linear-gradient(160deg, #0c1422 0%, #101a2b 55%, #0a1220 100%);
   color: var(--ink);
   padding: var(--lock-og-pad);
@@ -1911,7 +1819,7 @@ a.lp-card:hover .lp-card-arrow {
   position: absolute;
   inset: auto -15% -45% 30%;
   height: 65%;
-  background: radial-gradient(circle, rgba(43, 155, 255, 0.16), transparent 68%);
+  background: radial-gradient(circle, rgba(0, 80, 224, 0.16), transparent 68%);
   pointer-events: none;
 }
 
@@ -1959,9 +1867,9 @@ a.lp-card:hover .lp-card-arrow {
   text-transform: uppercase;
   padding: 0.28rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid rgba(43, 155, 255, 0.32);
+  border: 1px solid rgba(0, 80, 224, 0.32);
   color: #bfdbfe;
-  background: rgba(43, 155, 255, 0.1);
+  background: rgba(0, 80, 224, 0.1);
   white-space: nowrap;
 }
 
@@ -2246,7 +2154,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .amount-mode-btn.on {
-  color: #041018;
+  color: #ffffff;
   background: var(--beam);
 }
 
@@ -2279,7 +2187,7 @@ a.lp-card:hover .lp-card-arrow {
   border-radius: 50%;
   background: #fff;
   border: 2px solid var(--beam);
-  box-shadow: 0 0 0 3px rgba(43, 155, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 80, 224, 0.2);
   cursor: grab;
 }
 
@@ -2289,7 +2197,7 @@ a.lp-card:hover .lp-card-arrow {
   border-radius: 50%;
   background: #fff;
   border: 2px solid var(--beam);
-  box-shadow: 0 0 0 3px rgba(43, 155, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 80, 224, 0.2);
   cursor: grab;
 }
 
@@ -2325,7 +2233,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .amount-preset.on {
-  color: #041018;
+  color: #ffffff;
   background: var(--beam);
   border-color: transparent;
 }
@@ -2495,15 +2403,15 @@ a.lp-card:hover .lp-card-arrow {
 
 .meter {
   height: 4px;
-  background: rgba(0, 150, 255, 0.12);
+  background: rgba(148, 163, 184, 0.12);
   overflow: hidden;
   border-radius: 999px;
 }
 
 .meter-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(0, 136, 255, 0.7), var(--beam));
-  box-shadow: 0 0 10px rgba(0, 136, 255, 0.45);
+  background: var(--beam);
+  box-shadow: none;
   transition: width 0.4s ease;
 }
 
@@ -2521,7 +2429,7 @@ a.lp-card:hover .lp-card-arrow {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  border: 1px dashed rgba(0, 150, 255, 0.2);
+  border: 1px dashed rgba(0, 80, 224, 0.2);
   animation: spin 40s linear infinite;
 }
 
@@ -2546,15 +2454,15 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .row-link:hover {
-  background: rgba(0, 150, 255, 0.05);
+  background: rgba(0, 80, 224, 0.05);
 }
 
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(0, 150, 255, 0.07),
-    rgba(0, 150, 255, 0.16),
-    rgba(0, 150, 255, 0.07)
+    rgba(0, 80, 224, 0.07),
+    rgba(0, 80, 224, 0.16),
+    rgba(0, 80, 224, 0.07)
   );
   background-size: 200% 100%;
   animation: skeleton 1.4s ease-in-out infinite;

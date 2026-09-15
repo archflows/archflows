@@ -10,13 +10,13 @@ type Props = {
   priority?: boolean;
 };
 
-/** Official ArcFlow wordmark — PNG is lighter to decode than the SVG (embedded rasters). */
+/** Official ArcFlow wordmark (lightweight PNG). */
 export function BrandLogo({ className, height = 52, priority = false }: Props) {
   const width = Math.round(height * (1448 / 336));
 
   return (
     <Image
-      src="/logo-mark.png"
+      src="/logo-arc-png.png"
       alt="ArcFlow"
       width={width}
       height={height}

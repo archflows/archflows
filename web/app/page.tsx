@@ -302,7 +302,7 @@ export default function LandingPage() {
       <section className="shell lp-section lp-section-last">
         <div className="cta-box lp-cta">
           <div>
-            <p className="lp-eyebrow" style={{ color: "var(--ion)" }}>
+            <p className="lp-eyebrow">
               Get started
             </p>
             <h2>Open the app on Arc Testnet</h2>

@@ -476,7 +476,7 @@ export function DataTable({
         value="outline"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
-        <div className="overflow-hidden rounded-2xl border">
+        <div className="overflow-hidden rounded-2xl">
           <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
@@ -639,11 +639,11 @@ const chartData = [
 const chartConfig = {
   locks: {
     label: "Locks",
-    color: "var(--primary)",
+    color: "#0050e0",
   },
   claims: {
     label: "Claims",
-    color: "var(--primary)",
+    color: "#0050e0",
   },
 } satisfies ChartConfig
 function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
@@ -695,17 +695,17 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                   <Area
                     dataKey="claims"
                     type="natural"
-                    fill="var(--color-claims)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-claims)"
+                    fill="#0050e0"
+                    fillOpacity={0.18}
+                    stroke="#0050e0"
                     stackId="a"
                   />
                   <Area
                     dataKey="locks"
                     type="natural"
-                    fill="var(--color-locks)"
+                    fill="#0050e0"
                     fillOpacity={0.4}
-                    stroke="var(--color-locks)"
+                    stroke="#0050e0"
                     stackId="a"
                   />
                 </AreaChart>

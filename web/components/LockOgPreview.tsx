@@ -49,7 +49,7 @@ export function LockOgPreview({
 
         <header className="lock-og-top">
           <Image
-              src="/logo-mark.png"
+              src="/logo-arc-png.png"
             alt=""
             width={146}
             height={34}

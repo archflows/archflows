@@ -29,7 +29,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
           <div className="footer-grid">
             <div>
               <Link href="/" className="brand brand-logo-link" style={{ marginBottom: "0.75rem" }} aria-label="ArcFlow home">
-                <BrandLogo height={36} />
+                <BrandLogo height={28} />
               </Link>
               <p className="dim" style={{ maxWidth: "24rem", margin: "0.75rem 0 0" }}>
                 Token operations on Arc. Immutable locks, linear vesting, streams, airdrops,

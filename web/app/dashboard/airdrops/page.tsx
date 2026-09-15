@@ -1,19 +1,10 @@
-"use client";
-
-import { CreateAirdropForm } from "@/components/create-airdrop-form";
-import { ModuleTabs } from "@/components/module-tabs";
+import { ComingSoon } from "@/components/ComingSoon";
 
 export default function DashboardAirdropsPage() {
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:px-6">
-      <ModuleTabs
-        items={[
-          { href: "/dashboard/airdrops", label: "Create", exact: true },
-          { href: "/dashboard/airdrops/claim", label: "Claim" },
-          { href: "/dashboard/airdrops/manage", label: "Manage" },
-        ]}
-      />
-      <CreateAirdropForm />
-    </div>
+    <ComingSoon
+      title="Airdrops"
+      description="Campaign creation, claims, and management are on the way. Check back soon."
+    />
   );
 }

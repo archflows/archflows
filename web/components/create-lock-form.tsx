@@ -331,7 +331,7 @@ export function CreateLockForm() {
       }
 
       if (targets.length > 1 || lastLockId === undefined) {
-        router.push("/dashboard/locks/positions");
+        router.push("/dashboard/locks?tab=positions");
       } else {
         router.push(`/lock/${lastLockId.toString()}`);
       }

@@ -19,7 +19,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { switchChain } = useSwitchChain();
 
   const wrongChain = mounted && isConnected && chainId !== ARC_TESTNET.id;
-  const checking = !mounted || isConnecting || isReconnecting;
+
+  // Only block the first wallet settle. Do not tear down the shell on brief
+  // isReconnecting flickers — that made every in-dashboard nav feel like a reload.
+  const bootstrapping =
+    !mounted || ((!isConnected) && (isConnecting || isReconnecting));
 
   useEffect(() => {
     if (!mounted) return;
@@ -28,7 +32,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [mounted, isConnecting, isReconnecting, isConnected, pathname, router]);
 
-  if (checking || !isConnected) {
+  if (bootstrapping || !isConnected) {
     return (
       <div className="flex min-h-svh items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
@@ -51,6 +55,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider
+      className="bg-background"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",

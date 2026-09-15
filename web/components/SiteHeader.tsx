@@ -27,7 +27,7 @@ export function SiteHeader() {
     <header className="nav">
       <div className="shell nav-row">
         <Link href="/" className="brand brand-logo-link" aria-label="ArcFlow home">
-          <BrandLogo height={40} priority />
+          <BrandLogo height={26} priority />
         </Link>
 
         <nav className="nav-mid">

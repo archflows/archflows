@@ -324,7 +324,7 @@ function Locks({
 
   return (
     <div className="space-y-4">
-      <Card className="shadow-none ring-foreground/10">
+      <Card className="shadow-none ring-0">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <LockIcon className="size-4 text-primary" />
@@ -407,7 +407,7 @@ export default function MyLocksPage({
 
   if (!isConnected || !address) {
     return (
-      <Card className="max-w-md shadow-none ring-foreground/10">
+      <Card className="max-w-md shadow-none ring-0">
         <CardHeader>
           <CardTitle>Wallet required</CardTitle>
           <CardDescription>

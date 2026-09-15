@@ -1,10 +1,25 @@
 "use client";
 
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
+import dynamic from "next/dynamic";
 import { SectionCards } from "@/components/section-cards";
-
 import data from "./data.json";
+
+const ChartAreaInteractive = dynamic(
+  () =>
+    import("@/components/chart-area-interactive").then((m) => m.ChartAreaInteractive),
+  {
+    ssr: false,
+    loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/40" />,
+  },
+);
+
+const DataTable = dynamic(
+  () => import("@/components/data-table").then((m) => m.DataTable),
+  {
+    ssr: false,
+    loading: () => <div className="h-[320px] animate-pulse rounded-xl bg-muted/30" />,
+  },
+);
 
 export default function DashboardPage() {
   return (
