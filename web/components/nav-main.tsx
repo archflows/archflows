@@ -31,6 +31,8 @@ export type NavItem = {
   url: string;
   icon?: React.ReactNode;
   soon?: boolean;
+  /** Expand submenu on first load. Defaults to collapsed. */
+  defaultExpanded?: boolean;
   items?: NavLeaf[];
 };
 
@@ -54,13 +56,46 @@ function collectBranchKeys(nodes: NavLeaf[] | undefined, prefix = "", into: stri
 function defaultOpenMap(items: NavItem[]) {
   const map: Record<string, boolean> = {};
   for (const item of items) {
-    if (!item.items?.length) continue;
+    if (!item.items?.length || !item.defaultExpanded) continue;
     map[item.title] = true;
     for (const key of collectBranchKeys(item.items, `${item.title}/`)) {
       map[key] = true;
     }
   }
   return map;
+}
+
+function applyActiveExpansion(
+  items: NavItem[],
+  pathname: string,
+  map: Record<string, boolean>,
+) {
+  const next = { ...map };
+  for (const item of items) {
+    if (!item.items?.length) continue;
+    const active =
+      item.items.some((sub) => isBranchActive(pathname, sub)) ||
+      pathMatches(pathname, item.url);
+    if (!active) continue;
+    next[item.title] = true;
+    expandActiveBranches(item.items, `${item.title}/`, pathname, next);
+  }
+  return next;
+}
+
+function expandActiveBranches(
+  nodes: NavLeaf[],
+  prefix: string,
+  pathname: string,
+  map: Record<string, boolean>,
+) {
+  for (const node of nodes) {
+    if (!node.items?.length) continue;
+    const key = `${prefix}${node.title}`;
+    if (!isBranchActive(pathname, node)) continue;
+    map[key] = true;
+    expandActiveBranches(node.items, `${key}/`, pathname, map);
+  }
 }
 
 function pathMatches(pathname: string, url: string) {
@@ -164,10 +199,14 @@ export function NavMain({
   items: NavItem[];
   groupLabel?: string;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
   const { state } = useSidebar();
+  const pathname = usePathname();
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => defaultOpenMap(items));
+
+  useEffect(() => {
+    setOpenMap((prev) => applyActiveExpansion(items, pathname, prev));
+  }, [items, pathname]);
 
   useEffect(() => {
     const urls = new Set<string>();

@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { BookUserIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { cn } from "@/lib/utils";
 
 export function ContactsWalletGate({
   title,
@@ -27,7 +25,7 @@ export function ContactsWalletGate({
         </p>
         <Link
           href={`/auth?next=${encodeURIComponent(nextPath)}`}
-          className={cn(buttonVariants({ size: "sm" }), "mt-4")}
+          className="btn mt-4"
         >
           Connect wallet
         </Link>

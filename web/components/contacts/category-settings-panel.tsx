@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PencilIcon, PlusIcon, RotateCcwIcon, TagsIcon, Trash2Icon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PencilIcon, PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,11 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { buttonVariants } from "@/components/ui/button-variants";
 import { useContacts } from "@/hooks/useContacts";
 import { FALLBACK_CATEGORY_ID } from "@/lib/contacts";
-import { cn } from "@/lib/utils";
 import { ContactsWalletGate } from "@/components/contacts/wallet-gate";
+import { RecentContactsAside } from "@/components/contacts/recent-contacts-aside";
+import { ContactsQuickActionsAside } from "@/components/contacts/quick-actions-aside";
+import { ContactsShell } from "@/components/contacts/contacts-shell";
+import { useConfirm } from "@/components/confirm-provider";
+import { notify } from "@/lib/notify";
 
 export function CategorySettingsPanel() {
   const {
@@ -27,6 +29,7 @@ export function CategorySettingsPanel() {
     deleteCategory,
     resetCategories,
   } = useContacts();
+  const { confirm } = useConfirm();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,15 +74,36 @@ export function CategorySettingsPanel() {
     closeDialog();
   }
 
-  function remove(id: string, name: string) {
+  async function remove(id: string, name: string) {
     const count = categoryCounts.get(id) ?? 0;
-    const message =
-      count > 0
-        ? `Delete "${name}"? ${count} contact${count === 1 ? "" : "s"} will move to Other.`
-        : `Delete category "${name}"?`;
-    if (!window.confirm(message)) return;
+    const ok = await confirm({
+      title: `Delete "${name}"?`,
+      description:
+        count > 0
+          ? `${count} contact${count === 1 ? "" : "s"} will move to Other.`
+          : "This category will be removed from your master list.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     const error = deleteCategory(id);
-    if (error) window.alert(error);
+    if (error) {
+      notify.error(error);
+      return;
+    }
+    notify.success("Category deleted", name);
+  }
+
+  async function resetDefaults() {
+    const ok = await confirm({
+      title: "Reset categories?",
+      description: "Custom category labels will be lost and defaults will be restored.",
+      confirmLabel: "Reset defaults",
+      destructive: true,
+    });
+    if (!ok) return;
+    resetCategories();
+    notify.success("Categories reset to defaults");
   }
 
   if (!isConnected) {
@@ -87,79 +111,74 @@ export function CategorySettingsPanel() {
   }
 
   return (
-    <>
-      <Card className="shadow-none ring-0">
-        <CardHeader className="border-b">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2">
-              <TagsIcon className="size-4 text-primary" />
-              Category settings
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
+    <ContactsShell>
+      <div className="create-grid">
+        <div className="panel">
+          <div className="panel-head">
+            <span>Category settings</span>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="btn ghost sm"
-                onClick={() => {
-                  if (window.confirm("Reset categories to defaults? Custom labels will be lost.")) {
-                    resetCategories();
-                  }
-                }}
+                className="btn ghost"
+                onClick={() => void resetDefaults()}
               >
                 <RotateCcwIcon className="size-3.5" />
-                Reset defaults
+                Reset
               </button>
-              <button type="button" className={cn(buttonVariants({ size: "sm" }))} onClick={openCreate}>
+              <button type="button" className="btn" onClick={openCreate}>
                 <PlusIcon className="size-3.5" />
-                Add category
+                Add
               </button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-4">
-          <p className="text-sm text-muted-foreground">
-            Master categories for contacts. Renaming keeps existing assignments; deleting moves contacts to Other.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {categories.map((category) => {
-              const count = categoryCounts.get(category.id) ?? 0;
-              const protectedCategory = category.id === FALLBACK_CATEGORY_ID;
-              return (
-                <div
-                  key={category.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground">{category.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {count} contact{count === 1 ? "" : "s"}
-                      {protectedCategory ? " · default fallback" : ""}
-                    </p>
+          <div className="panel-body">
+            <p className="panel-intro">
+              Master labels for contacts. Rename keeps assignments; delete moves contacts to Other.
+            </p>
+            <div className="mgmt-list">
+              {categories.map((category) => {
+                const count = categoryCounts.get(category.id) ?? 0;
+                const protectedCategory = category.id === FALLBACK_CATEGORY_ID;
+                return (
+                  <div key={category.id} className="mgmt-item">
+                    <div className="mgmt-item-main">
+                      <p className="mgmt-item-title">{category.label}</p>
+                      <p className="mgmt-item-meta">
+                        {count} contact{count === 1 ? "" : "s"}
+                        {protectedCategory ? " · default fallback" : ""}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => openEdit(category.id, category.label)}
+                        title="Edit category"
+                      >
+                        <PencilIcon className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        disabled={protectedCategory}
+                        onClick={() => void remove(category.id, category.label)}
+                        title={protectedCategory ? "Other cannot be deleted" : "Delete category"}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      onClick={() => openEdit(category.id, category.label)}
-                      title="Edit category"
-                    >
-                      <PencilIcon className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      disabled={protectedCategory}
-                      onClick={() => remove(category.id, category.label)}
-                      title={protectedCategory ? "Other cannot be deleted" : "Delete category"}
-                    >
-                      <Trash2Icon className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <aside>
+          <ContactsQuickActionsAside />
+          <RecentContactsAside />
+        </aside>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
         <DialogContent>
@@ -182,12 +201,12 @@ export function CategorySettingsPanel() {
           </div>
           <DialogFooter>
             <button type="button" className="btn ghost" onClick={closeDialog}>Cancel</button>
-            <button type="button" className={cn(buttonVariants({ size: "sm" }))} onClick={save}>
+            <button type="button" className="btn" onClick={save}>
               {editingId ? "Save changes" : "Add category"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </ContactsShell>
   );
 }

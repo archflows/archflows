@@ -5609,3 +5609,183 @@ html.reveal-on.reveal-mobile .lp-flow-row[data-reveal]:not([data-reveal-in]) {
   border-radius: 0.75rem;
   background: rgba(148, 163, 184, 0.1) !important;
 }
+
+/* Sonner toasts — ArcFlows theme */
+[data-sonner-toaster] {
+  --width: 22rem;
+  font-family: var(--font-sora), system-ui, sans-serif;
+}
+
+[data-sonner-toast].cn-toast,
+[data-sonner-toast] {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.9rem;
+  background: #12131a;
+  color: #fff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+[data-sonner-toast] [data-title] {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+[data-sonner-toast] [data-description] {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8rem;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-color: rgba(0, 80, 224, 0.35);
+}
+
+/* Contacts management — match create-lock panel styling */
+.contacts-mgmt .create-grid > .panel,
+.contacts-mgmt .create-grid > aside > .panel {
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  box-shadow: none;
+}
+
+.contacts-mgmt .panel-head {
+  border-bottom: 1px solid var(--hairline);
+  padding: 0.95rem 1.15rem;
+  gap: 1rem;
+}
+
+.contacts-mgmt .panel-head > span:first-child {
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+
+.contacts-mgmt .panel-body {
+  padding: 1.15rem 1.15rem 1.35rem;
+}
+
+.contacts-mgmt .panel-body--flush-top {
+  padding-top: 0.75rem;
+}
+
+.contacts-mgmt .panel-intro {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.contacts-mgmt .mgmt-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.contacts-mgmt .mgmt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.contacts-mgmt .mgmt-item:last-child {
+  border-bottom: 0;
+}
+
+.contacts-mgmt .mgmt-item-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.contacts-mgmt .mgmt-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.contacts-mgmt .mgmt-item-meta {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.contacts-mgmt .mgmt-nav {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.contacts-mgmt .mgmt-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.contacts-mgmt .mgmt-nav-link.on {
+  background: rgba(0, 80, 224, 0.14);
+  color: var(--ion);
+}
+
+.contacts-mgmt .mgmt-nav-link:not(.on) {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.contacts-mgmt .mgmt-nav-link:not(.on):hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.contacts-mgmt .mgmt-aside-foot {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.contacts-mgmt .mgmt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.contacts-mgmt .mgmt-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.contacts-mgmt .field {
+  margin-bottom: 1rem;
+}
+
+.contacts-mgmt .field-hint {
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.5;
+}

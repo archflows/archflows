@@ -21,6 +21,8 @@ import {
   LayersIcon,
   WavesIcon,
   BookUserIcon,
+  UsersIcon,
+  UserCircleIcon,
 } from "lucide-react";
 
 const navMain = [
@@ -33,6 +35,7 @@ const navMain = [
     title: "Locks",
     url: "/dashboard/locks",
     icon: <LockIcon />,
+    defaultExpanded: true,
     items: [
       { title: "Create lock", url: "/dashboard/locks" },
       { title: "My locks", url: "/dashboard/locks/positions" },
@@ -88,6 +91,17 @@ const navManagement = [
       { title: "Category settings", url: "/dashboard/contacts/categories" },
     ],
   },
+  {
+    title: "Referral",
+    url: "/dashboard/referral",
+    icon: <UsersIcon />,
+    soon: true,
+  },
+  {
+    title: "Account",
+    url: "/dashboard/account",
+    icon: <UserCircleIcon />,
+  },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -107,7 +121,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavMain items={navManagement} groupLabel="Management" />
+        <NavMain items={navManagement} groupLabel="Management & Account" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

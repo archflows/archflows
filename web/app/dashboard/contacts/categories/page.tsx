@@ -4,7 +4,7 @@ import { CategorySettingsPanel } from "@/components/contacts/category-settings-p
 
 export default function DashboardContactsCategoriesPage() {
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:px-6 min-w-0">
+    <div className="flex flex-1 flex-col p-2 md:p-4 lg:px-4 min-w-0">
       <CategorySettingsPanel />
     </div>
   );

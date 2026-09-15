@@ -9,6 +9,8 @@ function titleFromPath(pathname: string) {
   if (pathname === "/dashboard/contacts/list") return "Contact list";
   if (pathname === "/dashboard/contacts/categories") return "Category settings";
   if (pathname.startsWith("/dashboard/contacts")) return "Contacts";
+  if (pathname.startsWith("/dashboard/referral")) return "Referral";
+  if (pathname.startsWith("/dashboard/account")) return "Account";
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
   if (pathname === "/dashboard/locks/positions") return "My locks";
   if (pathname.startsWith("/dashboard/locks")) return "Create lock";

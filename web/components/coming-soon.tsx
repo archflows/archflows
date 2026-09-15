@@ -29,7 +29,7 @@ export function ComingSoon({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-          <Link href="/dashboard/locks" className="btn sm">
+          <Link href="/dashboard/locks" className="btn">
             Go to locks
           </Link>
         </CardContent>

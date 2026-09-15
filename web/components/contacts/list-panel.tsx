@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookUserIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { isAddress } from "viem";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,12 +14,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button-variants";
 import { useContacts } from "@/hooks/useContacts";
 import { FALLBACK_CATEGORY_ID, type Contact, type ContactCategory } from "@/lib/contacts";
 import { shorten } from "@/lib/form-time";
-import { cn } from "@/lib/utils";
 import { ContactsWalletGate } from "@/components/contacts/wallet-gate";
+import { ContactsQuickActionsAside } from "@/components/contacts/quick-actions-aside";
+import { useConfirm } from "@/components/confirm-provider";
+import { notify } from "@/lib/notify";
+import { ContactsShell } from "@/components/contacts/contacts-shell";
 
 type FormState = {
   name: string;
@@ -38,6 +39,7 @@ export function ContactsListPanel() {
     deleteContact,
     resolveCategoryLabel,
   } = useContacts();
+  const { confirm } = useConfirm();
 
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -88,9 +90,16 @@ export function ContactsListPanel() {
     closeDialog();
   }
 
-  function remove(contact: Contact) {
-    if (!window.confirm(`Remove ${contact.name} from contacts?`)) return;
+  async function remove(contact: Contact) {
+    const ok = await confirm({
+      title: "Remove contact?",
+      description: `${contact.name} will be removed from your saved contacts.`,
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
     deleteContact(contact.id);
+    notify.success("Contact removed", contact.name);
   }
 
   if (!isConnected) {
@@ -98,90 +107,81 @@ export function ContactsListPanel() {
   }
 
   return (
-    <>
-      <Card className="shadow-none ring-0">
-        <CardHeader className="border-b">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2">
-              <BookUserIcon className="size-4 text-primary" />
-              Contact list
-            </CardTitle>
-            <Link href="/dashboard/contacts/add" className={cn(buttonVariants({ size: "sm" }))}>
+    <ContactsShell>
+      <div className="create-grid">
+        <div className="panel">
+          <div className="panel-head">
+            <span>Contact list</span>
+            <Link href="/dashboard/contacts/add" className="btn shrink-0">
               <PlusIcon className="size-3.5" />
               Add contact
             </Link>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="relative max-w-md">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-white/40" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, category, or wallet"
-              className="h-9 border-white/12 bg-black/30 pl-8 text-white placeholder:text-white/40"
-            />
-          </div>
+          <div className="panel-body">
+            <div className="relative mb-4">
+              <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-white/40" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search name, category, or wallet"
+                className="h-9 border-white/12 bg-black/30 pl-8 text-white placeholder:text-white/40"
+              />
+            </div>
 
-          {!ready ? (
-            <p className="text-sm text-muted-foreground">Loading contacts…</p>
-          ) : contacts.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-xl bg-black/20 px-4 py-6">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <BookUserIcon className="size-4" />
-              </span>
-              <div>
-                <p className="font-medium text-foreground">No contacts yet</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Save wallets with a name and category, then pick them when creating locks, vests, or streams.
-                </p>
+            {!ready ? (
+              <p className="panel-intro" style={{ margin: 0 }}>Loading contacts…</p>
+            ) : contacts.length === 0 ? (
+              <div className="mgmt-empty">
+                <p className="mgmt-item-title">No contacts yet</p>
+                <p>Add a wallet from the sidebar or open the add contact page.</p>
+                <Link href="/dashboard/contacts/add" className="btn">
+                  Add your first contact
+                </Link>
               </div>
-              <Link href="/dashboard/contacts/add" className={cn(buttonVariants({ size: "sm" }))}>
-                Add your first contact
-              </Link>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-xl bg-black/20 px-4 py-6 text-sm text-muted-foreground">
-              No contacts match that search.
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              {filtered.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-foreground">{contact.name}</p>
-                      <Badge variant="outline">{resolveCategoryLabel(contact.category)}</Badge>
+            ) : filtered.length === 0 ? (
+              <p className="panel-intro" style={{ margin: 0 }}>No contacts match that search.</p>
+            ) : (
+              <div className="mgmt-list">
+                {filtered.map((contact) => (
+                  <div key={contact.id} className="mgmt-item">
+                    <div className="mgmt-item-main">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="mgmt-item-title">{contact.name}</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {resolveCategoryLabel(contact.category)}
+                        </Badge>
+                      </div>
+                      <p className="mgmt-item-meta font-mono">{contact.wallet}</p>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">{contact.wallet}</p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => openEdit(contact)}
+                        title="Edit contact"
+                      >
+                        <PencilIcon className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => void remove(contact)}
+                        title="Delete contact"
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      onClick={() => openEdit(contact)}
-                      title="Edit contact"
-                    >
-                      <PencilIcon className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn ghost sm"
-                      onClick={() => remove(contact)}
-                      title="Delete contact"
-                    >
-                      <Trash2Icon className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <aside>
+          <ContactsQuickActionsAside />
+        </aside>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
         <DialogContent>
@@ -230,12 +230,12 @@ export function ContactsListPanel() {
           </div>
           <DialogFooter>
             <button type="button" className="btn ghost" onClick={closeDialog}>Cancel</button>
-            <button type="button" className={cn(buttonVariants({ size: "sm" }))} onClick={save}>
+            <button type="button" className="btn" onClick={save}>
               Save changes
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </ContactsShell>
   );
 }
