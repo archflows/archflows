@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 function env(...keys: string[]) {
   for (const key of keys) {
@@ -41,6 +42,34 @@ const reownProjectId = env(
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  outputFileTracingRoot: path.join(__dirname),
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/locks",
+        has: [{ type: "query", key: "tab", value: "positions" }],
+        destination: "/dashboard/locks/positions",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/vesting",
+        has: [{ type: "query", key: "tab", value: "positions" }],
+        destination: "/dashboard/vesting/positions",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/streams",
+        has: [{ type: "query", key: "tab", value: "positions" }],
+        destination: "/dashboard/streams/positions",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/create",
+        destination: "/dashboard/locks",
+        permanent: false,
+      },
+    ];
+  },
   onDemandEntries: {
     maxInactiveAge: 60 * 60 * 1000,
     pagesBufferLength: 8,

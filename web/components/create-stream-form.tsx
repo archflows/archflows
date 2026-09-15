@@ -27,6 +27,7 @@ import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { resolveTs, upsertStream, upsertStreams } from "@/lib/backend";
 import { eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
@@ -37,13 +38,12 @@ const MAX_BATCH = 200;
 type Mode = "single" | "payroll";
 
 /** Cancelable / top-upable streams for payroll & team vesting (ArcFlowStream). */
-export function CreateStreamForm() {
+export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const [mode, setMode] = useState<Mode>("single");
   const [token, setToken] = useState("");
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -61,6 +61,7 @@ export function CreateStreamForm() {
   const [createdTx, setCreatedTx] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating">("idle");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
   const { data: walletTokens } = useWalletTokens();
@@ -292,23 +293,6 @@ export function CreateStreamForm() {
         </div>
       ) : null}
 
-      <div className="seg seg-2" style={{ maxWidth: "22rem" }}>
-        <button
-          type="button"
-          className={`seg-btn${mode === "single" ? " on" : ""}`}
-          onClick={() => setMode("single")}
-        >
-          Single stream
-        </button>
-        <button
-          type="button"
-          className={`seg-btn${mode === "payroll" ? " on" : ""}`}
-          onClick={() => setMode("payroll")}
-        >
-          Payroll CSV
-        </button>
-      </div>
-
       <FormShell
         title={mode === "payroll" ? "Batch payroll" : "Create stream"}
         badge={mode === "payroll" ? "createBatch" : "ArcFlowStream"}
@@ -358,7 +342,6 @@ export function CreateStreamForm() {
                   .join(", ") || "immutable",
               },
             ]}
-            note="This uses ArcFlowStream, cancelable payroll / vesting. Anti-dump locks stay on the Locks page ($10 fee, immutable)."
           />
         }
       >
@@ -558,7 +541,7 @@ export function CreateStreamForm() {
                                   : mode === "payroll" && !payrollRows?.rows.length
                                     ? "Paste a valid recipients CSV."
                                     : null,
-                  () => void submit(),
+                  () => setConfirmOpen(true),
                 )
               }
             >
@@ -580,6 +563,37 @@ export function CreateStreamForm() {
           )}
         </div>
       </FormShell>
+
+      <ActionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={mode === "payroll" ? "Confirm payroll batch" : "Confirm stream"}
+        confirmLabel={
+          needsApprove
+            ? mode === "payroll"
+              ? "Agree & approve payroll"
+              : "Agree & approve stream"
+            : mode === "payroll"
+              ? "Agree & create payroll"
+              : "Agree & create stream"
+        }
+        feeUsd={null}
+        summary={[
+          {
+            label: "Type",
+            value: mode === "payroll" ? "Batch payroll" : "Single stream",
+          },
+          {
+            label: "Token",
+            value: symbol || "—",
+          },
+          {
+            label: "Recipients",
+            value: mode === "payroll" ? String(payrollRows?.rows.length ?? 0) : "1",
+          },
+        ]}
+        onConfirm={() => void submit()}
+      />
     </div>
   );
 }

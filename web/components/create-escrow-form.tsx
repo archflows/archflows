@@ -195,7 +195,6 @@ export function CreateEscrowForm() {
                 : `${dateFmt.format(new Date((nowSec() + timeout) * 1000))} UTC`,
             },
           ]}
-          note="Buyer funds now. Buyer releases to seller when work is done. Seller can refund anytime; buyer can refund after the timeout."
         />
       }
     >

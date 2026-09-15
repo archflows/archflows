@@ -33,7 +33,7 @@ import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
-import { LockOgPreview } from "@/components/LockOgPreview";
+import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { resolveTs, upsertLock } from "@/lib/backend";
 import { proofPath } from "@/lib/proof";
 import { confirmTx, eventArgs } from "@/lib/tx";
@@ -60,6 +60,7 @@ export function CreateVestForm() {
   const [startAt, setStartAt] = useState(() => nowSec());
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "locking">("idle");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
   const { data: walletTokens } = useWalletTokens();
@@ -181,7 +182,7 @@ export function CreateVestForm() {
       return;
     }
     if (shortFee) {
-      setError("Lock fee is $10 USDC. Fund the wallet from faucet.circle.com.");
+      setError("Not enough USDC. Fund the wallet from faucet.circle.com.");
       return;
     }
     if (notDeployed) {
@@ -274,8 +275,7 @@ export function CreateVestForm() {
         title="Linear vesting"
         badge="Per-second release"
         aside={
-          <>
-            <PreviewPanel
+          <PreviewPanel
               title="Vest schedule"
               rows={[
                 { label: "Type", value: "Linear vest" },
@@ -298,17 +298,8 @@ export function CreateVestForm() {
                   label: "Amount",
                   value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
                 },
-                { label: "Fee", value: "$10 USDC" },
               ]}
-              note="Before cliff: claimable = 0. After cliff: tokens unlock every second until fully vested. Beneficiary can claim accrued anytime. A hard lock (all-or-nothing) lives under Locks."
             />
-            <LockOgPreview
-              amount={amount}
-              symbol={symbol}
-              duration={tooShort || cliffPastEnd || cliffIsHardLock ? undefined : formatDuration(vestSec)}
-              unlockLabel={mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : undefined}
-            />
-          </>
         }
       >
         <TokenSelect
@@ -454,9 +445,9 @@ export function CreateVestForm() {
                                 : cliffIsHardLock
                                   ? "Cliff equal to vest length is a hard lock. Use Locks instead."
                                   : shortFee
-                                  ? "Need $10+ USDC for the fee and gas."
+                                  ? "Need more USDC for gas."
                                   : null,
-                  () => void submit(),
+                  () => setConfirmOpen(true),
                 )
               }
             >
@@ -472,6 +463,30 @@ export function CreateVestForm() {
           )}
         </div>
       </FormShell>
+
+      <ActionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirm linear vest"
+        confirmLabel={needsApprove ? "Agree & approve" : "Agree & create vest"}
+        feeUsd={10}
+        summary={[
+          { label: "Type", value: "Linear vest" },
+          {
+            label: "Amount",
+            value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
+          },
+          {
+            label: "Beneficiary",
+            value: <span className="mono">{shorten(beneficiaryAddress)}</span>,
+          },
+          {
+            label: "Fully vested",
+            value: mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : "—",
+          },
+        ]}
+        onConfirm={() => void submit()}
+      />
     </div>
   );
 }

@@ -497,11 +497,6 @@ function Locks({
             )}
             {vest ? "Your vests" : "Your locks"}
           </CardTitle>
-          <CardDescription>
-{vest
-              ? "Linear schedules for this wallet — still releasing or fully vested."
-              : "Hard locks for this wallet — still frozen or already unlocked."}
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           <div className="seg seg-2 max-w-md">
@@ -531,11 +526,6 @@ function Locks({
               <div>
                 <p className="font-medium text-foreground">
                   {vest ? "No vesting schedules yet" : "No hard locks yet"}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {vest
-                    ? "Create a vest to stream tokens after an optional cliff. Hard locks live under Locks."
-                    : "Create a lock to freeze the full amount until one date. Linear schedules live under Vesting."}
                 </p>
               </div>
               <Link href={createHref} className={cn(buttonVariants({ size: "sm" }), "text-primary-foreground")}>

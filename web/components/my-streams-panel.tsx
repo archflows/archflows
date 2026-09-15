@@ -709,7 +709,6 @@ export function MyStreamsPanel() {
           <WavesIcon className="size-4 text-primary" />
           Your streams
         </CardTitle>
-        <CardDescription>Withdraw, top up, transfer, or cancel from the Actions menu.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         <div className="seg seg-2 max-w-md">

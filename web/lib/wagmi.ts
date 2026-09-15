@@ -1,7 +1,7 @@
 import "./appkit-guards";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { defineChain } from "@reown/appkit/networks";
-import { cookieStorage, createStorage, http } from "wagmi";
+import { cookieStorage, createStorage, http } from "@wagmi/core";
 import { ARC_CHAIN_ID, ARC_RPC_URL, EXPLORER_URL, arcChain, isTestnet } from "./chain";
 import { af } from "./public-env";
 

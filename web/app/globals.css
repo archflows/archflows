@@ -3356,6 +3356,7 @@ a.lp-card:hover .lp-card-arrow {
   width: 30px;
   height: 30px;
   border: 1px solid var(--line-strong);
+  border-radius: 999px;
   background: var(--glass-strong);
   font-family: var(--font-mono);
   font-size: 0.62rem;

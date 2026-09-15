@@ -227,7 +227,6 @@ export function CreateStakingForm() {
               },
               { label: "Owner", value: <span className="mono">{shorten(address)}</span> },
             ]}
-            note="You own the pool after create. Stakers lock for at least min lock. Fund rewards now or later with the same wallet."
           />
         }
       >

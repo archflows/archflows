@@ -32,16 +32,35 @@ const navMain = [
     title: "Locks",
     url: "/dashboard/locks",
     icon: <LockIcon />,
+    items: [
+      { title: "Create lock", url: "/dashboard/locks" },
+      { title: "My locks", url: "/dashboard/locks/positions" },
+    ],
   },
   {
     title: "Vesting",
     url: "/dashboard/vesting",
     icon: <HourglassIcon />,
+    items: [
+      { title: "Create vest", url: "/dashboard/vesting" },
+      { title: "My vests", url: "/dashboard/vesting/positions" },
+    ],
   },
   {
     title: "Streams",
     url: "/dashboard/streams",
     icon: <WavesIcon />,
+    items: [
+      {
+        title: "Create stream",
+        url: "/dashboard/streams",
+        items: [
+          { title: "Single stream", url: "/dashboard/streams" },
+          { title: "Payroll CSV", url: "/dashboard/streams/payroll" },
+        ],
+      },
+      { title: "My streams", url: "/dashboard/streams/positions" },
+    ],
   },
   {
     title: "Staking",
@@ -65,7 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="h-10 justify-center data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/dashboard" prefetch={false} aria-label="ArcFlow dashboard" />}
+              render={<Link href="/dashboard" prefetch aria-label="ArcFlow dashboard" />}
             >
               <BrandLogo height={28} className="mx-auto" />
             </SidebarMenuButton>

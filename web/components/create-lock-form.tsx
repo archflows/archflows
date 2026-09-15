@@ -39,6 +39,7 @@ import {
 import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/form-shell";
 import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
 import { LockSuccessDialog, type LockSuccessResult } from "@/components/lock-success-dialog";
+import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { upsertLock } from "@/lib/backend";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
@@ -70,6 +71,7 @@ export function CreateLockForm() {
   const [step, setStep] = useState<"idle" | "approving" | "locking">("idle");
   const [success, setSuccess] = useState<LockSuccessResult | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
   const { data: walletTokens } = useWalletTokens();
@@ -297,8 +299,8 @@ export function CreateLockForm() {
     if (shortFee) {
       setError(
         unlockMode === "split"
-          ? `Split needs $${10 * lockTargets.length} USDC in fees ($10 each).`
-          : "Lock fee is $10 USDC. Fund the wallet from faucet.circle.com.",
+          ? "Not enough USDC for this split."
+          : "Not enough USDC. Fund the wallet from faucet.circle.com.",
       );
       return;
     }
@@ -434,6 +436,41 @@ export function CreateLockForm() {
         result={success}
       />
 
+      <ActionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={unlockMode === "split" ? "Confirm split lock" : "Confirm hard lock"}
+        confirmLabel={
+          needsApprove
+            ? unlockMode === "split"
+              ? "Agree & approve split"
+              : "Agree & approve"
+            : unlockMode === "split"
+              ? "Agree & split lock"
+              : "Agree & lock"
+        }
+        feeUsd={10 * Math.max(lockTargets.length, 1)}
+        summary={[
+          { label: "Type", value: "Hard lock" },
+          {
+            label: "Amount",
+            value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
+          },
+          {
+            label: "Unlocks",
+            value: mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : "—",
+          },
+          {
+            label: "Unlock to",
+            value:
+              unlockMode === "split"
+                ? `${lockTargets.length} wallets`
+                : shorten(lockTargets[0]?.address),
+          },
+        ]}
+        onConfirm={() => void submit()}
+      />
+
       <FormShell
         title="Hard lock"
         badge="All-or-nothing"
@@ -462,7 +499,6 @@ export function CreateLockForm() {
                   value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
                 },
               ]}
-              note="Hard lock: the full amount stays frozen until the unlock date. Nothing streams out early. For a cliff then per-second release, use Vesting."
             />
             <div className="panel create-tok-panel">
               <div className="panel-head">
@@ -518,15 +554,8 @@ export function CreateLockForm() {
           error={
             overBalance
               ? lockingUsdc
-                ? "Exceeds balance after lock fees."
+                ? "Exceeds available balance."
                 : "Exceeds wallet balance."
-              : undefined
-          }
-          hint={
-            lockingUsdc
-              ? unlockMode === "split"
-                ? `MAX leaves $${10 * Math.max(splits.length, 1)} USDC for fees.`
-                : "MAX leaves $10 USDC for the lock fee."
               : undefined
           }
         />
@@ -579,10 +608,8 @@ export function CreateLockForm() {
                   : isConnected && shortFee
                     ? {
                         tone: "warn" as const,
-                        title: "USDC needed for fee",
-                        body: lockingUsdc
-                          ? "Need $10 USDC lock fee plus the amount you lock, and a little for gas."
-                          : "Each lock costs $10 USDC (+ gas). Your USDC balance is empty.",
+                        title: "Need more USDC",
+                        body: "This wallet needs more USDC for gas. Get testnet USDC from the faucet.",
                         href: "https://faucet.circle.com",
                         hrefLabel: "Get testnet USDC",
                       }
@@ -620,7 +647,7 @@ export function CreateLockForm() {
               disabled={busy}
               title={
                 shortFee
-                  ? "Need $10+ USDC for fee and gas"
+                  ? "Need more USDC"
                   : !tokenAddress
                     ? "Select a token"
                     : parsedAmount === undefined
@@ -642,7 +669,7 @@ export function CreateLockForm() {
                           : tooShort
                             ? "Need at least 1 minute."
                             : shortFee
-                              ? "Need $10+ USDC for the lock fee and gas."
+                              ? "Need more USDC for gas."
                               : splitError
                                 ? splitError
                                 : otherError
@@ -650,7 +677,7 @@ export function CreateLockForm() {
                                   : lockTargets.length === 0
                                     ? "Set who can unlock."
                                     : null,
-                  () => void submit(),
+                  () => setConfirmOpen(true),
                 )
               }
             >

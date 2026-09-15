@@ -100,74 +100,79 @@ export function TokenSelect({
 
   return (
     <div className="field">
-      <div className="flex items-center justify-between gap-2">
-        <label className="field-label" htmlFor={id} style={{ margin: 0 }}>
-          {label}
-        </label>
-        {isConnected ? (
-          <button
-            type="button"
-            className="btn ghost sm"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-            title="Refresh wallet tokens"
-          >
-            <RefreshCwIcon className={`size-3.5 ${isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        ) : null}
-      </div>
+      <label className="field-label" htmlFor={id}>
+        {label}
+      </label>
 
       {!isConnected ? (
         <p className="field-hint">Connect a wallet to load its tokens.</p>
       ) : (
         <>
-          <button
-            id={id}
-            type="button"
-            className="af-input"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "0.75rem",
-              textAlign: "left",
-              cursor: "pointer",
-              height: "auto",
-              minHeight: "var(--af-control-h)",
-              maxHeight: "none",
-              padding: "0.45rem 0.7rem",
-            }}
-            onClick={() => setOpen(true)}
-          >
-            {selected ? (
-              <span className="flex min-w-0 items-center gap-2.5">
-                <span className="token-glyph">{selected.symbol.slice(0, 3).toUpperCase()}</span>
-                <span className="min-w-0">
-                  <span className="block truncate font-medium text-white">{selected.symbol}</span>
-                  <span className="block truncate font-mono text-[10px] text-white/55">
-                    {shortAddr(selected.address)}
+          <div className="flex items-stretch gap-2">
+            <button
+              id={id}
+              type="button"
+              className="af-input min-w-0 flex-1"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                textAlign: "left",
+                cursor: "pointer",
+                height: "auto",
+                minHeight: "var(--af-control-h)",
+                maxHeight: "none",
+                padding: "0.45rem 0.7rem",
+              }}
+              onClick={() => setOpen(true)}
+            >
+              {selected ? (
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="token-glyph">{selected.symbol.slice(0, 3).toUpperCase()}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-white">{selected.symbol}</span>
+                    <span className="block truncate font-mono text-[10px] text-white/55">
+                      {shortAddr(selected.address)}
+                    </span>
                   </span>
                 </span>
-              </span>
-            ) : isLoading ? (
-              <span className="flex min-w-0 items-center gap-2.5">
-                <span className="skeleton size-[30px] shrink-0 rounded-md" />
-                <span className="grid min-w-0 gap-1.5">
-                  <span className="skeleton h-3.5 w-16" />
-                  <span className="skeleton h-2.5 w-28" />
+              ) : isLoading ? (
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="skeleton size-[30px] shrink-0 rounded-full" />
+                  <span className="grid min-w-0 gap-1.5">
+                    <span className="skeleton h-3.5 w-16" />
+                    <span className="skeleton h-2.5 w-28" />
+                  </span>
                 </span>
+              ) : (
+                <span className="text-white/55">Choose a token</span>
+              )}
+              <span className="flex shrink-0 items-center gap-2 text-white/70">
+                {selected ? (
+                  <span className="tabular-nums text-xs">{fmtBalance(selected)}</span>
+                ) : null}
+                <ChevronDownIcon className="size-4" />
               </span>
-            ) : (
-              <span className="text-white/55">Choose a token</span>
-            )}
-            <span className="flex shrink-0 items-center gap-2 text-white/70">
-              {selected ? (
-                <span className="tabular-nums text-xs">{fmtBalance(selected)}</span>
-              ) : null}
-              <ChevronDownIcon className="size-4" />
-            </span>
-          </button>
+            </button>
+            <button
+              type="button"
+              className="btn ghost shrink-0 self-stretch"
+              style={{
+                width: "var(--af-control-h)",
+                minWidth: "var(--af-control-h)",
+                minHeight: "var(--af-control-h)",
+                height: "auto",
+                padding: 0,
+              }}
+              onClick={() => void refetch()}
+              disabled={isFetching}
+              title="Refresh wallet tokens"
+              aria-label="Refresh wallet tokens"
+            >
+              <RefreshCwIcon className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
+            </button>
+          </div>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>

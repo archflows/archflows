@@ -6,9 +6,13 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function titleFromPath(pathname: string) {
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
-  if (pathname.startsWith("/dashboard/locks")) return "Locks";
-  if (pathname.startsWith("/dashboard/vesting")) return "Vesting";
-  if (pathname.startsWith("/dashboard/streams")) return "Streams";
+  if (pathname === "/dashboard/locks/positions") return "My locks";
+  if (pathname.startsWith("/dashboard/locks")) return "Create lock";
+  if (pathname === "/dashboard/vesting/positions") return "My vests";
+  if (pathname.startsWith("/dashboard/vesting")) return "Create vest";
+  if (pathname === "/dashboard/streams/positions") return "My streams";
+  if (pathname === "/dashboard/streams/payroll") return "Payroll CSV";
+  if (pathname.startsWith("/dashboard/streams")) return "Single stream";
   if (pathname.startsWith("/dashboard/escrow")) return "Escrow";
   if (pathname.startsWith("/dashboard/airdrops")) return "Airdrops";
   if (pathname.startsWith("/dashboard/staking")) return "Staking";

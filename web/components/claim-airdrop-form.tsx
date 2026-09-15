@@ -187,7 +187,6 @@ export function ClaimAirdropForm() {
                   : "—",
             },
           ]}
-          note="Paste the JSON exported when the campaign was created. Anyone can pay gas for claim; claimTo redirects only if you own the leaf."
         />
       }
     >
