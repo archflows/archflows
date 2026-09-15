@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { HashNavLink } from "@/components/hash-nav-link";
+import { NETWORK_BADGE } from "@/lib/chain";
 import { cn } from "@/lib/utils";
 
 const MARKETING = [
@@ -30,17 +32,17 @@ export function SiteHeader() {
 
         <nav className="nav-mid">
           {MARKETING.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn("nav-link", pathname.startsWith(link.href) && "active")}
-            >
+<HashNavLink key={link.href} href={link.href} className={cn("nav-link", pathname.startsWith(link.href) && "active")}>
               {link.label}
-            </Link>
+            </HashNavLink>
           ))}
         </nav>
 
         <div className="nav-end">
+          <span className="live live-accent hide-mobile">
+            <span className="pulse-dot" />
+            {NETWORK_BADGE}
+          </span>
           <Link href="/auth" className="btn sm hide-mobile">
             {onLockProof ? "Dashboard" : "Launch app"}
           </Link>
@@ -60,9 +62,9 @@ export function SiteHeader() {
       <div className={cn("mobile-drawer", open && "open")}>
         <div className="shell mobile-drawer-inner">
           {MARKETING.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <HashNavLink key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}
-            </Link>
+            </HashNavLink>
           ))}
           <Link href="/auth" className="btn" style={{ marginTop: "0.75rem" }}>
             Launch app

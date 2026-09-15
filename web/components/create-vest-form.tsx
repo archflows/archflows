@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
@@ -28,10 +28,16 @@ import {
   toLocalInput,
 } from "@/lib/form-time";
 import { useMounted } from "@/hooks/useMounted";
+import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { LockOgPreview } from "@/components/LockOgPreview";
+import { resolveTs, upsertLock } from "@/lib/backend";
+import { proofPath } from "@/lib/proof";
+import { confirmTx, eventArgs } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 
@@ -56,6 +62,8 @@ export function CreateVestForm() {
   const [step, setStep] = useState<"idle" | "approving" | "locking">("idle");
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
+  const { data: walletTokens } = useWalletTokens();
+  const tokenInWallet = ownsWalletToken(walletTokens, tokenAddress);
   const beneficiaryAddress = isAddress(beneficiary)
     ? (beneficiary as `0x${string}`)
     : address;
@@ -69,6 +77,7 @@ export function CreateVestForm() {
   const endAt = startAt + vestSec;
   const tooShort = vestSec < MIN_DURATION_SEC;
   const cliffPastEnd = cliffSec > vestSec;
+  const cliffIsHardLock = !cliffPastEnd && vestSec > 0 && cliffSec === vestSec;
 
   const { data: symbol } = useReadContract({
     address: tokenAddress,
@@ -134,11 +143,13 @@ export function CreateVestForm() {
   const ready = Boolean(
     isConnected &&
       tokenAddress &&
+      tokenInWallet &&
       beneficiaryAddress &&
       parsedAmount !== undefined &&
       !overBalance &&
       !tooShort &&
       !cliffPastEnd &&
+      !cliffIsHardLock &&
       !shortFee,
   );
 
@@ -154,11 +165,19 @@ export function CreateVestForm() {
   async function submit() {
     setError("");
     if (!address || !publicClient || !tokenAddress || !beneficiaryAddress || parsedAmount === undefined) {
-      setError("Fill token, amount, and connect a wallet on Arc Testnet.");
+      setError("Fill token, amount, and connect a wallet.");
       return;
     }
-    if (tooShort || cliffPastEnd) {
-      setError("Vest duration must be at least 1 minute, and cliff cannot exceed the vest length.");
+    if (!tokenInWallet) {
+      setError("Pick a token from the connected wallet.");
+      return;
+    }
+    if (tooShort || cliffPastEnd || cliffIsHardLock) {
+      setError(
+        cliffIsHardLock
+          ? "Cliff equal to vest length is a hard lock. Use Locks instead."
+          : "Vest duration must be ≥ 1 minute, and cliff cannot exceed the vest length.",
+      );
       return;
     }
     if (shortFee) {
@@ -166,7 +185,7 @@ export function CreateVestForm() {
       return;
     }
     if (notDeployed) {
-      setError("Set NEXT_PUBLIC_ARCFLOW_ADDRESS after deploying the contract.");
+      setError("Lock contract is not configured.");
       return;
     }
 
@@ -189,7 +208,7 @@ export function CreateVestForm() {
           args: [ARCFLOW_ADDRESS, tokenSpend],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await confirmTx(publicClient, approveHash);
       }
       if (needsFeeApprove) {
         const feeHash = await writeContractAsync({
@@ -199,7 +218,7 @@ export function CreateVestForm() {
           args: [ARCFLOW_ADDRESS, LOCK_FEE_UNITS],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: feeHash });
+        await confirmTx(publicClient, feeHash, { fee: true });
       }
 
       setStep("locking");
@@ -210,25 +229,32 @@ export function CreateVestForm() {
         args: [tokenAddress, beneficiaryAddress, parsedAmount, startArg, cliffArg, endArg],
         ...gas,
       });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: lockHash });
-
-      let lockId: bigint | undefined;
-      for (const log of receipt.logs) {
-        try {
-          const parsed = decodeEventLog({ abi: arcFlowAbi, data: log.data, topics: log.topics });
-          if (parsed.eventName === "Locked") {
-            lockId = parsed.args.id;
-            break;
-          }
-        } catch {
-          // skip
-        }
-      }
+      const receipt = await confirmTx(publicClient, lockHash);
+      const locked = eventArgs<{ id: bigint; beneficiary: `0x${string}`; amount: bigint }>(
+        receipt,
+        arcFlowAbi,
+        "Locked",
+      );
+      const lockId = locked[0]?.id;
       if (lockId === undefined) {
         setError("Created, but the vest id could not be read from the receipt.");
         return;
       }
-      router.push(`/lock/${lockId.toString()}`);
+      const createdAt = nowSec();
+      await upsertLock({
+        id: lockId.toString(),
+        kind: "vest",
+        token: tokenAddress,
+        beneficiary: beneficiaryAddress,
+        creator: address,
+        amount: parsedAmount.toString(),
+        start: resolveTs(startArg, createdAt),
+        cliff: resolveTs(cliffArg, resolveTs(startArg, createdAt)),
+        end: Number(endArg),
+        feeUsdc: "10000000",
+        txHash: lockHash,
+      });
+      router.push(proofPath("lock", lockHash, lockId));
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
     } finally {
@@ -240,41 +266,49 @@ export function CreateVestForm() {
     <div className="space-y-5">
       {notDeployed ? (
         <div className="alert alert-warn">
-          Contract not deployed yet. Set <code className="mono">NEXT_PUBLIC_ARCFLOW_ADDRESS</code>.
+          Lock contract address is not configured.
         </div>
       ) : null}
 
       <FormShell
         title="Linear vesting"
-        badge="Cliff + release"
+        badge="Per-second release"
         aside={
-          <PreviewPanel
-            title="Vest schedule"
-            rows={[
-              { label: "Type", value: "Linear vest" },
-              {
-                label: "Start",
-                value: mounted ? `${dateFmt.format(new Date(startAt * 1000))} UTC` : "—",
-              },
-              {
-                label: "Cliff",
-                value: cliffSec === 0 ? "None (starts releasing immediately)" : formatDuration(cliffSec),
-              },
-              {
-                label: "Cliff ends",
-                value: mounted ? `${dateFmt.format(new Date(cliffAt * 1000))} UTC` : "—",
-              },
-              { label: "Fully unlocked", value: mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : "—" },
-              { label: "Total duration", value: tooShort || cliffPastEnd ? "—" : formatDuration(vestSec) },
-              { label: "Beneficiary", value: <span className="mono">{shorten(beneficiaryAddress)}</span> },
-              {
-                label: "Amount",
-                value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
-              },
-              { label: "Fee", value: "$10 USDC" },
-            ]}
-            note="Before cliff: claimable = 0. After cliff: tokens unlock every second until end. Beneficiary can claim accrued anytime."
-          />
+          <>
+            <PreviewPanel
+              title="Vest schedule"
+              rows={[
+                { label: "Type", value: "Linear vest" },
+                {
+                  label: "Start",
+                  value: mounted ? `${dateFmt.format(new Date(startAt * 1000))} UTC` : "—",
+                },
+                {
+                  label: "Cliff",
+                  value: cliffSec === 0 ? "None (starts releasing immediately)" : formatDuration(cliffSec),
+                },
+                {
+                  label: "Cliff ends",
+                  value: mounted ? `${dateFmt.format(new Date(cliffAt * 1000))} UTC` : "—",
+                },
+                { label: "Fully vested", value: mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : "—" },
+                { label: "Total duration", value: tooShort || cliffPastEnd || cliffIsHardLock ? "—" : formatDuration(vestSec) },
+                { label: "Beneficiary", value: <span className="mono">{shorten(beneficiaryAddress)}</span> },
+                {
+                  label: "Amount",
+                  value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
+                },
+                { label: "Fee", value: "$10 USDC" },
+              ]}
+              note="Before cliff: claimable = 0. After cliff: tokens unlock every second until fully vested. Beneficiary can claim accrued anytime. A hard lock (all-or-nothing) lives under Locks."
+            />
+            <LockOgPreview
+              amount={amount}
+              symbol={symbol}
+              duration={tooShort || cliffPastEnd || cliffIsHardLock ? undefined : formatDuration(vestSec)}
+              unlockLabel={mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : undefined}
+            />
+          </>
         }
       >
         <TokenSelect
@@ -289,7 +323,7 @@ export function CreateVestForm() {
                     maximumFractionDigits: 4,
                   })}`
                 : symbol
-              : "Team or investor allocation token."
+              : "Pick a token held by the connected wallet."
           }
         />
 
@@ -384,6 +418,9 @@ export function CreateVestForm() {
           />
           {tooShort ? <p className="field-error">Need at least 1 minute.</p> : null}
           {cliffPastEnd ? <p className="field-error">Cliff cannot be longer than the vest.</p> : null}
+          {cliffIsHardLock ? (
+            <p className="field-error">Cliff equal to vest length is a hard lock — use Locks instead.</p>
+          ) : null}
         </div>
 
         {error ? <div className="alert alert-error">{error}</div> : null}
@@ -395,8 +432,33 @@ export function CreateVestForm() {
             <button
               type="button"
               className="btn lg block"
-              disabled={!ready || busy || notDeployed}
-              onClick={submit}
+              disabled={busy}
+              onClick={() =>
+                clickOrExplain(
+                  ready
+                    ? null
+                    : notDeployed
+                    ? "Lock contract is not configured."
+                    : !tokenAddress
+                      ? "Select a token from the connected wallet."
+                      : !beneficiaryAddress
+                        ? "Enter the beneficiary wallet."
+                        : parsedAmount === undefined
+                          ? "Enter how much to vest."
+                          : overBalance
+                            ? "Amount exceeds your balance."
+                            : tooShort
+                              ? "Need at least 1 minute."
+                              : cliffPastEnd
+                                ? "Cliff cannot be longer than the vest."
+                                : cliffIsHardLock
+                                  ? "Cliff equal to vest length is a hard lock. Use Locks instead."
+                                  : shortFee
+                                  ? "Need $10+ USDC for the fee and gas."
+                                  : null,
+                  () => void submit(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {step === "approving"
@@ -404,8 +466,8 @@ export function CreateVestForm() {
                 : step === "locking"
                   ? "Creating vest…"
                   : needsApprove
-                    ? "Approve & create vest, $10"
-                    : "Create vesting, $10"}
+                    ? "Approve & create vest"
+                    : "Create vesting"}
             </button>
           )}
         </div>

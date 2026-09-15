@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
@@ -27,6 +26,7 @@ import {
   toLocalInput,
 } from "@/lib/form-time";
 import { useMounted } from "@/hooks/useMounted";
+import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
@@ -38,6 +38,10 @@ import {
 } from "@/components/UnlockTargetField";
 import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/form-shell";
 import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
+import { LockSuccessDialog, type LockSuccessResult } from "@/components/lock-success-dialog";
+import { upsertLock } from "@/lib/backend";
+import { confirmTx, eventArgs } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 
@@ -48,7 +52,6 @@ function shareAmount(total: bigint, percent: number, isLast: boolean, allocated:
 
 /** Hard lock only — nothing claimable until the unlock timestamp. */
 export function CreateLockForm() {
-  const router = useRouter();
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
@@ -65,8 +68,12 @@ export function CreateLockForm() {
   const [unlockAt, setUnlockAt] = useState(() => nowSec() + 30 * DAY);
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "locking">("idle");
+  const [success, setSuccess] = useState<LockSuccessResult | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
+  const { data: walletTokens } = useWalletTokens();
+  const tokenInWallet = ownsWalletToken(walletTokens, tokenAddress);
   const notDeployed = ARCFLOW_ADDRESS === ZERO;
   const lockingUsdc = sameAddress(tokenAddress, USDC_ADDRESS);
   const durationSec = Math.max(0, unlockAt - nowSec());
@@ -218,6 +225,7 @@ export function CreateLockForm() {
   const ready = Boolean(
     isConnected &&
       tokenAddress &&
+      tokenInWallet &&
       lockTargets.length > 0 &&
       parsedAmount !== undefined &&
       !overBalance &&
@@ -261,8 +269,14 @@ export function CreateLockForm() {
 
   async function submit() {
     setError("");
+    setSuccess(null);
+    setSuccessOpen(false);
     if (!address || !publicClient || !tokenAddress || parsedAmount === undefined) {
-      setError("Fill token, amount, and connect a wallet on Arc Testnet.");
+      setError("Fill token, amount, and connect a wallet.");
+      return;
+    }
+    if (!tokenInWallet) {
+      setError("Pick a token from the connected wallet.");
       return;
     }
     if (tooShort) {
@@ -289,7 +303,7 @@ export function CreateLockForm() {
       return;
     }
     if (notDeployed) {
-      setError("Set NEXT_PUBLIC_ARCFLOW_ADDRESS after deploying the contract.");
+      setError("Lock contract is not configured.");
       return;
     }
 
@@ -314,7 +328,7 @@ export function CreateLockForm() {
           args: [ARCFLOW_ADDRESS, tokenSpend],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await confirmTx(publicClient, approveHash);
       }
       if (needsFeeApprove) {
         const feeHash = await writeContractAsync({
@@ -324,12 +338,17 @@ export function CreateLockForm() {
           args: [ARCFLOW_ADDRESS, feeTotal],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: feeHash });
+        await confirmTx(publicClient, feeHash, { fee: true });
       }
 
       setStep("locking");
       let allocated = 0n;
-      let lastLockId: bigint | undefined;
+      const created: LockSuccessResult["locks"] = [];
+      const tokenDecimals =
+        decimals ??
+        walletTokens.find((t) => t.address.toLowerCase() === tokenAddress.toLowerCase())?.decimals ??
+        18;
+      const tokenSymbol = symbol ?? "TOKEN";
 
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
@@ -344,25 +363,51 @@ export function CreateLockForm() {
           args: [tokenAddress, target.address, piece, 0n, end, end],
           ...gas,
         });
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: lockHash });
-        for (const log of receipt.logs) {
-          try {
-            const parsed = decodeEventLog({ abi: arcFlowAbi, data: log.data, topics: log.topics });
-            if (parsed.eventName === "Locked") {
-              lastLockId = parsed.args.id;
-              break;
-            }
-          } catch {
-            // skip
-          }
+        const receipt = await confirmTx(publicClient, lockHash);
+        const locked = eventArgs<{ id: bigint; beneficiary: `0x${string}`; amount: bigint }>(
+          receipt,
+          arcFlowAbi,
+          "Locked",
+        );
+        for (const ev of locked) {
+          created.push({
+            id: ev.id.toString(),
+            txHash: lockHash,
+            amount: Number(formatUnits(ev.amount, tokenDecimals)).toLocaleString("en-US", {
+              maximumFractionDigits: 6,
+            }),
+            beneficiary: ev.beneficiary,
+          });
+          await upsertLock({
+            id: ev.id.toString(),
+            kind: "lock",
+            token: tokenAddress,
+            beneficiary: ev.beneficiary,
+            creator: address,
+            amount: ev.amount.toString(),
+            start: nowSec(),
+            cliff: unlockAt,
+            end: unlockAt,
+            feeUsdc: "10000000",
+            txHash: lockHash,
+          });
         }
       }
 
-      if (targets.length > 1 || lastLockId === undefined) {
-        router.push("/dashboard/locks?tab=positions");
-      } else {
-        router.push(`/lock/${lastLockId.toString()}`);
+      if (created.length === 0) {
+        setError("Lock confirmed, but no lock event was found.");
+        return;
       }
+
+      setSuccess({
+        locks: created,
+        symbol: tokenSymbol,
+        unlockAt,
+        totalAmount: Number(formatUnits(parsedAmount, tokenDecimals)).toLocaleString("en-US", {
+          maximumFractionDigits: 6,
+        }),
+      });
+      setSuccessOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
     } finally {
@@ -377,15 +422,21 @@ export function CreateLockForm() {
           <div className="form-notice-body">
             <strong>Contract not configured</strong>
             <p>
-              Set <code className="mono">NEXT_PUBLIC_ARCFLOW_ADDRESS</code> after deploying.
+              Lock contract address is not configured.
             </p>
           </div>
         </div>
       ) : null}
 
+      <LockSuccessDialog
+        open={successOpen}
+        onOpenChange={setSuccessOpen}
+        result={success}
+      />
+
       <FormShell
         title="Hard lock"
-        badge="Time-based"
+        badge="All-or-nothing"
         aside={
           <>
             <PreviewPanel
@@ -411,6 +462,7 @@ export function CreateLockForm() {
                   value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
                 },
               ]}
+              note="Hard lock: the full amount stays frozen until the unlock date. Nothing streams out early. For a cliff then per-second release, use Vesting."
             />
             <div className="panel create-tok-panel">
               <div className="panel-head">
@@ -565,7 +617,7 @@ export function CreateLockForm() {
             <button
               type="button"
               className="btn lg block"
-              disabled={!ready || busy || notDeployed}
+              disabled={busy}
               title={
                 shortFee
                   ? "Need $10+ USDC for fee and gas"
@@ -575,7 +627,32 @@ export function CreateLockForm() {
                       ? "Enter amount"
                       : undefined
               }
-              onClick={submit}
+              onClick={() =>
+                clickOrExplain(
+                  ready
+                    ? null
+                    : notDeployed
+                    ? "Lock contract is not configured."
+                    : !tokenAddress
+                      ? "Select a token from the connected wallet."
+                      : parsedAmount === undefined
+                        ? "Enter how much you want to lock."
+                        : overBalance
+                          ? "Amount exceeds your balance."
+                          : tooShort
+                            ? "Need at least 1 minute."
+                            : shortFee
+                              ? "Need $10+ USDC for the lock fee and gas."
+                              : splitError
+                                ? splitError
+                                : otherError
+                                  ? otherError
+                                  : lockTargets.length === 0
+                                    ? "Set who can unlock."
+                                    : null,
+                  () => void submit(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {step === "approving"
@@ -586,11 +663,11 @@ export function CreateLockForm() {
                     : "Locking…"
                   : needsApprove
                     ? unlockMode === "split"
-                      ? `Approve & split lock, $${10 * Math.max(splits.length, 1)}`
-                      : "Approve & lock, $10"
+                      ? "Approve & split lock"
+                      : "Approve & lock"
                     : unlockMode === "split"
-                      ? `Split lock, $${10 * Math.max(splits.length, 1)}`
-                      : "Lock until unlock, $10"}
+                      ? "Split lock"
+                      : "Lock until unlock"}
             </button>
           )}
         </div>

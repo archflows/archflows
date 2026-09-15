@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { erc20Abi, stakingAbi } from "@/lib/abi";
@@ -18,6 +19,10 @@ import {
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { upsertPool } from "@/lib/backend";
+import { confirmTx, eventArgs } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
+import { proofPath } from "@/lib/proof";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 const MAX_MIN_LOCK = 730 * DAY;
@@ -38,6 +43,7 @@ export function CreateStakingForm() {
   const [fundMinutes, setFundMinutes] = useState("0");
   const [autoFund, setAutoFund] = useState(true);
   const [createdId, setCreatedId] = useState("");
+  const [createdTx, setCreatedTx] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating" | "funding">("idle");
 
@@ -110,7 +116,7 @@ export function CreateStakingForm() {
     setError("");
     setCreatedId("");
     if (!address || !publicClient || !stakeAddress || !rewardAddress) {
-      setError("Set stake token, reward token, and connect on Arc Testnet.");
+      setError("Set stake token, reward token, and connect a wallet.");
       return;
     }
     if (badLock) {
@@ -122,7 +128,7 @@ export function CreateStakingForm() {
       return;
     }
     if (notDeployed) {
-      setError("Set NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS.");
+      setError("Staking contract is not configured.");
       return;
     }
 
@@ -136,7 +142,7 @@ export function CreateStakingForm() {
           args: [ARCFLOW_STAKING_ADDRESS, parsedFund],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash });
+        await confirmTx(publicClient, hash);
       }
 
       setStep("creating");
@@ -147,25 +153,24 @@ export function CreateStakingForm() {
         args: [stakeAddress, rewardAddress, BigInt(minLock)],
         ...gas,
       });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: createTx });
+      const receipt = await confirmTx(publicClient, createTx);
 
-      let poolId: bigint | undefined;
-      for (const log of receipt.logs) {
-        try {
-          const parsed = decodeEventLog({ abi: stakingAbi, data: log.data, topics: log.topics });
-          if (parsed.eventName === "PoolCreated") {
-            poolId = parsed.args.id;
-            break;
-          }
-        } catch {
-          // skip
-        }
-      }
+      const created = eventArgs<{ id: bigint }>(receipt, stakingAbi, "PoolCreated");
+      const poolId = created[0]?.id;
       if (poolId === undefined) {
         setError("Pool created, but id could not be read from the receipt.");
         return;
       }
       setCreatedId(poolId.toString());
+      setCreatedTx(createTx);
+      await upsertPool({
+        id: poolId.toString(),
+        stakeToken: stakeAddress,
+        rewardToken: rewardAddress,
+        owner: address,
+        minLock,
+        txHash: createTx,
+      });
 
       if (autoFund && parsedFund !== undefined) {
         setStep("funding");
@@ -176,7 +181,7 @@ export function CreateStakingForm() {
           args: [poolId, parsedFund, BigInt(fundDuration)],
           ...gas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: fundTx });
+        await confirmTx(publicClient, fundTx);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
@@ -189,7 +194,7 @@ export function CreateStakingForm() {
     <div className="space-y-5">
       {notDeployed ? (
         <div className="alert alert-warn">
-          Staking not configured. Set <code className="mono">NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS</code>.
+          Staking contract address is not configured.
         </div>
       ) : null}
 
@@ -319,7 +324,8 @@ export function CreateStakingForm() {
         {error ? <div className="alert alert-error">{error}</div> : null}
         {createdId ? (
           <div className="alert alert-warn">
-            Pool #{createdId} ready{autoFund && parsedFund ? " and funded" : ""}.
+            Pool #{createdId} ready{autoFund && parsedFund ? " and funded" : ""}.{" "}
+            <Link href={proofPath("staking", createdTx, createdId)}>Open proof</Link>
           </div>
         ) : null}
 
@@ -330,8 +336,27 @@ export function CreateStakingForm() {
             <button
               type="button"
               className="btn lg block"
-              disabled={!ready || busy || notDeployed}
-              onClick={submit}
+              disabled={busy}
+              onClick={() =>
+                clickOrExplain(
+                  ready
+                    ? null
+                    : notDeployed
+                    ? "Staking contract is not configured."
+                    : !stakeAddress
+                      ? "Select the stake token."
+                      : !rewardAddress
+                        ? "Select the reward token."
+                        : badLock
+                          ? "Min lock cannot exceed 730 days."
+                          : overFund
+                            ? "Fund amount exceeds reward balance."
+                            : autoFund && badFund
+                              ? "Fund amount and duration are required."
+                              : null,
+                  () => void submit(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {step === "approving"

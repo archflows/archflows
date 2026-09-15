@@ -1,8 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, keccak256, parseUnits, toBytes } from "viem";
-import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { formatUnits, isAddress, keccak256, parseUnits, toBytes } from "viem";
+import {
+  useAccount,
+  usePublicClient,
+  useReadContract,
+  useReadContracts,
+  useWriteContract,
+} from "wagmi";
 import { Loader2 } from "lucide-react";
 import { erc20Abi, escrowAbi } from "@/lib/abi";
 import { ARCFLOW_ESCROW_ADDRESS } from "@/lib/chain";
@@ -17,15 +24,32 @@ import {
   parseCount,
   shorten,
 } from "@/lib/form-time";
-import { arcGas, MAX_U128, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, eventArgs, MAX_U128, txMessage } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { TxExplorerLink } from "@/components/TxExplorerLink";
+import { useTxHashMap } from "@/hooks/useTxHashMap";
+import { useTokenMeta } from "@/hooks/useTokenMeta";
 import { cn } from "@/lib/utils";
+import { patchEscrow, upsertEscrow } from "@/lib/backend";
+import { proofPath } from "@/lib/proof";
 
 const MAX_ROWS = 30;
+const READ_STALE = { staleTime: 30_000, gcTime: 10 * 60_000 } as const;
 type Tab = "buying" | "selling";
+
+type Deal = readonly [
+  `0x${string}`,
+  `0x${string}`,
+  `0x${string}`,
+  bigint,
+  bigint,
+  `0x${string}`,
+  number,
+];
 
 export function CreateEscrowForm() {
   const publicClient = usePublicClient();
@@ -40,6 +64,7 @@ export function CreateEscrowForm() {
   const [minutes, setMinutes] = useState("0");
   const [terms, setTerms] = useState("");
   const [createdId, setCreatedId] = useState("");
+  const [createdTx, setCreatedTx] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating">("idle");
 
@@ -115,7 +140,7 @@ export function CreateEscrowForm() {
           args: [ARCFLOW_ESCROW_ADDRESS, parsedAmount],
           ...arcGas,
         });
-        await publicClient.waitForTransactionReceipt({ hash });
+        await confirmTx(publicClient, hash);
       }
       setStep("creating");
       const tx = await writeContractAsync({
@@ -125,17 +150,22 @@ export function CreateEscrowForm() {
         args: [tokenAddress, sellerAddress, parsedAmount, BigInt(timeout), termsHash],
         ...arcGas,
       });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
-      for (const log of receipt.logs) {
-        try {
-          const parsed = decodeEventLog({ abi: escrowAbi, data: log.data, topics: log.topics });
-          if (parsed.eventName === "Created") {
-            setCreatedId(parsed.args.id.toString());
-            break;
-          }
-        } catch {
-          // skip
-        }
+      const receipt = await confirmTx(publicClient, tx);
+      const created = eventArgs<{ id: bigint; unlockAt: bigint }>(receipt, escrowAbi, "Created");
+      const idStr = created[0]?.id.toString() ?? "";
+      if (idStr) {
+        setCreatedId(idStr);
+        setCreatedTx(tx);
+        await upsertEscrow({
+          id: idStr,
+          token: tokenAddress,
+          buyer: address,
+          seller: sellerAddress,
+          amount: parsedAmount.toString(),
+          unlockAt: created[0] ? Number(created[0].unlockAt) : nowSec() + timeout,
+          termsHash,
+          txHash: tx,
+        });
       }
     } catch (e) {
       setError(txMessage(e));
@@ -170,7 +200,7 @@ export function CreateEscrowForm() {
       }
     >
       {notDeployed ? (
-        <div className="alert alert-warn">Set NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS.</div>
+        <div className="alert alert-warn">Escrow contract is not configured.</div>
       ) : null}
       <TokenSelect id="esc-token" label="Token" value={token} onChange={setToken} />
       <AmountPercentField
@@ -220,11 +250,40 @@ export function CreateEscrowForm() {
         />
       </div>
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {createdId ? <div className="alert alert-warn">Deal created, #{createdId}</div> : null}
+      {createdId ? (
+        <div className="alert alert-warn">
+          Deal created · #{createdId}{" "}
+          <Link href={proofPath("escrow", createdTx, createdId)}>Open proof</Link>
+        </div>
+      ) : null}
       {!isConnected ? (
         <WalletConnectButton />
       ) : (
-        <button type="button" className="btn lg block" disabled={!ready || busy || notDeployed} onClick={submit}>
+        <button
+          type="button"
+          className="btn lg block"
+          disabled={busy}
+          onClick={() =>
+            clickOrExplain(
+              ready
+                ? null
+                : notDeployed
+                ? "Escrow contract is not configured."
+                : !tokenAddress
+                  ? "Select a token"
+                  : !sellerAddress
+                    ? "Enter the seller wallet."
+                    : !parsedAmount
+                      ? "Enter the escrow amount."
+                      : badTimeout
+                        ? "Timeout must be greater than 0."
+                        : overBalance
+                          ? "Amount exceeds your balance."
+                          : null,
+              () => void submit(),
+            )
+          }
+        >
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           {step === "approving" ? "Approving…" : step === "creating" ? "Creating…" : needsApprove ? "Approve & fund" : "Fund escrow"}
         </button>
@@ -233,19 +292,25 @@ export function CreateEscrowForm() {
   );
 }
 
-function DealRow({ id, tab }: { id: bigint; tab: Tab }) {
+function DealRow({
+  id,
+  tab,
+  indexedHash,
+  d,
+  onRefresh,
+}: {
+  id: bigint;
+  tab: Tab;
+  indexedHash?: string;
+  d?: Deal;
+  onRefresh?: () => Promise<unknown>;
+}) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  const { data: d, refetch } = useReadContract({
-    address: ARCFLOW_ESCROW_ADDRESS,
-    abi: escrowAbi,
-    functionName: "deals",
-    args: [id],
-  });
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const token = d?.[0];
   const buyer = d?.[1];
@@ -253,19 +318,7 @@ function DealRow({ id, tab }: { id: bigint; tab: Tab }) {
   const amount = d?.[3];
   const unlockAt = d?.[4];
   const status = d?.[6];
-
-  const { data: symbol } = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "symbol",
-    query: { enabled: Boolean(token && token !== ZERO) },
-  });
-  const { data: decimals } = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "decimals",
-    query: { enabled: Boolean(token && token !== ZERO) },
-  });
+  const { symbol, decimals } = useTokenMeta(token);
 
   if (!d) {
     return (
@@ -297,8 +350,13 @@ function DealRow({ id, tab }: { id: bigint; tab: Tab }) {
         args: [id],
         ...arcGas,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
-      await refetch();
+      await confirmTx(publicClient, hash);
+      setTxHash(hash);
+      await patchEscrow(id.toString(), {
+        status: fn === "release" ? "released" : "refunded",
+        txHash: hash,
+      });
+      await onRefresh?.();
     } catch (e) {
       setError(txMessage(e));
     } finally {
@@ -322,21 +380,23 @@ function DealRow({ id, tab }: { id: bigint; tab: Tab }) {
         {tab === "buying" ? `seller ${shorten(seller)}` : `buyer ${shorten(buyer)}`}
         {unlockAt ? `, buyer refund after ${dateFmt.format(new Date(Number(unlockAt) * 1000))}` : ""}
       </p>
-      {funded ? (
-        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.55rem" }}>
-          {isBuyer ? (
-            <button type="button" className="btn sm" disabled={busy} onClick={() => act("release")}>
-              Release to seller
-            </button>
-          ) : null}
-          {(isSeller || (isBuyer && unlockAt !== undefined && now >= Number(unlockAt))) ? (
-            <button type="button" className="btn sm" disabled={busy} onClick={() => act("refund")}>
-              Refund buyer
-            </button>
-          ) : null}
-          {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
-        </div>
-      ) : null}
+      <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.55rem", flexWrap: "wrap" }}>
+        <TxExplorerLink hash={txHash ?? indexedHash} />
+        <Link className="btn sm ghost" href={proofPath("escrow", txHash ?? indexedHash, id)}>
+          Proof
+        </Link>
+        {funded && isBuyer ? (
+          <button type="button" className="btn sm" disabled={busy} onClick={() => act("release")}>
+            Release to seller
+          </button>
+        ) : null}
+        {funded && (isSeller || (isBuyer && unlockAt !== undefined && now >= Number(unlockAt))) ? (
+          <button type="button" className="btn sm" disabled={busy} onClick={() => act("refund")}>
+            Refund buyer
+          </button>
+        ) : null}
+        {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
+      </div>
       {error ? <p className="field-error">{error}</p> : null}
     </div>
   );
@@ -363,23 +423,106 @@ function IndexedDeal({ owner, index, tab }: { owner: `0x${string}`; index: numbe
   return <DealRow id={id} tab={tab} />;
 }
 
+function DealList({
+  owner,
+  tab,
+  count,
+  txMap,
+}: {
+  owner: `0x${string}`;
+  tab: Tab;
+  count: number;
+  txMap?: Map<string, string>;
+}) {
+  const n = Math.min(count, MAX_ROWS);
+  const idContracts = useMemo(
+    () =>
+      Array.from({ length: n }, (_, i) => ({
+        address: ARCFLOW_ESCROW_ADDRESS,
+        abi: escrowAbi,
+        functionName:
+          tab === "buying" ? ("dealsByBuyer" as const) : ("dealsBySeller" as const),
+        args: [owner, BigInt(i)] as const,
+      })),
+    [n, owner, tab],
+  );
+
+  const { data: idResults } = useReadContracts({
+    contracts: idContracts,
+    query: { enabled: n > 0, ...READ_STALE },
+  });
+
+  const ids = useMemo(() => {
+    const out: bigint[] = [];
+    for (const row of idResults ?? []) {
+      if (row.status === "success" && row.result !== undefined) out.push(row.result as bigint);
+    }
+    return out;
+  }, [idResults]);
+
+  const dealContracts = useMemo(
+    () =>
+      ids.map((id) => ({
+        address: ARCFLOW_ESCROW_ADDRESS,
+        abi: escrowAbi,
+        functionName: "deals" as const,
+        args: [id] as const,
+      })),
+    [ids],
+  );
+
+  const { data: dealResults, refetch } = useReadContracts({
+    contracts: dealContracts,
+    query: { enabled: dealContracts.length > 0, ...READ_STALE },
+  });
+
+  if (n === 0) {
+    return (
+      <div className="panel-body">
+        <p className="dim" style={{ margin: 0 }}>
+          No deals in this tab.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {ids.map((id, i) => {
+        const row = dealResults?.[i];
+        return (
+          <DealRow
+            key={id.toString()}
+            id={id}
+            tab={tab}
+            indexedHash={txMap?.get(id.toString())}
+            d={row?.status === "success" ? (row.result as unknown as Deal) : undefined}
+            onRefresh={refetch}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function MyEscrowsPanel() {
   const { address, isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("buying");
+  const { data: txMap } = useTxHashMap("escrow", address);
 
   const { data: buyCount } = useReadContract({
     address: ARCFLOW_ESCROW_ADDRESS,
     abi: escrowAbi,
     functionName: "buyerDealCount",
     args: address ? [address] : undefined,
-    query: { enabled: Boolean(address) },
+    query: { enabled: Boolean(address), ...READ_STALE },
   });
   const { data: sellCount } = useReadContract({
     address: ARCFLOW_ESCROW_ADDRESS,
     abi: escrowAbi,
     functionName: "sellerDealCount",
     args: address ? [address] : undefined,
-    query: { enabled: Boolean(address) },
+    query: { enabled: Boolean(address), ...READ_STALE },
   });
 
   if (!isConnected || !address) {
@@ -394,7 +537,6 @@ export function MyEscrowsPanel() {
 
   const buy = Number(buyCount ?? 0n);
   const sell = Number(sellCount ?? 0n);
-  const count = tab === "buying" ? buy : sell;
 
   return (
     <div className="space-y-4">
@@ -407,19 +549,12 @@ export function MyEscrowsPanel() {
         </button>
       </div>
       <div className="panel">
-        {count === 0 ? (
-          <div className="panel-body">
-            <p className="dim" style={{ margin: 0 }}>
-              No deals in this tab.
-            </p>
-          </div>
-        ) : (
-          <div>
-            {Array.from({ length: Math.min(count, MAX_ROWS) }, (_, i) => (
-              <IndexedDeal key={`${tab}-${i}`} owner={address} index={i} tab={tab} />
-            ))}
-          </div>
-        )}
+        <DealList
+          owner={address}
+          tab={tab}
+          count={tab === "buying" ? buy : sell}
+          txMap={txMap}
+        />
       </div>
     </div>
   );

@@ -13,13 +13,14 @@ type Props = {
   tabs: ModuleTab[];
   defaultTab: string;
   panels: Record<string, ReactNode>;
+  lead?: ReactNode;
 };
 
 /**
- * In-page tabs that keep visited panels mounted (hidden) so switching
- * Create ↔ Positions does not remount forms or re-hit the RPC.
+ * Keep the default (create) tab mounted so form state survives. Other tabs
+ * unmount when hidden so RPC watches do not keep running in the background.
  */
-export function ModuleWorkspace({ tabs, defaultTab, panels }: Props) {
+export function ModuleWorkspace({ tabs, defaultTab, panels, lead }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,6 +46,7 @@ export function ModuleWorkspace({ tabs, defaultTab, panels }: Props) {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:px-6 min-w-0">
+      {lead}
       <div
         className={cn("seg", tabs.length === 2 ? "seg-2" : "seg-3")}
         style={{ maxWidth: "28rem" }}
@@ -61,8 +63,10 @@ export function ModuleWorkspace({ tabs, defaultTab, panels }: Props) {
         ))}
       </div>
 
-      {tabs.map((tab) =>
-        mounted[tab.id] ? (
+      {tabs.map((tab) => {
+        const keepForm = tab.id === defaultTab && mounted[tab.id];
+        if (!mounted[tab.id] || (active !== tab.id && !keepForm)) return null;
+        return (
           <div
             key={tab.id}
             hidden={active !== tab.id}
@@ -70,8 +74,8 @@ export function ModuleWorkspace({ tabs, defaultTab, panels }: Props) {
           >
             {panels[tab.id]}
           </div>
-        ) : null,
-      )}
+        );
+      })}
     </div>
   );
 }

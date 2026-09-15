@@ -45,6 +45,30 @@ export function formatDuration(sec: number) {
   return parts.join(" ");
 }
 
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+/** Live remaining time until `unix` seconds, including seconds so it ticks. */
+export function formatCountdown(
+  remainingSec: number,
+  doneLabel = "Unlocked",
+) {
+  if (!Number.isFinite(remainingSec) || remainingSec <= 0) return doneLabel;
+  const total = Math.floor(remainingSec);
+  const d = Math.floor(total / DAY);
+  const h = Math.floor((total % DAY) / HOUR);
+  const m = Math.floor((total % HOUR) / MINUTE);
+  const s = total % MINUTE;
+  if (d > 0) return `${d}d ${pad2(h)}h ${pad2(m)}m ${pad2(s)}s`;
+  if (h > 0) return `${h}h ${pad2(m)}m ${pad2(s)}s`;
+  return `${m}m ${pad2(s)}s`;
+}
+
+export function remainingUntil(unix: number, now = nowSec()) {
+  return Math.max(0, unix - now);
+}
+
 export function shorten(addr?: string) {
   if (!addr) return "Connect wallet";
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;

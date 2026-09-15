@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -7,18 +8,23 @@ import { Loader2 } from "lucide-react";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_DISTRIBUTOR_ADDRESS } from "@/lib/chain";
 import { ZERO, dateFmt } from "@/lib/form-time";
-import { arcGas, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, txMessage } from "@/lib/tx";
+import { patchCampaign } from "@/lib/backend";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
+import { TxExplorerLink } from "@/components/TxExplorerLink";
+import { useTxHashMap } from "@/hooks/useTxHashMap";
+import { proofPath } from "@/lib/proof";
 
 const MAX_ROWS = 30;
 
-function CampaignRow({ id }: { id: bigint }) {
+function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [topUp, setTopUp] = useState("");
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const { data: c, refetch } = useReadContract({
     address: ARCFLOW_DISTRIBUTOR_ADDRESS,
@@ -119,8 +125,14 @@ function CampaignRow({ id }: { id: bigint }) {
             })}`
           : ""}
       </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>
+        <TxExplorerLink hash={txHash ?? indexedHash} />
+        <Link className="btn sm ghost" href={proofPath("airdrop", txHash ?? indexedHash, id)}>
+          Proof
+        </Link>
+      </div>
       {!canceled ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.4rem" }}>
           {beforeStart ? (
             <button
               type="button"
@@ -136,7 +148,9 @@ function CampaignRow({ id }: { id: bigint }) {
                     args: [id],
                     ...arcGas,
                   });
-                  await publicClient.waitForTransactionReceipt({ hash });
+                  await confirmTx(publicClient, hash);
+                  setTxHash(hash);
+                  await patchCampaign(id.toString(), { canceled: true, txHash: hash });
                 })
               }
             >
@@ -158,7 +172,12 @@ function CampaignRow({ id }: { id: bigint }) {
                     args: [id],
                     ...arcGas,
                   });
-                  await publicClient.waitForTransactionReceipt({ hash });
+                  await confirmTx(publicClient, hash);
+                  setTxHash(hash);
+                  await patchCampaign(id.toString(), {
+                    deposited: (claimed ?? 0n).toString(),
+                    txHash: hash,
+                  });
                 })
               }
             >
@@ -190,7 +209,7 @@ function CampaignRow({ id }: { id: bigint }) {
                         args: [ARCFLOW_DISTRIBUTOR_ADDRESS, value],
                         ...arcGas,
                       });
-                      await publicClient.waitForTransactionReceipt({ hash: a });
+                      await confirmTx(publicClient, a);
                     }
                     const hash = await writeContractAsync({
                       address: ARCFLOW_DISTRIBUTOR_ADDRESS,
@@ -199,7 +218,12 @@ function CampaignRow({ id }: { id: bigint }) {
                       args: [id, value],
                       ...arcGas,
                     });
-                    await publicClient.waitForTransactionReceipt({ hash });
+                    await confirmTx(publicClient, hash);
+                  setTxHash(hash);
+                    await patchCampaign(id.toString(), {
+                      deposited: ((deposited ?? 0n) + value).toString(),
+                      txHash: hash,
+                    });
                     setTopUp("");
                   })
                 }
@@ -216,7 +240,7 @@ function CampaignRow({ id }: { id: bigint }) {
   );
 }
 
-function IndexedCampaign({ owner, index }: { owner: `0x${string}`; index: number }) {
+function IndexedCampaign({ owner, index, txMap }: { owner: `0x${string}`; index: number; txMap?: Map<string, string>; }) {
   const { data: id, isPending } = useReadContract({
     address: ARCFLOW_DISTRIBUTOR_ADDRESS,
     abi: distributorAbi,
@@ -234,11 +258,12 @@ function IndexedCampaign({ owner, index }: { owner: `0x${string}`; index: number
       </div>
     );
   }
-  return <CampaignRow id={id} />;
+  return <CampaignRow id={id} indexedHash={txMap?.get(id.toString())} />;
 }
 
 export function MyCampaignsPanel() {
   const { address, isConnected } = useAccount();
+  const { data: txMap } = useTxHashMap("campaigns", address);
   const { data: count } = useReadContract({
     address: ARCFLOW_DISTRIBUTOR_ADDRESS,
     abi: distributorAbi,
@@ -273,7 +298,7 @@ export function MyCampaignsPanel() {
       ) : (
         <div>
           {Array.from({ length: Math.min(n, MAX_ROWS) }, (_, i) => (
-            <IndexedCampaign key={i} owner={address} index={i} />
+            <IndexedCampaign key={i} owner={address} index={i} txMap={txMap} />
           ))}
         </div>
       )}

@@ -155,7 +155,9 @@ export function UnlockAfterField({
           />
         </label>
       </div>
-      <p className="field-hint">Manual duration and calendar stay in sync.</p>
+      <p className="field-hint">
+        The entire amount unlocks on this date — nothing is claimable before it.
+      </p>
       {error ? <p className="field-error">{error}</p> : null}
     </div>
   );

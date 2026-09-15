@@ -1,62 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useConnect, useSwitchChain, type Connector } from "wagmi";
-import { ARC_TESTNET } from "@/lib/chain";
-import { useMounted } from "@/hooks/useMounted";
+import { useAppKit } from "@reown/appkit/react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-function pickConnector(connectors: readonly Connector[]) {
-  return (
-    connectors.find((c) => c.id === "injected") ??
-    connectors.find((c) => c.type === "injected") ??
-    connectors[0]
-  );
-}
-
-function errCode(err: unknown): number | undefined {
-  if (err && typeof err === "object" && "code" in err) {
-    const code = (err as { code?: number | string }).code;
-    return typeof code === "number" ? code : Number(code);
-  }
-  return undefined;
-}
-
-function errMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (err && typeof err === "object" && "message" in err) {
-    return String((err as { message?: unknown }).message ?? "Connection failed.");
-  }
-  return "Connection failed.";
-}
-
-async function ensureArcNetwork(ethereum: EthereumProvider) {
-  const hexId = `0x${ARC_TESTNET.id.toString(16)}`;
-  try {
-    await ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: hexId }],
-    });
-  } catch (err) {
-    const code = errCode(err);
-    if (code !== 4902) throw err;
-    await ethereum.request({
-      method: "wallet_addEthereumChain",
-      params: [
-        {
-          chainId: hexId,
-          chainName: ARC_TESTNET.name,
-          nativeCurrency: ARC_TESTNET.nativeCurrency,
-          rpcUrls: [...ARC_TESTNET.rpcUrls.default.http],
-          blockExplorerUrls: ARC_TESTNET.blockExplorers?.default.url
-            ? [ARC_TESTNET.blockExplorers.default.url]
-            : [],
-        },
-      ],
-    });
-  }
-}
+import { useMounted } from "@/hooks/useMounted";
 
 type Props = {
   className?: string;
@@ -73,96 +20,22 @@ export function WalletConnectButton({
   compact = false,
 }: Props) {
   const mounted = useMounted();
-  const { connectAsync, connectors, isPending } = useConnect();
-  const { switchChainAsync } = useSwitchChain();
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [hasInjected, setHasInjected] = useState(false);
-  const lockRef = useRef(false);
-
-  useEffect(() => {
-    if (!mounted) return;
-    setHasInjected(typeof window.ethereum !== "undefined");
-  }, [mounted]);
-
-  const connector = useMemo(() => pickConnector(connectors), [connectors]);
-
-  const onConnect = useCallback(async () => {
-    if (lockRef.current || busy || isPending) return;
-    setError("");
-
-    const ethereum = window.ethereum;
-    if (!ethereum) {
-      setError("No browser wallet found. Install MetaMask (or Rabby), then refresh.");
-      return;
-    }
-    if (!connector) {
-      setError("Wallet connector is not ready. Refresh the page.");
-      return;
-    }
-
-    lockRef.current = true;
-    setBusy(true);
-
-    try {
-      // Single permission flow — do NOT also call eth_requestAccounts
-      // (that causes MetaMask -32002 "already pending")
-      try {
-        await connectAsync({ connector, chainId: ARC_TESTNET.id });
-      } catch (err) {
-        const code = errCode(err);
-        const message = errMessage(err);
-
-        if (code === -32002 || /already pending/i.test(message)) {
-          setError(
-            "MetaMask popup is already open. Open the MetaMask extension, approve (or reject), then try again.",
-          );
-          return;
-        }
-        if (code === 4001 || /reject|denied|cancel/i.test(message)) {
-          setError("Connection request was rejected in the wallet.");
-          return;
-        }
-
-        // Retry without chainId, then switch/add Arc
-        await connectAsync({ connector });
-        try {
-          await switchChainAsync({ chainId: ARC_TESTNET.id });
-        } catch {
-          try {
-            await ensureArcNetwork(ethereum);
-            await switchChainAsync({ chainId: ARC_TESTNET.id });
-          } catch {
-            setError("Connected. Switch the wallet network to Arc Testnet (5042002).");
-          }
-        }
-      }
-    } catch (err) {
-      const code = errCode(err);
-      const message = errMessage(err);
-      if (code === -32002 || /already pending/i.test(message)) {
-        setError(
-          "MetaMask popup is already open. Open the MetaMask extension, approve (or reject), then try again.",
-        );
-      } else if (code === 4001 || /reject|denied|cancel/i.test(message)) {
-        setError("Connection request was rejected in the wallet.");
-      } else {
-        setError(message.split("\n")[0]);
-      }
-    } finally {
-      setBusy(false);
-      lockRef.current = false;
-    }
-  }, [busy, connectAsync, connector, isPending, switchChainAsync]);
-
-  const loading = busy || isPending;
+  const { open } = useAppKit();
 
   const trigger = (
     <button
       type="button"
-      disabled={loading}
-      onClick={onConnect}
-      title={compact && error ? error : undefined}
+      disabled={!mounted}
+      onClick={() => {
+        void (async () => {
+          try {
+            await open({ view: "Connect" });
+          } catch (error) {
+            console.warn("[wallet]", error);
+            toast.error("Could not open the wallet modal.");
+          }
+        })();
+      }}
       className={cn(
         "btn",
         size === "sm" && "sm",
@@ -171,54 +44,11 @@ export function WalletConnectButton({
         className,
       )}
     >
-      {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-      {loading ? "Connecting…" : label}
+      {label}
     </button>
   );
 
   if (compact) return trigger;
 
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={onConnect}
-        className={cn(
-          "btn",
-          size === "sm" && "sm",
-          size === "lg" && "lg block",
-          size === "default" && "block",
-          className,
-        )}
-      >
-        {loading ? <Loader2 className="size-4 animate-spin" /> : null}
-        {loading ? "Connecting…" : label}
-      </button>
-      {mounted && !hasInjected ? (
-        <p className="field-hint">
-          Need a wallet extension.{" "}
-          <a
-            href="https://metamask.io/download/"
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            Get MetaMask
-          </a>
-        </p>
-      ) : null}
-      {error ? <p className="field-error">{error}</p> : null}
-    </div>
-  );
-}
-
-type EthereumProvider = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-};
-
-declare global {
-  interface Window {
-    ethereum?: EthereumProvider;
-  }
+  return <div className="space-y-2">{trigger}</div>;
 }

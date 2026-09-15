@@ -18,7 +18,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { EllipsisVerticalIcon, LogOutIcon, WalletIcon } from "lucide-react";
+import { EllipsisVerticalIcon, LogOutIcon, CopyIcon } from "lucide-react";
+import { NETWORK_BADGE } from "@/lib/chain";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -41,8 +43,8 @@ export function NavUser() {
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{short}</span>
-              <span className="truncate font-mono text-xs text-muted-foreground">
-                Arc Testnet
+              <span className="truncate text-xs text-muted-foreground">
+                {NETWORK_BADGE}
               </span>
             </div>
             <EllipsisVerticalIcon className="ml-auto size-4" />
@@ -69,9 +71,13 @@ export function NavUser() {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <WalletIcon />
-              Connected wallet
+            <DropdownMenuItem
+              onClick={() => {
+                if (address) void copyToClipboard(address, "Address copied");
+              }}
+            >
+              <CopyIcon />
+              Copy address
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

@@ -42,7 +42,7 @@ export function NavDocuments() {
           </SidebarMenuItem>
         ))}
         <SidebarMenuItem>
-          <SidebarMenuButton render={<Link href="/" />}>
+          <SidebarMenuButton render={<Link href="/" prefetch={false} />}>
             <ExternalLinkIcon />
             <span>Marketing site</span>
           </SidebarMenuButton>

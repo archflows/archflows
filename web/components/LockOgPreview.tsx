@@ -111,8 +111,8 @@ export function LockOgPreview({
             </div>
           </div>
           <div className="lock-og-foot">
-            <span>arcflows</span>
-            <span>{lockId ? `archflows.finance/lock/${lockId}` : "archflows.finance"}</span>
+            <span>ArcFlow</span>
+            <span>Public proof</span>
           </div>
         </div>
       </div>

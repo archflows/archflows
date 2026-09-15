@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Sora, IBM_Plex_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Providers } from "@/lib/providers";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -23,9 +25,17 @@ export const metadata: Metadata = {
   title: "ArcFlows. Token locks and vesting on Arc",
   description:
     "Immutable token locks, linear vesting, streams, airdrops, escrow, and staking on Arc. Public proof pages. Gas paid in USDC.",
+  icons: {
+    icon: [{ url: "/arc-logo-only.png", type: "image/png" }],
+    apple: [{ url: "/arc-logo-only.png", type: "image/png" }],
+    shortcut: "/arc-logo-only.png",
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const cookies = headersList.get("cookie");
+
   return (
     <html
       lang="en"
@@ -33,9 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-svh text-foreground antialiased" suppressHydrationWarning>
-        <Providers>
+        <Providers cookies={cookies}>
           <TooltipProvider>
             <SiteChrome>{children}</SiteChrome>
+            <Toaster />
           </TooltipProvider>
         </Providers>
         <ScrollReveal />

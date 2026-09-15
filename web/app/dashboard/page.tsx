@@ -6,11 +6,10 @@ import { HomeLocksTable } from "@/components/home-locks-table";
 import { useWalletPositions } from "@/hooks/useWalletPositions";
 
 const ChartAreaInteractive = dynamic(
-  () =>
-    import("@/components/chart-area-interactive").then((m) => m.ChartAreaInteractive),
+  () => import("@/components/chart-area-interactive").then((m) => m.ChartAreaInteractive),
   {
     ssr: false,
-    loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/40" />,
+    loading: () => <div className="skeleton h-[220px] rounded-xl" />,
   },
 );
 
@@ -24,7 +23,7 @@ export default function DashboardPage() {
         <div className="px-4 lg:px-6">
           <ChartAreaInteractive rows={rows} pending={pending} />
         </div>
-        <HomeLocksTable rows={rows} pending={pending} />
+<HomeLocksTable rows={rows} pending={pending} />
       </div>
     </div>
   );

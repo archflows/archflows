@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { erc20Abi, streamAbi } from "@/lib/abi";
-import { ARCFLOW_STREAM_ADDRESS, USDC_ADDRESS } from "@/lib/chain";
+import { ARCFLOW_STREAM_ADDRESS } from "@/lib/chain";
 import { parseAddressAmountCsv } from "@/lib/csv";
 import {
   DAY,
@@ -19,12 +20,17 @@ import {
   shorten,
   toLocalInput,
 } from "@/lib/form-time";
-import { arcGas, MAX_U128, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, MAX_U128, txMessage } from "@/lib/tx";
 import { useMounted } from "@/hooks/useMounted";
+import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { resolveTs, upsertStream, upsertStreams } from "@/lib/backend";
+import { eventArgs } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
+import { proofPath } from "@/lib/proof";
 
 const MAX_BATCH = 200;
 
@@ -38,7 +44,7 @@ export function CreateStreamForm() {
   const { writeContractAsync } = useWriteContract();
 
   const [mode, setMode] = useState<Mode>("single");
-  const [token, setToken] = useState(USDC_ADDRESS as string);
+  const [token, setToken] = useState("");
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const [csv, setCsv] = useState("");
@@ -52,10 +58,13 @@ export function CreateStreamForm() {
   const [transferable, setTransferable] = useState(true);
   const [canTopup, setCanTopup] = useState(true);
   const [createdIds, setCreatedIds] = useState<string[]>([]);
+  const [createdTx, setCreatedTx] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating">("idle");
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
+  const { data: walletTokens } = useWalletTokens();
+  const tokenInWallet = ownsWalletToken(walletTokens, tokenAddress);
   const recipientAddress = isAddress(recipient) ? (recipient as `0x${string}`) : undefined;
   const notDeployed = ARCFLOW_STREAM_ADDRESS === ZERO;
 
@@ -140,6 +149,7 @@ export function CreateStreamForm() {
   const ready =
     isConnected &&
     tokenAddress &&
+    tokenInWallet &&
     !tooShort &&
     !cliffPastEnd &&
     !overBalance &&
@@ -150,8 +160,12 @@ export function CreateStreamForm() {
     setError("");
     setCreatedIds([]);
     if (!address || !publicClient || !tokenAddress || totalNeeded === undefined) return;
+    if (!tokenInWallet) {
+      setError("Pick a token from the connected wallet.");
+      return;
+    }
     if (notDeployed) {
-      setError("Set NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS.");
+      setError("Stream contract is not configured.");
       return;
     }
 
@@ -168,7 +182,7 @@ export function CreateStreamForm() {
           args: [ARCFLOW_STREAM_ADDRESS, totalNeeded],
           ...arcGas,
         });
-        await publicClient.waitForTransactionReceipt({ hash });
+        await confirmTx(publicClient, hash);
       }
 
       setStep("creating");
@@ -193,17 +207,27 @@ export function CreateStreamForm() {
           ],
           ...arcGas,
         });
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
-        for (const log of receipt.logs) {
-          try {
-            const parsed = decodeEventLog({ abi: streamAbi, data: log.data, topics: log.topics });
-            if (parsed.eventName === "Created") {
-              setCreatedIds([parsed.args.id.toString()]);
-              break;
-            }
-          } catch {
-            // skip
-          }
+        const receipt = await confirmTx(publicClient, tx);
+        const created = eventArgs<{ id: bigint }>(receipt, streamAbi, "Created");
+        const ids = created.map((ev) => ev.id.toString());
+        setCreatedIds(ids);
+        setCreatedTx(tx);
+        if (ids[0]) {
+          await upsertStream({
+            id: ids[0],
+            token: tokenAddress,
+            sender: address,
+            recipient: recipientAddress,
+            amount: singleAmount.toString(),
+            start: resolveTs(startArg, nowSec()),
+            cliff: resolveTs(cliffArg, resolveTs(startArg, nowSec())),
+            end: endAt,
+            period: 1,
+            cancelable,
+            transferable,
+            canTopup,
+            txHash: tx,
+          });
         }
       } else if (payrollRows) {
         const params = payrollRows.rows.map((r) => ({
@@ -225,17 +249,33 @@ export function CreateStreamForm() {
           args: [params],
           ...arcGas,
         });
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
-        const ids: string[] = [];
-        for (const log of receipt.logs) {
-          try {
-            const parsed = decodeEventLog({ abi: streamAbi, data: log.data, topics: log.topics });
-            if (parsed.eventName === "Created") ids.push(parsed.args.id.toString());
-          } catch {
-            // skip
-          }
-        }
+        const receipt = await confirmTx(publicClient, tx);
+        const created = eventArgs<{ id: bigint; recipient: `0x${string}`; amount: bigint }>(
+          receipt,
+          streamAbi,
+          "Created",
+        );
+        const ids = created.map((ev) => ev.id.toString());
         setCreatedIds(ids);
+        setCreatedTx(tx);
+        await upsertStreams(
+          created.map((ev, index) => ({
+            id: ev.id.toString(),
+            token: tokenAddress,
+            sender: address,
+            recipient: ev.recipient,
+            amount: ev.amount.toString(),
+            start: resolveTs(startArg, nowSec()),
+            cliff: resolveTs(cliffArg, resolveTs(startArg, nowSec())),
+            end: endAt,
+            period: 1,
+            cancelable,
+            transferable,
+            canTopup,
+            txHash: tx,
+            meta: { csvIndex: index },
+          })),
+        );
       }
     } catch (err) {
       setError(txMessage(err));
@@ -248,7 +288,7 @@ export function CreateStreamForm() {
     <div className="space-y-5">
       {notDeployed ? (
         <div className="alert alert-warn">
-          Stream not configured. Set <code className="mono">NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS</code>.
+          Stream contract address is not configured.
         </div>
       ) : null}
 
@@ -333,7 +373,7 @@ export function CreateStreamForm() {
               ? `${symbol}, balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}`
-              : "USDC payroll or any ERC-20 allocation."
+              : "Pick a token held by the connected wallet."
           }
         />
 
@@ -478,6 +518,12 @@ export function CreateStreamForm() {
             Created stream{createdIds.length > 1 ? "s" : ""},{" "}
             {createdIds.slice(0, 8).map((id) => `#${id}`).join(", ")}
             {createdIds.length > 8 ? ` +${createdIds.length - 8} more` : ""}
+            {createdTx ? (
+              <>
+                {" "}
+                <Link href={proofPath("stream", createdTx, createdIds[0])}>Open proof</Link>
+              </>
+            ) : null}
           </div>
         ) : null}
 
@@ -488,8 +534,33 @@ export function CreateStreamForm() {
             <button
               type="button"
               className="btn lg block"
-              disabled={!ready || busy || notDeployed}
-              onClick={submit}
+              disabled={busy}
+              onClick={() =>
+                clickOrExplain(
+                  ready
+                    ? null
+                    : notDeployed
+                    ? "Stream contract is not configured."
+                    : !tokenAddress
+                      ? "Select a token from the connected wallet."
+                      : tooShort
+                        ? "Need at least 1 minute."
+                        : cliffPastEnd
+                          ? "Cliff cannot be longer than the stream."
+                          : overBalance
+                            ? "Amount exceeds your balance."
+                            : csvError
+                              ? csvError
+                              : mode === "single" && !recipientAddress
+                                ? "Enter the recipient wallet."
+                                : mode === "single" && !singleAmount
+                                  ? "Enter the stream amount."
+                                  : mode === "payroll" && !payrollRows?.rows.length
+                                    ? "Paste a valid recipients CSV."
+                                    : null,
+                  () => void submit(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {step === "approving"

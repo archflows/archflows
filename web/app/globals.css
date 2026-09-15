@@ -129,6 +129,7 @@
   html {
     background: var(--void);
     overflow-x: clip;
+    scroll-behavior: smooth;
     scroll-padding-top: 4.5rem;
   }
 
@@ -442,7 +443,12 @@
   box-shadow: none;
 }
 
-/* â”€â”€ Type bits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+a.btn {
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+/* ── Type bits ────────────────────────────────────────────────── */
 .tag {
   margin: 0 0 0.75rem;
   font-family: var(--font-mono);
@@ -1393,6 +1399,21 @@ a.lp-card:hover .lp-card-arrow {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: #fff;
+}
+
+.lp-card-soon {
+  opacity: 0.78;
+  cursor: default;
+}
+
+.lp-soon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .lp-proof {
@@ -2569,6 +2590,15 @@ a.lp-card:hover .lp-card-arrow {
   color: #fecaca;
 }
 
+.form-notice-ok {
+  border-color: rgba(52, 211, 153, 0.28);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.form-notice-ok .form-notice-body strong {
+  color: #6ee7b7;
+}
+
 @media (max-width: 520px) {
   .form-notice {
     flex-direction: column;
@@ -3306,14 +3336,17 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .skeleton {
+  display: block;
+  border-radius: 0.45rem;
   background: linear-gradient(
     90deg,
-    rgba(0, 80, 224, 0.07),
-    rgba(0, 80, 224, 0.16),
-    rgba(0, 80, 224, 0.07)
+    rgba(0, 80, 224, 0.08),
+    rgba(0, 80, 224, 0.22),
+    rgba(255, 255, 255, 0.08),
+    rgba(0, 80, 224, 0.08)
   );
-  background-size: 200% 100%;
-  animation: skeleton 1.4s ease-in-out infinite;
+  background-size: 240% 100%;
+  animation: skeleton 1.35s ease-in-out infinite;
 }
 
 @keyframes skeleton {
@@ -3322,6 +3355,13 @@ a.lp-card:hover .lp-card-arrow {
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: rgba(0, 80, 224, 0.14);
   }
 }
 

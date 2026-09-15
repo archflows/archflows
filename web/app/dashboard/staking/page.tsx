@@ -1,10 +1,12 @@
-import { ComingSoon } from "@/components/ComingSoon";
+"use client";
+
+import { ComingSoon } from "@/components/coming-soon";
 
 export default function DashboardStakingPage() {
   return (
     <ComingSoon
       title="Staking"
-      description="Pool creation and staking flows are on the way. Check back soon."
+      body="Permissionless reward pools are not live in the app yet. Locks and vesting are available now."
     />
   );
 }

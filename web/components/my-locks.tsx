@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import {
   useAccount,
@@ -10,13 +12,26 @@ import {
   useReadContracts,
   useWriteContract,
 } from "wagmi";
-import { ArrowRightIcon, Loader2Icon, LockIcon, SatelliteIcon } from "lucide-react";
-import { arcFlowAbi, erc20Abi } from "@/lib/abi";
-import { ARCFLOW_ADDRESS } from "@/lib/chain";
-import { arcGas, txMessage } from "@/lib/tx";
+import { ArrowRightIcon, CopyIcon, ExternalLinkIcon, HourglassIcon, Loader2Icon, LockIcon, SatelliteIcon } from "lucide-react";
+import { arcFlowAbi } from "@/lib/abi";
+import { ARCFLOW_ADDRESS, explorerTxUrl } from "@/lib/chain";
+import { arcGas, confirmTx, txMessage } from "@/lib/tx";
+import { persistLockClaim } from "@/lib/backend";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { RowActions } from "@/components/row-actions";
+import { useLockTxMap, type LockTxRecord } from "@/hooks/useTxHashMap";
+import { useTokenMeta } from "@/hooks/useTokenMeta";
+import { useNowSec } from "@/hooks/useNowSec";
+import { proofPath } from "@/lib/proof";
+import { isHardLock } from "@/lib/position-kind";
+import { lockClaimable } from "@/lib/schedule";
+import { abiField, asAddress, asBigint } from "@/lib/abi-result";
+import { copyToClipboard } from "@/lib/clipboard";
+import { clickOrExplain } from "@/lib/guard-click";
+import { formatCountdown } from "@/lib/form-time";
 import {
   Card,
   CardAction,
@@ -25,10 +40,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ListRowSkeleton } from "@/components/page-skeleton";
 import { cn } from "@/lib/utils";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 const MAX_ROWS = 50;
+const READ_STALE = { staleTime: 30_000, gcTime: 10 * 60_000 } as const;
+
+type Position = {
+  token: `0x${string}`;
+  beneficiary: `0x${string}`;
+  creator: `0x${string}`;
+  amount: bigint;
+  claimed: bigint;
+  start: bigint;
+  cliff: bigint;
+  end: bigint;
+};
+
+function parsePosition(raw: unknown): Position | undefined {
+  const token = asAddress(abiField(raw, 0, "token"));
+  const beneficiary = asAddress(abiField(raw, 1, "beneficiary"));
+  const creator = asAddress(abiField(raw, 2, "creator"));
+  if (!token || !beneficiary || !creator) return undefined;
+  return {
+    token,
+    beneficiary,
+    creator,
+    amount: asBigint(abiField(raw, 3, "amount")),
+    claimed: asBigint(abiField(raw, 4, "claimed")),
+    start: asBigint(abiField(raw, 5, "start")),
+    cliff: asBigint(abiField(raw, 6, "cliff")),
+    end: asBigint(abiField(raw, 7, "end")),
+  };
+}
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -38,107 +83,128 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
 });
 
 type Tab = "locked" | "unlocked";
+type Kind = "lock" | "vest";
 
 type Props = {
+  kind?: Kind;
   createHref?: string;
   createLabel?: string;
 };
 
-function LockRow({ id }: { id: bigint }) {
-  const publicClient = usePublicClient();
-  const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-  const [busy, setBusy] = useState(false);
-  const [claimError, setClaimError] = useState("");
+function fmtAmt(value: bigint, decimals: number) {
+  return Number(formatUnits(value, decimals)).toLocaleString("en-US", { maximumFractionDigits: 4 });
+}
 
-  const { data: position, refetch: refetchPosition } = useReadContract({
-    address: ARCFLOW_ADDRESS,
-    abi: arcFlowAbi,
-    functionName: "positions",
-    args: [id],
-  });
-  const { data: claimable, refetch: refetchClaimable } = useReadContract({
-    address: ARCFLOW_ADDRESS,
-    abi: arcFlowAbi,
-    functionName: "claimable",
-    args: [id],
-  });
-
-  const token = position?.[0];
-  const beneficiary = position?.[1];
-  const amount = position?.[3];
-  const claimed = position?.[4];
-  const start = position?.[5];
-  const cliff = position?.[6];
-  const end = position?.[7];
-  const enabled = Boolean(token && token !== ZERO);
-
-  const { data: symbol } = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "symbol",
-    query: { enabled },
-  });
-  const { data: decimals } = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "decimals",
-    query: { enabled },
-  });
-
-  if (!position) {
+function LockRow(props: {
+  id: bigint;
+  indexed?: LockTxRecord;
+  kind: Kind;
+  position?: Position;
+  now: bigint;
+  onRefresh?: () => Promise<unknown>;
+}) {
+  if (!props.position) {
     return (
       <div className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3">
-        <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
+        <div className="skeleton size-9 shrink-0 rounded-lg" />
         <div className="grid flex-1 gap-2">
-          <div className="h-3.5 w-36 animate-pulse rounded bg-muted" />
-          <div className="h-2 w-48 animate-pulse rounded bg-muted" />
+          <div className="skeleton h-3.5 w-36" />
+          <div className="skeleton h-2 w-48" />
         </div>
       </div>
     );
   }
+  return <LockRowReady {...props} position={props.position} />;
+}
 
+function LockRowReady({
+  id,
+  indexed,
+  kind,
+  position,
+  now,
+  onRefresh,
+}: {
+  id: bigint;
+  indexed?: LockTxRecord;
+  kind: Kind;
+  position: Position;
+  now: bigint;
+  onRefresh?: () => Promise<unknown>;
+}) {
+  const publicClient = usePublicClient();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const [busy, setBusy] = useState(false);
+  const [claimError, setClaimError] = useState("");
+  const [unlockHash, setUnlockHash] = useState<string | null>(null);
+
+  const { symbol, decimals } = useTokenMeta(position.token);
+  const { beneficiary, creator, amount, claimed, start, cliff, end } = position;
   const dec = decimals ?? 18;
-  const now = BigInt(Math.floor(Date.now() / 1000));
-  const isDone = end !== undefined && now >= end;
-  const isHardLock = cliff !== undefined && end !== undefined && cliff === end;
+  const isDone = now >= end;
+  const hard = isHardLock(cliff, end);
   const isBeneficiary =
-    Boolean(address && beneficiary) && address!.toLowerCase() === beneficiary!.toLowerCase();
-  const canClaim = isBeneficiary && claimable !== undefined && claimable > 0n;
-  const fullyClaimed =
-    isDone &&
-    amount !== undefined &&
-    claimed !== undefined &&
-    claimed >= amount &&
-    (claimable === undefined || claimable === 0n);
+    Boolean(address) && address!.toLowerCase() === beneficiary.toLowerCase();
+  const liveClaimable = lockClaimable({ amount, claimed, start, cliff, end, now });
+  const fullyClaimed = claimed >= amount && liveClaimable === 0n && isDone;
+  const span = end - start;
+  const timePct =
+    isDone || span === 0n ? 100 : now <= start ? 0 : Number(((now - start) * 100n) / span);
+  const ticker = symbol ?? "Token";
+  const claimedOnChain = claimed > 0n;
+  const rawCreate = indexed?.create;
+  const rawUnlock =
+    unlockHash ?? indexed?.unlock ?? (claimedOnChain && !indexed?.unlock ? rawCreate : undefined);
+  const duplicateHash =
+    Boolean(rawCreate && rawUnlock) && rawCreate!.toLowerCase() === rawUnlock!.toLowerCase();
+  const lockTx = duplicateHash ? undefined : rawCreate;
+  const unlockTx = rawUnlock;
+  const proofHref = proofPath("lock", indexed?.create ?? lockTx, id);
 
-  let timePct = 0;
-  if (start !== undefined && end !== undefined) {
-    const span = end - start;
-    timePct = isDone || span === 0n ? 100 : now <= start ? 0 : Number(((now - start) * 100n) / span);
+  function claimReason(): string | null {
+    if (busy) return "Transaction in progress.";
+    if (!address) return "Connect a wallet to claim.";
+    if (!publicClient) return "Wallet is still connecting.";
+    if (!isBeneficiary) return "Only the beneficiary can claim this position.";
+    if (fullyClaimed) return "Already fully claimed.";
+    if (now < cliff) return `Cliff is ${dateFmt.format(new Date(Number(cliff) * 1000))} UTC.`;
+    if (kind === "lock" && now < end) {
+      return `Unlocks ${dateFmt.format(new Date(Number(end) * 1000))} UTC · ${formatCountdown(Number(end - now), "Unlocked")} left.`;
+    }
+    if (liveClaimable === 0n) {
+      return kind === "vest" ? "Nothing vested to claim yet." : "Nothing to unlock yet.";
+    }
+    return null;
   }
 
-  const ticker = symbol ?? "Token";
-  const amountLabel =
-    amount !== undefined
-      ? Number(formatUnits(amount, dec)).toLocaleString("en-US", { maximumFractionDigits: 4 })
-      : "—";
-
-  const statusLabel = fullyClaimed
-    ? "Claimed"
-    : canClaim
-      ? "Ready"
-      : isDone
-        ? "Unlocked"
-        : isHardLock
-          ? "Locked"
-          : "Vesting";
-
   async function unlock() {
-    if (!publicClient || !canClaim) return;
+    const reason = claimReason();
+    if (reason || !publicClient || !address) {
+      clickOrExplain(reason ?? "Cannot claim right now.", () => undefined);
+      return;
+    }
     setClaimError("");
     setBusy(true);
     try {
+      const onChain = await publicClient.readContract({
+        address: ARCFLOW_ADDRESS,
+        abi: arcFlowAbi,
+        functionName: "claimable",
+        args: [id],
+      });
+      if (onChain === 0n) {
+        throw new Error("Nothing to claim yet.");
+      }
+      await publicClient.simulateContract({
+        account: address,
+        address: ARCFLOW_ADDRESS,
+        abi: arcFlowAbi,
+        functionName: "claim",
+        args: [id],
+      });
       const hash = await writeContractAsync({
         address: ARCFLOW_ADDRESS,
         abi: arcFlowAbi,
@@ -146,8 +212,25 @@ function LockRow({ id }: { id: bigint }) {
         args: [id],
         ...arcGas,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
-      await Promise.all([refetchPosition(), refetchClaimable()]);
+      await confirmTx(publicClient, hash);
+      setUnlockHash(hash);
+      await persistLockClaim({
+        id: id.toString(),
+        claimed: (claimed + onChain).toString(),
+        unlockTxHash: hash,
+        token: position.token,
+        beneficiary,
+        creator,
+        amount: amount.toString(),
+        start: Number(start),
+        cliff: Number(cliff),
+        end: Number(end),
+        kind: hard ? "lock" : "vest",
+        txHash: indexed?.create,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["arcflow-api", "tx-hashes"] });
+      await queryClient.invalidateQueries({ queryKey: ["arcflow-api", "stats"] });
+      await onRefresh?.();
     } catch (err) {
       setClaimError(txMessage(err));
     } finally {
@@ -155,21 +238,31 @@ function LockRow({ id }: { id: bigint }) {
     }
   }
 
+  const blocked = claimReason();
+
   return (
     <div className="rounded-xl bg-black/20 px-4 py-3">
-      <div className="flex items-center gap-4">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-mono text-[10px] font-semibold tracking-wide text-primary">
-          {ticker.slice(0, 3).toUpperCase()}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          {kind === "vest" ? <HourglassIcon className="size-4" /> : <LockIcon className="size-4" />}
         </div>
 
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate font-medium tabular-nums text-foreground">
-              {amountLabel} {ticker}
+            <span className="truncate font-medium tabular-nums text-white">
+              {fmtAmt(amount, dec)} {ticker}
             </span>
-            <Badge variant="outline" className="font-normal">
-              {statusLabel}
-            </Badge>
+            {isDone ? (
+              <Badge className="border-white/25 bg-white/20 font-normal text-white">
+                {kind === "vest" ? "Fully vested" : "Unlocked"}
+              </Badge>
+            ) : kind === "vest" ? (
+              <Badge className="border-white/25 bg-black/40 font-normal text-white">Vesting</Badge>
+            ) : (
+              <Badge className="border-white/25 bg-black/40 font-normal text-white">Locked</Badge>
+            )}
+            {fullyClaimed ? <Badge className="font-normal">Claimed</Badge> : null}
+            {liveClaimable > 0n && isBeneficiary ? <Badge className="font-normal">Ready</Badge> : null}
           </div>
 
           <div className="h-1.5 max-w-xs overflow-hidden rounded-full bg-muted">
@@ -179,42 +272,82 @@ function LockRow({ id }: { id: bigint }) {
             />
           </div>
 
-          <p className="truncate font-mono text-[11px] text-muted-foreground">
-            LOCK #{id.toString()}, {isDone ? "unlocked" : "unlocks"}{" "}
-            {end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"}
-            {claimed !== undefined && claimed > 0n
-              ? `, claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
-                  maximumFractionDigits: 4,
-                })}`
+<p className="truncate font-mono text-[11px] text-white/70">
+            {kind === "vest" ? "VEST" : "LOCK"} #{id.toString()} ·{" "}
+            {kind === "vest"
+              ? isDone
+                ? "fully vested"
+                : `releases through ${dateFmt.format(new Date(Number(end) * 1000))} · ${formatCountdown(Number(end - now), "Vested")}`
+              : isDone
+                ? "unlocked"
+                : `unlocks ${dateFmt.format(new Date(Number(end) * 1000))} · ${formatCountdown(Number(end - now), "Unlocked")}`}
+            {kind === "vest" && !isDone && cliff > start
+              ? ` · cliff ${dateFmt.format(new Date(Number(cliff) * 1000))}`
               : ""}
+            {liveClaimable > 0n ? ` · claimable ${fmtAmt(liveClaimable, dec)}` : ""}
+            {claimed > 0n ? ` · claimed ${fmtAmt(claimed, dec)}` : ""}
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {canClaim ? (
-            <Button size="sm" disabled={busy} onClick={unlock}>
-              {busy ? <Loader2Icon className="size-3.5 animate-spin" /> : null}
-              {busy ? "Unlocking…" : "Unlock"}
-            </Button>
-          ) : null}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-primary hover:text-primary"
-            nativeButton={false}
-            render={<Link href={`/lock/${id.toString()}`} />}
-          >
-            Proof
-            <ArrowRightIcon className="size-3.5" />
-          </Button>
-        </div>
+        <RowActions
+          busy={busy}
+          primary={
+            fullyClaimed ? null : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={() => clickOrExplain(blocked, () => void unlock())}
+              >
+                {busy ? <Loader2Icon className="size-3.5 animate-spin" /> : null}
+                {busy ? "Claiming…" : kind === "vest" ? "Claim vested" : "Unlock"}
+              </Button>
+            )
+          }
+          items={[
+            {
+              id: "proof",
+              label: "Open proof",
+              icon: <ArrowRightIcon />,
+              onSelect: () => {
+                router.push(proofHref);
+              },
+            },
+            {
+              id: "copy",
+              label: "Copy proof link",
+              icon: <CopyIcon />,
+              onSelect: () => {
+                void copyToClipboard(`${window.location.origin}${proofHref}`, "Proof link copied");
+              },
+            },
+            {
+              id: "lock-tx",
+              label: "View create tx",
+              icon: <ExternalLinkIcon />,
+              hidden: !lockTx,
+              onSelect: () => {
+                if (lockTx) window.open(explorerTxUrl(lockTx), "_blank", "noopener,noreferrer");
+              },
+            },
+            {
+              id: "claim-tx",
+              label: kind === "vest" ? "View claim tx" : "View unlock tx",
+              icon: <ExternalLinkIcon />,
+              hidden: !unlockTx,
+              onSelect: () => {
+                if (unlockTx) window.open(explorerTxUrl(unlockTx), "_blank", "noopener,noreferrer");
+              },
+            },
+          ]}
+        />
       </div>
       {claimError ? <p className="mt-2 text-xs text-destructive">{claimError}</p> : null}
     </div>
   );
 }
 
-function useWalletLockBuckets(owner: `0x${string}`) {
+function useWalletLockBuckets(owner: `0x${string}`, kind: Kind) {
   const enabled = Boolean(owner) && ARCFLOW_ADDRESS !== ZERO;
 
   const { data: createdCount } = useReadContract({
@@ -222,14 +355,14 @@ function useWalletLockBuckets(owner: `0x${string}`) {
     abi: arcFlowAbi,
     functionName: "creatorLockCount",
     args: [owner],
-    query: { enabled },
+    query: { enabled, ...READ_STALE },
   });
   const { data: receivedCount } = useReadContract({
     address: ARCFLOW_ADDRESS,
     abi: arcFlowAbi,
     functionName: "beneficiaryLockCount",
     args: [owner],
-    query: { enabled },
+    query: { enabled, ...READ_STALE },
   });
 
   const created = Math.min(Number(createdCount ?? 0n), MAX_ROWS);
@@ -255,7 +388,7 @@ function useWalletLockBuckets(owner: `0x${string}`) {
 
   const { data: idResults, isPending: idsPending } = useReadContracts({
     contracts: idContracts,
-    query: { enabled: enabled && idContracts.length > 0 },
+    query: { enabled: enabled && idContracts.length > 0, ...READ_STALE },
   });
 
   const ids = useMemo(() => {
@@ -283,20 +416,32 @@ function useWalletLockBuckets(owner: `0x${string}`) {
     [ids],
   );
 
-  const { data: positionResults, isPending: positionsPending } = useReadContracts({
+  const {
+    data: positionResults,
+    isPending: positionsPending,
+    refetch: refetchPositions,
+  } = useReadContracts({
     contracts: positionContracts,
-    query: { enabled: enabled && positionContracts.length > 0 },
+    query: { enabled: enabled && positionContracts.length > 0, ...READ_STALE },
   });
 
   return useMemo(() => {
     const now = BigInt(Math.floor(Date.now() / 1000));
     const locked: bigint[] = [];
     const unlocked: bigint[] = [];
+    const positions = new Map<string, Position>();
 
     ids.forEach((id, i) => {
       const row = positionResults?.[i];
       if (!row || row.status !== "success" || !row.result) return;
-      const end = row.result[7] as bigint;
+      const position = parsePosition(row.result);
+      if (!position) return;
+      positions.set(id.toString(), position);
+      const cliff = position.cliff;
+      const end = position.end;
+      const hard = isHardLock(cliff, end);
+      if (kind === "lock" && !hard) return;
+      if (kind === "vest" && hard) return;
       if (now >= end) unlocked.push(id);
       else locked.push(id);
     });
@@ -305,33 +450,57 @@ function useWalletLockBuckets(owner: `0x${string}`) {
       (created + received > 0 && idsPending) ||
       (ids.length > 0 && positionsPending);
 
-    return { locked, unlocked, pending, total: ids.length };
-  }, [ids, positionResults, idsPending, positionsPending, created, received]);
+    return {
+      locked,
+      unlocked,
+      pending,
+      total: locked.length + unlocked.length,
+      positions,
+      refetchPositions,
+    };
+  }, [ids, positionResults, idsPending, positionsPending, created, received, kind, refetchPositions]);
 }
 
 function Locks({
   owner,
+  kind,
   createHref,
   createLabel,
 }: {
   owner: `0x${string}`;
+  kind: Kind;
   createHref: string;
   createLabel: string;
 }) {
   const [tab, setTab] = useState<Tab>("locked");
-  const { locked, unlocked, pending, total } = useWalletLockBuckets(owner);
-  const rows = tab === "locked" ? locked : unlocked;
+  const now = useNowSec();
+  const { locked, unlocked, pending, total, positions, refetchPositions } = useWalletLockBuckets(
+    owner,
+    kind,
+  );
+  const { data: txMap } = useLockTxMap(owner);
+  const rows = useMemo(
+    () => (tab === "locked" ? locked : unlocked).slice(0, MAX_ROWS),
+    [tab, locked, unlocked],
+  );
+  const vest = kind === "vest";
 
   return (
     <div className="space-y-4">
       <Card className="shadow-none ring-0">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
-            <LockIcon className="size-4 text-primary" />
-            Your positions
+            {vest ? (
+              <HourglassIcon className="size-4 text-primary" />
+            ) : (
+              <LockIcon className="size-4 text-primary" />
+            )}
+            {vest ? "Your vests" : "Your locks"}
           </CardTitle>
           <CardDescription>
-            Locks tied to this wallet, still locked or already unlocked.
+{vest
+              ? "Linear schedules for this wallet — still releasing or fully vested."
+              : "Hard locks for this wallet — still frozen or already unlocked."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
@@ -341,55 +510,60 @@ function Locks({
               className={cn("seg-btn", tab === "locked" && "on")}
               onClick={() => setTab("locked")}
             >
-              Locked ({locked.length})
+              {vest ? `Releasing (${locked.length})` : `Locked (${locked.length})`}
             </button>
             <button
               type="button"
               className={cn("seg-btn", tab === "unlocked" && "on")}
               onClick={() => setTab("unlocked")}
             >
-              Unlocked ({unlocked.length})
+              {vest ? `Fully vested (${unlocked.length})` : `Unlocked (${unlocked.length})`}
             </button>
           </div>
 
           {pending ? (
-            <div className="grid gap-2">
-              {Array.from({ length: 2 }, (_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3"
-                >
-                  <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
-                  <div className="grid flex-1 gap-2">
-                    <div className="h-3.5 w-36 animate-pulse rounded bg-muted" />
-                    <div className="h-2 w-48 animate-pulse rounded bg-muted" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ListRowSkeleton count={4} />
           ) : total === 0 ? (
             <div className="flex flex-col items-start gap-3 rounded-xl bg-black/20 px-4 py-6">
               <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <SatelliteIcon className="size-4" />
+                {vest ? <HourglassIcon className="size-4" /> : <SatelliteIcon className="size-4" />}
               </span>
               <div>
-                <p className="font-medium text-foreground">No positions yet</p>
+                <p className="font-medium text-foreground">
+                  {vest ? "No vesting schedules yet" : "No hard locks yet"}
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Create a lock, then share the proof page under your CA.
+                  {vest
+                    ? "Create a vest to stream tokens after an optional cliff. Hard locks live under Locks."
+                    : "Create a lock to freeze the full amount until one date. Linear schedules live under Vesting."}
                 </p>
               </div>
-              <Button size="sm" nativeButton={false} render={<Link href={createHref} />}>
+              <Link href={createHref} className={cn(buttonVariants({ size: "sm" }), "text-primary-foreground")}>
                 {createLabel}
-              </Button>
+              </Link>
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-xl bg-black/20 px-4 py-6 text-sm text-white">
-              {tab === "locked" ? "Nothing still locked." : "Nothing unlocked yet."}
+              {tab === "locked"
+                ? vest
+                  ? "Nothing still vesting."
+                  : "Nothing still locked."
+                : vest
+                  ? "Nothing fully vested yet."
+                  : "Nothing unlocked yet."}
             </div>
           ) : (
             <div className="grid gap-2">
               {rows.map((id) => (
-                <LockRow key={id.toString()} id={id} />
+                <LockRow
+                  key={id.toString()}
+                  id={id}
+                  kind={kind}
+                  indexed={txMap?.get(id.toString())}
+                  position={positions.get(id.toString())}
+                  now={now}
+                  onRefresh={refetchPositions}
+                />
               ))}
             </div>
           )}
@@ -400,6 +574,7 @@ function Locks({
 }
 
 export default function MyLocksPage({
+  kind = "lock",
   createHref = "/dashboard/locks",
   createLabel = "Create lock",
 }: Props) {
@@ -411,7 +586,7 @@ export default function MyLocksPage({
         <CardHeader>
           <CardTitle>Wallet required</CardTitle>
           <CardDescription>
-            Connect on Arc Testnet to read positions tied to your address.
+            Connect a wallet to see {kind === "vest" ? "vests" : "locks"} for your address.
           </CardDescription>
           <CardAction>
             <Badge variant="outline">Read-only</Badge>
@@ -424,5 +599,5 @@ export default function MyLocksPage({
     );
   }
 
-  return <Locks owner={address} createHref={createHref} createLabel={createLabel} />;
+  return <Locks owner={address} kind={kind} createHref={createHref} createLabel={createLabel} />;
 }

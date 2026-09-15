@@ -183,6 +183,7 @@ export function ChartAreaInteractive({
             <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
             <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
           </ToggleGroup>
+
           <Select
             value={timeRange}
             onValueChange={(value) => {
@@ -194,7 +195,7 @@ export function ChartAreaInteractive({
               size="sm"
               aria-label="Select a value"
             >
-              <SelectValue placeholder="Last 3 months" />
+              <SelectValue placeholder="Last 30 days" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
