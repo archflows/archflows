@@ -3,20 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ConnectButton } from "@/components/ConnectButton";
 import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
 const MARKETING = [
-  { href: "/#product", label: "Product" },
-  { href: "/#proof", label: "Proof" },
-  { href: "/#how", label: "How it works" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/explorer", label: "Explorer" },
+  { href: "/docs", label: "Docs" },
+  { href: "/litepaper", label: "Litepaper" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const onLockProof = pathname.startsWith("/lock");
+  const onLockProof = pathname.startsWith("/lock") || pathname.startsWith("/explorer");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -26,24 +24,23 @@ export function SiteHeader() {
   return (
     <header className="nav">
       <div className="shell nav-row">
-        <Link href="/" className="brand brand-logo-link" aria-label="ArcFlow home">
+        <Link href="/" className="brand brand-logo-link" aria-label="ArcFlows home">
           <BrandLogo height={26} priority />
         </Link>
 
         <nav className="nav-mid">
           {MARKETING.map((link) => (
-            <Link key={link.href} href={link.href} className="nav-link">
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn("nav-link", pathname.startsWith(link.href) && "active")}
+            >
               {link.label}
             </Link>
           ))}
         </nav>
 
         <div className="nav-end">
-          <span className="live live-accent hide-mobile">
-            <span className="pulse-dot" />
-            Testnet
-          </span>
-          <ConnectButton />
           <Link href="/auth" className="btn sm hide-mobile">
             {onLockProof ? "Dashboard" : "Launch app"}
           </Link>

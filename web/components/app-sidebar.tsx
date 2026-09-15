@@ -19,6 +19,7 @@ import {
   HourglassIcon,
   GiftIcon,
   LayersIcon,
+  CompassIcon,
 } from "lucide-react";
 
 const navMain = [
@@ -36,6 +37,11 @@ const navMain = [
     title: "Vesting",
     url: "/dashboard/vesting",
     icon: <HourglassIcon />,
+  },
+  {
+    title: "Explorer",
+    url: "/explorer",
+    icon: <CompassIcon />,
   },
   {
     title: "Staking",
@@ -57,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="h-10 justify-center data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/dashboard" aria-label="ArcFlow dashboard" />}
+              render={<Link href="/dashboard" aria-label="ArcFlows dashboard" />}
             >
               <BrandLogo height={28} className="mx-auto" />
             </SidebarMenuButton>

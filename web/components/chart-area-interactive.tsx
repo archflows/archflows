@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount } from "wagmi";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { WalletPositionRow } from "@/hooks/useWalletPositions";
-import { arcFlowAbi } from "@/lib/abi";
+import { fetchArcFlowLogsFromExplorer } from "@/lib/arcflow-logs";
 import { ARCFLOW_ADDRESS } from "@/lib/chain";
 import { ZERO } from "@/lib/form-time";
 import {
@@ -59,34 +59,26 @@ function rangeDays(timeRange: string) {
 }
 
 function useClaimedTimestamps(owner?: `0x${string}`) {
-  const client = usePublicClient();
   const [times, setTimes] = React.useState<number[]>([]);
 
   React.useEffect(() => {
-    if (!client || !owner || ARCFLOW_ADDRESS === ZERO) {
+    if (!owner || ARCFLOW_ADDRESS === ZERO) {
       setTimes([]);
       return;
     }
     let live = true;
-    client
-      .getContractEvents({
-        address: ARCFLOW_ADDRESS,
-        abi: arcFlowAbi,
-        eventName: "Claimed",
-        args: { beneficiary: owner },
-        fromBlock: 0n,
-        toBlock: "latest",
-      })
-      .then(async (logs) => {
-        const unique = [...new Set(logs.map((log) => log.blockNumber))];
-        const blocks = await Promise.all(
-          unique.map((blockNumber) => client.getBlock({ blockNumber })),
-        );
-        const byBlock = new Map(blocks.map((block) => [block.number, Number(block.timestamp)]));
+    fetchArcFlowLogsFromExplorer()
+      .then((logs) => {
         if (!live) return;
+        const needle = owner.toLowerCase();
         setTimes(
           logs
-            .map((log) => byBlock.get(log.blockNumber) ?? 0)
+            .filter(
+              (log) =>
+                log.eventName === "Claimed" &&
+                String(log.args.beneficiary ?? "").toLowerCase() === needle,
+            )
+            .map((log) => log.timestamp)
             .filter((unix) => unix > 0),
         );
       })
@@ -96,7 +88,7 @@ function useClaimedTimestamps(owner?: `0x${string}`) {
     return () => {
       live = false;
     };
-  }, [client, owner]);
+  }, [owner]);
 
   return times;
 }

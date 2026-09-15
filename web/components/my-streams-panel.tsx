@@ -68,8 +68,12 @@ function StreamRow({ id, role }: { id: bigint; role: Tab }) {
 
   if (!s) {
     return (
-      <div className="row-link" style={{ pointerEvents: "none" }}>
-        <div className="skeleton" style={{ width: "12rem", height: "0.85rem" }} />
+      <div className="sk-list-row" style={{ pointerEvents: "none" }} aria-hidden>
+        <div className="skeleton size-9 rounded-lg" style={{ width: "2.25rem", height: "2.25rem" }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "9rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "12rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
       </div>
     );
   }
@@ -284,13 +288,23 @@ function IndexedStream({
   index: number;
   tab: Tab;
 }) {
-  const { data: id } = useReadContract({
+  const { data: id, isPending } = useReadContract({
     address: ARCFLOW_STREAM_ADDRESS,
     abi: streamAbi,
     functionName: tab === "sent" ? "streamsBySender" : "streamsByRecipient",
     args: [owner, BigInt(index)],
   });
-  if (id === undefined) return null;
+  if (isPending || id === undefined) {
+    return (
+      <div className="sk-list-row" style={{ pointerEvents: "none" }} aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "9rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "12rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   return <StreamRow id={id} role={tab} />;
 }
 

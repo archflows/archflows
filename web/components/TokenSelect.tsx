@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TokenListSkeleton } from "@/components/skeletons";
 import { useWalletTokens } from "@/hooks/useWalletTokens";
 import { USDC_ADDRESS } from "@/lib/chain";
 
@@ -132,29 +133,32 @@ export function TokenSelect({
                   </SelectTrigger>
                   <SelectContent className="max-h-72 min-w-[var(--anchor-width)]">
                     <SelectGroup>
+                      {isLoading ? <TokenListSkeleton rows={4} /> : null}
                       {sorted.length === 0 && !isLoading ? (
                         <div className="px-2 py-3 text-xs text-muted-foreground">
                           No ERC-20 balances found on Arc Testnet yet.
                         </div>
                       ) : null}
-                      {sorted.map((t) => (
-                        <SelectItem key={t.address} value={t.address}>
-                          <span className="flex w-full items-center justify-between gap-3">
-                            <span>
-                              <span className="font-medium">{t.symbol}</span>
-                              <span className="ml-2 font-mono text-[10px] text-muted-foreground">
-                                {t.address.slice(0, 6)}…{t.address.slice(-4)}
+                      {!isLoading
+                        ? sorted.map((t) => (
+                            <SelectItem key={t.address} value={t.address}>
+                              <span className="flex w-full items-center justify-between gap-3">
+                                <span>
+                                  <span className="font-medium">{t.symbol}</span>
+                                  <span className="ml-2 font-mono text-[10px] text-muted-foreground">
+                                    {t.address.slice(0, 6)}…{t.address.slice(-4)}
+                                  </span>
+                                </span>
+                                <span className="tabular-nums text-xs text-muted-foreground">
+                                  {Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
+                                    "en-US",
+                                    { maximumFractionDigits: 4 },
+                                  )}
+                                </span>
                               </span>
-                            </span>
-                            <span className="tabular-nums text-xs text-muted-foreground">
-                              {Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
-                                "en-US",
-                                { maximumFractionDigits: 4 },
-                              )}
-                            </span>
-                          </span>
-                        </SelectItem>
-                      ))}
+                            </SelectItem>
+                          ))
+                        : null}
                     </SelectGroup>
                   </SelectContent>
                 </Select>

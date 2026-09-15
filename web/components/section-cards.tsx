@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatCardsSkeleton } from "@/components/skeletons";
 import { ARCFLOW_ADDRESS, EXPLORER_URL } from "@/lib/chain";
 import { arcFlowAbi } from "@/lib/abi";
 import { shorten } from "@/lib/form-time";
@@ -28,20 +29,26 @@ export function SectionCards() {
   const { address } = useAccount();
   const notDeployed = ARCFLOW_ADDRESS === ZERO;
 
-  const { data: createdCount } = useReadContract({
+  const { data: createdCount, isPending: createdPending } = useReadContract({
     address: ARCFLOW_ADDRESS,
     abi: arcFlowAbi,
     functionName: "creatorLockCount",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address && !notDeployed) },
   });
-  const { data: receivedCount } = useReadContract({
+  const { data: receivedCount, isPending: receivedPending } = useReadContract({
     address: ARCFLOW_ADDRESS,
     abi: arcFlowAbi,
     functionName: "beneficiaryLockCount",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address && !notDeployed) },
   });
+
+  const countsPending = Boolean(address && !notDeployed && (createdPending || receivedPending));
+
+  if (countsPending) {
+    return <StatCardsSkeleton count={4} />;
+  }
 
   const created = notDeployed ? "—" : String(Number(createdCount ?? 0n));
   const receiving = notDeployed ? "—" : String(Number(receivedCount ?? 0n));
@@ -119,7 +126,7 @@ export function SectionCards() {
         <CardFooter className={FOOTER}>
           <div className="line-clamp-1 text-[0.95rem] font-medium">Created + receiving</div>
           <div className="text-[0.8rem] leading-snug text-white">
-            Total exposure on ArcFlow
+            Total exposure on ArcFlows
           </div>
         </CardFooter>
       </Card>
@@ -140,7 +147,7 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className={FOOTER}>
           <div className="text-[0.95rem] font-medium">
-            {notDeployed ? "Deploy ArcFlow first" : "Arc Testnet"}
+            {notDeployed ? "Deploy ArcFlows first" : "Arc Testnet"}
           </div>
           {notDeployed ? (
             <div className="text-[0.8rem] leading-snug text-white">

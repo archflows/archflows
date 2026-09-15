@@ -60,7 +60,17 @@ function CampaignRow({ id }: { id: bigint }) {
     query: { enabled: Boolean(address && token) },
   });
 
-  if (!c) return null;
+  if (!c) {
+    return (
+      <div className="sk-list-row border-b border-border px-4 py-3" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "14rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   const dec = decimals ?? 18;
   const now = Math.floor(Date.now() / 1000);
   const beforeStart = claimStart !== undefined && now < Number(claimStart);
@@ -207,13 +217,23 @@ function CampaignRow({ id }: { id: bigint }) {
 }
 
 function IndexedCampaign({ owner, index }: { owner: `0x${string}`; index: number }) {
-  const { data: id } = useReadContract({
+  const { data: id, isPending } = useReadContract({
     address: ARCFLOW_DISTRIBUTOR_ADDRESS,
     abi: distributorAbi,
     functionName: "campaignsByFunder",
     args: [owner, BigInt(index)],
   });
-  if (id === undefined) return null;
+  if (isPending || id === undefined) {
+    return (
+      <div className="sk-list-row border-b border-border px-4 py-3" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "14rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   return <CampaignRow id={id} />;
 }
 

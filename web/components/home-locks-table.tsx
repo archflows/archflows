@@ -8,6 +8,7 @@ import type { WalletPositionRow } from "@/hooks/useWalletPositions";
 import { shorten } from "@/lib/form-time";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -116,11 +117,28 @@ export function HomeLocksTable({
             </TableHeader>
             <TableBody>
               {pending ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-white/70">
-                    Reading positions on Arc…
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }, (_, i) => (
+                  <TableRow key={`sk-${i}`} className="hover:bg-transparent">
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-18" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-4 w-20" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : visible.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-white/70">

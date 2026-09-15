@@ -28,7 +28,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
         <div className="shell">
           <div className="footer-grid">
             <div>
-              <Link href="/" className="brand brand-logo-link" style={{ marginBottom: "0.75rem" }} aria-label="ArcFlow home">
+              <Link href="/" className="brand brand-logo-link" style={{ marginBottom: "0.75rem" }} aria-label="ArcFlows home">
                 <BrandLogo height={28} />
               </Link>
               <p className="dim" style={{ maxWidth: "24rem", margin: "0.75rem 0 0" }}>
@@ -39,8 +39,10 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
             <div className="footer-col">
               <div className="footer-col-title">Product</div>
+              <Link href="/explorer">Explorer</Link>
+              <Link href="/docs">Docs</Link>
+              <Link href="/litepaper">Litepaper</Link>
               <Link href="/dashboard/locks">Locks</Link>
-              <Link href="/dashboard/vesting">Vesting</Link>
               <Link href="/dashboard">Dashboard</Link>
               <Link href="/auth">Sign in</Link>
             </div>
@@ -61,13 +63,15 @@ export function SiteChrome({ children }: { children: ReactNode }) {
             <div className="footer-col">
               <div className="footer-col-title">Company</div>
               <a href="/#product">Product</a>
-              <a href="/#how">How it works</a>
+              <a href="/#how">On Arc</a>
               <a href="/#faq">FAQ</a>
+              <Link href="/docs">Docs</Link>
+              <Link href="/litepaper">Litepaper</Link>
             </div>
           </div>
 
           <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} ArcFlow. Lock. Vest. Stream. On Arc.</span>
+            <span>© {new Date().getFullYear()} ArcFlows. Lock. Vest. Stream. On Arc.</span>
             <span>Arc Testnet, chain 5042002, gas in USDC</span>
           </div>
         </div>

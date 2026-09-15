@@ -397,7 +397,8 @@ export function CreateLockForm() {
               duration={tooShort ? undefined : formatDuration(durationSec)}
               unlockLabel={mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : undefined}
               supplyShare={supplyShare}
-              lockType="Hard lock"
+              status="Locked"
+              tokenAddress={token || undefined}
             />
           </>
         }

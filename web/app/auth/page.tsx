@@ -1,15 +1,10 @@
 import { Suspense } from "react";
 import AuthClient from "./AuthClient";
+import AuthLoading from "./loading";
 
 export default function AuthPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">
-          Loading…
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthLoading />}>
       <AuthClient />
     </Suspense>
   );
