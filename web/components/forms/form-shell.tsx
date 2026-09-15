@@ -50,8 +50,12 @@ export function PreviewPanel({
             </div>
           ))}
         </dl>
+        {note ? (
+          <p className="field-hint" style={{ lineHeight: 1.65, padding: "0.75rem 1rem 1rem", margin: 0 }}>
+            {note}
+          </p>
+        ) : null}
       </div>
-      {note ? <p className="field-hint" style={{ lineHeight: 1.65 }}>{note}</p> : null}
     </>
   );
 }

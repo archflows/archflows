@@ -88,7 +88,7 @@ function LockRow({ id }: { id: bigint }) {
 
   if (!position) {
     return (
-      <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+      <div className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3">
         <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
         <div className="grid flex-1 gap-2">
           <div className="h-3.5 w-36 animate-pulse rounded bg-muted" />
@@ -156,7 +156,7 @@ function LockRow({ id }: { id: bigint }) {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-3 transition-colors hover:border-primary/35 hover:bg-primary/5">
+    <div className="rounded-xl bg-black/20 px-4 py-3">
       <div className="flex items-center gap-4">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-mono text-[10px] font-semibold tracking-wide text-primary">
           {ticker.slice(0, 3).toUpperCase()}
@@ -357,7 +357,7 @@ function Locks({
               {Array.from({ length: 2 }, (_, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3"
+                  className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3"
                 >
                   <div className="h-9 w-9 animate-pulse rounded-lg bg-muted" />
                   <div className="grid flex-1 gap-2">
@@ -368,7 +368,7 @@ function Locks({
               ))}
             </div>
           ) : total === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-6">
+            <div className="flex flex-col items-start gap-3 rounded-xl bg-black/20 px-4 py-6">
               <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <SatelliteIcon className="size-4" />
               </span>
@@ -383,7 +383,7 @@ function Locks({
               </Button>
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+            <div className="rounded-xl bg-black/20 px-4 py-6 text-sm text-white">
               {tab === "locked" ? "Nothing still locked." : "Nothing unlocked yet."}
             </div>
           ) : (

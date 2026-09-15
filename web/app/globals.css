@@ -1505,7 +1505,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 /* Home stat cards — Streamflow-style right bloom */
-[data-slot="card"].dash-stat-card {
+[data-slot="card"] {
   background: var(--bloom);
   color: #fff;
   border: 0;
@@ -1514,17 +1514,24 @@ a.lp-card:hover .lp-card-arrow {
   --tw-ring-offset-shadow: 0 0 #0000;
 }
 
-[data-slot="card"].dash-stat-card [data-slot="card-description"],
-[data-slot="card"].dash-stat-card .text-muted-foreground {
+[data-slot="card"] [data-slot="card-description"],
+[data-slot="card"] [data-slot="card-title"],
+[data-slot="card"] .text-muted-foreground {
   color: #fff;
+}
+
+[data-slot="card"] [data-slot="card-footer"] {
+  border-top-color: transparent;
+  background: transparent;
 }
 
 /* ── Panels / forms ───────────────────────────────────────────── */
 .panel {
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: var(--radius-2xl);
-  background: var(--card);
+  background: var(--bloom);
   overflow: hidden;
+  color: #fff;
 }
 
 .panel-head {
@@ -1533,10 +1540,42 @@ a.lp-card:hover .lp-card-arrow {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0;
   font-size: 0.85rem;
   font-weight: 600;
-  background: rgba(148, 163, 184, 0.04);
+  background: transparent;
+  color: #fff;
+}
+
+.panel .field-label,
+.panel .field-hint,
+.panel .kv dt,
+.panel .kv-key,
+.panel .kv dd,
+.panel .kv-val,
+.panel .dim,
+.panel .live,
+.panel .unlock-part > span,
+.panel .amount-field-max,
+.panel .amount-control-suffix,
+.panel .amount-control-val,
+.panel [data-slot="select-trigger"],
+.panel [data-placeholder] {
+  color: #fff;
+}
+
+.create-grid > aside > .field-hint,
+.create-grid .field-hint,
+.create-grid .field-label,
+.create-grid .unlock-part > span,
+.create-grid .dim {
+  color: #fff;
+}
+
+.panel .af-input::placeholder,
+.panel .amount-control-input::placeholder,
+.create-grid .af-input::placeholder {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .panel-body {
@@ -1553,12 +1592,12 @@ a.lp-card:hover .lp-card-arrow {
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: color-mix(in srgb, var(--ink) 78%, var(--dim));
+  color: #fff;
 }
 
 .field-hint {
   font-size: 0.74rem;
-  color: var(--dim);
+  color: #fff;
   line-height: 1.4;
 }
 
@@ -1593,7 +1632,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .af-input::placeholder {
-  color: rgba(148, 163, 184, 0.55);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .af-input[type="datetime-local"],
@@ -1623,6 +1662,7 @@ a.lp-card:hover .lp-card-arrow {
   max-height: var(--af-control-h);
   padding-top: 0;
   padding-bottom: 0;
+  color: #fff;
 }
 
 .seg {
@@ -2041,7 +2081,7 @@ a.lp-card:hover .lp-card-arrow {
 
 .amount-field-max {
   font-size: 0.72rem;
-  color: var(--dim);
+  color: #fff;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2082,7 +2122,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 .amount-control-input::placeholder {
-  color: rgba(148, 163, 184, 0.55);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .amount-control-suffix,
@@ -2090,7 +2130,7 @@ a.lp-card:hover .lp-card-arrow {
 .amount-control-val {
   flex-shrink: 0;
   font-size: 0.75rem;
-  color: var(--dim);
+  color: #fff;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2308,7 +2348,7 @@ a.lp-card:hover .lp-card-arrow {
 .unlock-part > span {
   font-size: 0.72rem;
   font-weight: 500;
-  color: var(--dim);
+  color: #fff;
   line-height: 1;
 }
 
@@ -2366,7 +2406,7 @@ a.lp-card:hover .lp-card-arrow {
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--line);
+  border: 0;
 }
 
 .stat-grid-2 {
