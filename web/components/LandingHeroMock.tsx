@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { NETWORK_BADGE } from "@/lib/chain";
 import { useLiveStats } from "@/hooks/useLiveStats";
 import { formatAmount, formatUnlock, lockStatus } from "@/lib/live-format";
 import { proofPath, shortHash } from "@/lib/proof";
@@ -24,7 +23,6 @@ export function LandingHeroMock() {
             ? `app.arcflow / lock/${featured.tx_hash ? shortHash(featured.tx_hash) : featured.id}`
             : "app.arcflow / create lock"}
         </span>
-        <span className="live live-accent">{NETWORK_BADGE}</span>
       </div>
       <div className="lp-mock-body">
         <div className="lp-mock-row">

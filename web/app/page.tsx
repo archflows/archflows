@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 import { FlowMock } from "@/components/FlowMock";
 import { HeroShot } from "@/components/HeroShot";
-import { LandingLiveCounts, LandingLiveProof } from "@/components/LandingLiveProof";
-import { NETWORK_NAME, isTestnet } from "@/lib/chain";
+import { LandingLiveProof } from "@/components/LandingLiveProof";
 
 const MARQUEE = [
   { name: "Arc", src: "/marquee/arc.svg" },
@@ -99,15 +98,15 @@ const FEATURED = [
   {
     icon: Lock,
     title: "Token lock",
-    body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit — not even for the creator.",
-    meta: "Immutable · $10 USDC fee",
+    body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit, not even for the creator.",
+    meta: "Immutable, $10 USDC fee",
     href: "/auth?next=/dashboard/locks",
   },
   {
     icon: Clock3,
     title: "Linear vesting",
     body: "Cliff, then per-second release to a beneficiary. Teams and investors claim only what has accrued.",
-    meta: "start ≤ cliff ≤ end",
+    meta: "start, cliff, then end",
     href: "/auth?next=/dashboard/vesting",
   },
 ];
@@ -128,7 +127,7 @@ const MODULES = [
   {
     icon: Handshake,
     title: "Escrow",
-    body: "Fund a deal, release on delivery, or refund — both sides stay on-chain.",
+    body: "Fund a deal, release on delivery, or refund. Both sides stay on-chain.",
     soon: true,
   },
   {
@@ -215,9 +214,7 @@ const FAQ = [
   },
   {
     q: "Is this ready for mainnet?",
-    a: isTestnet
-      ? "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only — not production funds."
-      : "You are on Arc mainnet. Contracts may not be externally audited — only use funds you can afford to risk.",
+    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only, not production funds.",
   },
 ];
 
@@ -228,13 +225,11 @@ export default function LandingPage() {
         <div className="lp-hero-arc" aria-hidden />
         <div className="shell lp-hero-inner">
           <div className="hero-copy">
-            <p className="lp-kicker">
-              <span className="pulse-dot" />
-              Live on {NETWORK_NAME}
-              {" · "}
-              <LandingLiveCounts />
-            </p>
-            <h1>Lock and vest tokens on Arc</h1>
+            <h1>
+              ARC Token Distribution
+              <br />
+              <em>Platform - ArcFlows</em>
+            </h1>
             <p className="hero-lead">
               Lock, vest, and distribute tokens on Arc with public proof anyone can verify.
             </p>
@@ -243,9 +238,9 @@ export default function LandingPage() {
                 Launch app
                 <ArrowRight className="size-4" />
               </Link>
-              <a className="btn ghost lg" href="#product">
+              <Link className="btn ghost lg" href="/#product">
                 View products
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -498,17 +493,14 @@ export default function LandingPage() {
       </section>
 
       <section className="shell lp-section lp-section-last">
-        <div className="cta-box lp-cta">
-          <div>
-            <p className="lp-eyebrow">
-              Get started
-            </p>
-            <h2>Open the app on {NETWORK_NAME}</h2>
-            <p className="lead" style={{ marginBottom: 0 }}>
-              Two minutes to create a lock and a proof URL. Not for production funds.
-            </p>
-          </div>
-          <div className="hero-actions">
+        <div className="lp-cta">
+          <p className="lp-eyebrow">Get started</p>
+          <h2>Create your first lock on Arc</h2>
+          <p className="lead">
+            Connect a wallet on Arc Testnet, set the schedule, and share the public URL. The
+            same USDC pays gas and the $10 fee. Not for production funds.
+          </p>
+          <div className="lp-cta-actions">
             <Link className="btn lg" href="/auth">
               Launch the app
               <ArrowRight className="size-4" />

@@ -971,21 +971,6 @@ a.btn {
   color: #ffffff;
 }
 
-.lp-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.15rem;
-  padding: 0.32rem 0.7rem 0.32rem 0.55rem;
-  border: 1px solid rgba(0, 80, 224, 0.22);
-  border-radius: 999px;
-  background: rgba(0, 80, 224, 0.08);
-  color: var(--ion);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-}
-
 .lp-rail {
   display: flex;
   flex-wrap: wrap;
@@ -3892,7 +3877,7 @@ a.lp-card:hover .lp-card-arrow {
 }
 
 /* ── Scroll reveal (Notion-soft) ──────────────────────────────── */
-html.reveal-on .reveal {
+html.reveal-on [data-reveal] {
   transition:
     opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.72s cubic-bezier(0.16, 1, 0.3, 1),
@@ -3901,54 +3886,54 @@ html.reveal-on .reveal {
   will-change: opacity, transform;
 }
 
-html.reveal-on .reveal:not(.is-in) {
+html.reveal-on [data-reveal]:not([data-reveal-in]) {
   opacity: 0;
   transform: translate3d(0, 18px, 0);
   filter: blur(2px);
   pointer-events: none;
 }
 
-html.reveal-on .reveal.is-in {
+html.reveal-on [data-reveal][data-reveal-in] {
   opacity: 1;
   filter: none;
   will-change: auto;
 }
 
-html.reveal-on .lp-card.reveal:not(.is-in),
-html.reveal-on .lp-pillar.reveal:not(.is-in),
-html.reveal-on .lp-proof-panel.reveal:not(.is-in),
-html.reveal-on .faq-item.reveal:not(.is-in) {
+html.reveal-on .lp-card[data-reveal]:not([data-reveal-in]),
+html.reveal-on .lp-pillar[data-reveal]:not([data-reveal-in]),
+html.reveal-on .lp-proof-panel[data-reveal]:not([data-reveal-in]),
+html.reveal-on .faq-item[data-reveal]:not([data-reveal-in]) {
   transform: translate3d(0, 22px, 0) scale(0.985);
 }
 
-html.reveal-on .lp-flow-row.reveal:not(.is-in) {
+html.reveal-on .lp-flow-row[data-reveal]:not([data-reveal-in]) {
   transform: translate3d(0, 28px, 0);
   filter: blur(3px);
 }
 
-html.reveal-on .lp-marquee.reveal:not(.is-in) .lp-marquee-track,
-html.reveal-on .lp-testimonials-rows.reveal:not(.is-in) .lp-testimonials-track {
+html.reveal-on .lp-marquee[data-reveal]:not([data-reveal-in]) .lp-marquee-track,
+html.reveal-on .lp-testimonials-rows[data-reveal]:not([data-reveal-in]) .lp-testimonials-track {
   animation-play-state: paused;
 }
 
-html.reveal-on.reveal-mobile .reveal:not(.is-in) {
+html.reveal-on.reveal-mobile [data-reveal]:not([data-reveal-in]) {
   transform: translate3d(0, 12px, 0);
   filter: none;
 }
 
-html.reveal-on.reveal-mobile .lp-card.reveal:not(.is-in),
-html.reveal-on.reveal-mobile .lp-pillar.reveal:not(.is-in),
-html.reveal-on.reveal-mobile .lp-proof-panel.reveal:not(.is-in),
-html.reveal-on.reveal-mobile .faq-item.reveal:not(.is-in),
-html.reveal-on.reveal-mobile .lp-flow-row.reveal:not(.is-in) {
+html.reveal-on.reveal-mobile .lp-card[data-reveal]:not([data-reveal-in]),
+html.reveal-on.reveal-mobile .lp-pillar[data-reveal]:not([data-reveal-in]),
+html.reveal-on.reveal-mobile .lp-proof-panel[data-reveal]:not([data-reveal-in]),
+html.reveal-on.reveal-mobile .faq-item[data-reveal]:not([data-reveal-in]),
+html.reveal-on.reveal-mobile .lp-flow-row[data-reveal]:not([data-reveal-in]) {
   transform: translate3d(0, 14px, 0);
   filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.reveal-on .reveal,
-  html.reveal-on .reveal:not(.is-in),
-  html.reveal-on .reveal.is-in {
+  html.reveal-on [data-reveal],
+  html.reveal-on [data-reveal]:not([data-reveal-in]),
+  html.reveal-on [data-reveal][data-reveal-in] {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;

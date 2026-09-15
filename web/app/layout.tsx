@@ -26,9 +26,9 @@ export const metadata: Metadata = {
   description:
     "Immutable token locks, linear vesting, streams, airdrops, escrow, and staking on Arc. Public proof pages. Gas paid in USDC.",
   icons: {
-    icon: [{ url: "/arc-logo-only.png", type: "image/png" }],
-    apple: [{ url: "/arc-logo-only.png", type: "image/png" }],
-    shortcut: "/arc-logo-only.png",
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
   },
 };
 

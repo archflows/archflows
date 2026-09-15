@@ -19,7 +19,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { EllipsisVerticalIcon, LogOutIcon, CopyIcon } from "lucide-react";
-import { NETWORK_BADGE } from "@/lib/chain";
 import { copyToClipboard } from "@/lib/clipboard";
 
 export function NavUser() {
@@ -43,9 +42,7 @@ export function NavUser() {
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{short}</span>
-              <span className="truncate text-xs text-muted-foreground">
-                {NETWORK_BADGE}
-              </span>
+              <span className="truncate text-xs text-muted-foreground">Connected</span>
             </div>
             <EllipsisVerticalIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>

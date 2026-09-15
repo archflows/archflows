@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { HashNavLink } from "@/components/hash-nav-link";
-import { NETWORK_BADGE } from "@/lib/chain";
 import { cn } from "@/lib/utils";
 
 const MARKETING = [
@@ -39,10 +38,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="nav-end">
-          <span className="live live-accent hide-mobile">
-            <span className="pulse-dot" />
-            {NETWORK_BADGE}
-          </span>
           <Link href="/auth" className="btn sm hide-mobile">
             {onLockProof ? "Dashboard" : "Launch app"}
           </Link>

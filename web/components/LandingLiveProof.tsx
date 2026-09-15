@@ -88,14 +88,3 @@ export function LandingLiveProof() {
     </div>
   );
 }
-
-export function LandingLiveCounts() {
-  const { data: stats } = useLiveStats();
-  const t = stats?.totals;
-  if (!t) return <span className="lp-kicker-live">Indexing live API…</span>;
-  return (
-    <span className="lp-kicker-live">
-      {t.locks} locks · {t.streams} streams · {t.campaigns} airdrops
-    </span>
-  );
-}
