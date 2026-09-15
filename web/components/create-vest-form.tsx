@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
+import { ContactAddressInput } from "@/components/ContactAddressInput";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import {
   ARCFLOW_ADDRESS,
@@ -329,20 +330,14 @@ export function CreateVestForm() {
           error={overBalance ? "Exceeds wallet balance." : undefined}
         />
 
-        <div className="field">
-          <label className="field-label" htmlFor="vest-beneficiary">
-            Beneficiary
-          </label>
-          <input
-            id="vest-beneficiary"
-            className="af-input mono"
-            placeholder={address ? `${address} (you)` : "0x… teammate / investor wallet"}
-            autoComplete="off"
-            spellCheck={false}
-            value={beneficiary}
-            onChange={(e) => setBeneficiary(e.target.value.trim())}
-          />
-        </div>
+        <ContactAddressInput
+          id="vest-beneficiary"
+          label="Beneficiary"
+          value={beneficiary}
+          onChange={setBeneficiary}
+          placeholder={address ? `${address} (you)` : "0x… teammate / investor wallet"}
+          hint="Leave empty to vest to your connected wallet."
+        />
 
         <div className="field">
           <label className="field-label" htmlFor="vest-start">

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
+import { ContactAddressInput } from "@/components/ContactAddressInput";
 import { erc20Abi, streamAbi } from "@/lib/abi";
 import { ARCFLOW_STREAM_ADDRESS } from "@/lib/chain";
 import { parseAddressAmountCsv } from "@/lib/csv";
@@ -372,20 +373,14 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
               symbol={symbol}
               error={overBalance ? "Exceeds wallet balance." : undefined}
             />
-            <div className="field">
-              <label className="field-label" htmlFor="stream-recipient">
-                Recipient
-              </label>
-              <input
-                id="stream-recipient"
-                className="af-input mono"
-                placeholder="0x… employee / teammate"
-                autoComplete="off"
-                spellCheck={false}
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value.trim())}
-              />
-            </div>
+            <ContactAddressInput
+              id="stream-recipient"
+              label="Recipient"
+              value={recipient}
+              onChange={setRecipient}
+              placeholder="0x… employee / teammate"
+              hint="Pick a saved contact or paste a wallet address."
+            />
           </>
         ) : (
           <div className="field">

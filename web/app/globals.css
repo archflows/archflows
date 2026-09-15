@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -2257,9 +2257,9 @@ a.lp-card:hover .lp-card-arrow {
   width: 100%;
 }
 
-/* Home stat cards â€” Streamflow-style right bloom */
+/* Dashboard cards — solid surface (landing mocks keep --bloom via .lp-*) */
 [data-slot="card"] {
-  background: var(--bloom);
+  background: var(--card);
   color: #fff;
   border: 1px solid var(--hairline);
   box-shadow: none;
@@ -2295,7 +2295,7 @@ a.lp-card:hover .lp-card-arrow {
 .panel {
   border: 1px solid var(--hairline);
   border-radius: var(--radius-2xl);
-  background: var(--bloom);
+  background: var(--panel);
   overflow: hidden;
   color: #fff;
 }

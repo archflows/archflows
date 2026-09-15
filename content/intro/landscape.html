@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1920" />
+    <title>ArcFlows intro landscape</title>
+    <style>
+      @font-face {
+        font-family: Sora;
+        src: url("fonts/Sora-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("fonts/Sora-SemiBold.ttf") format("truetype");
+        font-weight: 600;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("fonts/Sora-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: block;
+      }
+
+      * { box-sizing: border-box; }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #050814;
+        font-family: Sora, sans-serif;
+        color: #fff;
+      }
+
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+
+      #bg {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 130%;
+        height: 130%;
+        object-fit: cover;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      #veil {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(5, 8, 20, 0.28) 0%,
+          rgba(5, 8, 20, 0.12) 45%,
+          rgba(5, 8, 20, 0.36) 100%
+        );
+      }
+
+      #logo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 780px;
+        height: auto;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+      }
+
+      #copy {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 96px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 92px;
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+        perspective: 1400px;
+      }
+
+      #copy .word {
+        display: inline-block;
+        transform-origin: center;
+        margin: 0 0.2em;
+        white-space: nowrap;
+      }
+
+      #copy .accent {
+        color: #8bb7ff;
+      }
+
+      #mark {
+        position: absolute;
+        left: 50%;
+        top: 20%;
+        transform: translate(-50%, -50%);
+        font-weight: 700;
+        font-size: 260px;
+        letter-spacing: -0.08em;
+        color: rgba(255, 255, 255, 0.22);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        line-height: 1;
+      }
+
+      #dash-wrap {
+        position: absolute;
+        left: 50%;
+        top: 58%;
+        width: 1520px;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        filter: drop-shadow(0 28px 50px rgba(0, 20, 80, 0.5));
+      }
+
+      #dash {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <img id="bg" src="../bahan/bcakgound.png" alt="" />
+      <div id="veil"></div>
+      <div id="mark">arcflows</div>
+      <img id="logo" src="logo.png" alt="ArcFlows" />
+      <div id="copy"></div>
+      <div id="dash-wrap">
+        <img id="dash" src="../bahan/dsabord.png" alt="" />
+      </div>
+    </div>
+    <script>
+      const DURATION = 16;
+
+      const SCENES = [
+        { start: 0.0, end: 1.7, logo: true },
+        { start: 1.65, end: 3.25, text: "This is ArcFlows.", size: 96, motion: "wipe" },
+        { start: 3.05, end: 4.65, text: "Token locks on Arc.", size: 88, motion: "split" },
+        { start: 4.45, end: 6.05, text: "Lock. Vest. Stream.", size: 92, motion: "pop" },
+        { start: 5.85, end: 7.45, text: "Airdrop. Escrow. Stake.", size: 76, motion: "flip" },
+        { start: 7.25, end: 8.85, text: "Immutable schedules.", size: 86, motion: "tracking" },
+        { start: 8.65, end: 10.25, text: "Public proof pages.", size: 90, motion: "zoomOut" },
+        { start: 10.05, end: 11.65, text: "Gas paid in USDC.", size: 92, motion: "rise", highlight: "USDC." },
+        { start: 11.45, end: 12.95, text: "Built for Arc.", size: 108, motion: "slam" },
+        { start: 12.75, end: 16.0, endcard: true },
+      ];
+
+      const els = {
+        bg: document.getElementById("bg"),
+        logo: document.getElementById("logo"),
+        copy: document.getElementById("copy"),
+        dash: document.getElementById("dash-wrap"),
+        mark: document.getElementById("mark"),
+      };
+
+      function clamp(v, a, b) {
+        return Math.max(a, Math.min(b, v));
+      }
+      function easeOut(t) {
+        t = clamp(t, 0, 1);
+        return 1 - Math.pow(1 - t, 3);
+      }
+      function easeOutBack(t) {
+        t = clamp(t, 0, 1);
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+      }
+      function easeOutExpo(t) {
+        t = clamp(t, 0, 1);
+        return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      }
+      function fade(t, start, end, fadeIn = 0.28, fadeOut = 0.24) {
+        if (t < start || t > end) return 0;
+        return Math.min(easeOut((t - start) / fadeIn), easeOut((end - t) / fadeOut));
+      }
+      function unit(local, delay, dur) {
+        return easeOut((local - delay) / dur);
+      }
+
+      function wordsOf(text) {
+        return text.split(/\s+/);
+      }
+
+      function decorate(word, highlight) {
+        if (highlight && word === highlight) {
+          return `<span class="accent">${word}</span>`;
+        }
+        return word;
+      }
+
+      function renderCopy(scene, t) {
+        const local = t - scene.start;
+        const hold = fade(t, scene.start, scene.end, 0.2, 0.22);
+        const words = wordsOf(scene.text);
+        els.copy.style.fontSize = (scene.size || 90) + "px";
+        els.copy.style.letterSpacing = "-0.04em";
+        els.copy.style.clipPath = "none";
+        els.copy.style.filter = "none";
+        els.copy.style.transform = "none";
+        els.copy.style.opacity = "1";
+
+        const motion = scene.motion;
+        const out = 1 - hold;
+
+        if (motion === "wipe") {
+          const p = easeOut(local / 0.7);
+          els.copy.style.clipPath = `inset(0 ${(1 - p) * 100}% 0 0)`;
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML = `<span class="word">${scene.text}</span>`;
+          return;
+        }
+
+        if (motion === "split") {
+          const mid = Math.ceil(words.length / 2);
+          const left = words.slice(0, mid).join(" ");
+          const right = words.slice(mid).join(" ");
+          const pl = unit(local, 0, 0.55);
+          const pr = unit(local, 0.1, 0.55);
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML =
+            `<span class="word" style="opacity:${pl};transform:translateX(${(1 - pl) * -140}px)">${left}</span>` +
+            `<span class="word" style="opacity:${pr};transform:translateX(${(1 - pr) * 140}px)">${right}</span>`;
+          return;
+        }
+
+        if (motion === "pop") {
+          els.copy.style.opacity = String(Math.max(hold, 0.001));
+          els.copy.innerHTML = words
+            .map((word, i) => {
+              const p = clamp((local - i * 0.18) / 0.45, 0, 1);
+              const s = 0.2 + 0.8 * easeOutBack(p);
+              return `<span class="word" style="opacity:${easeOut(p)};transform:scale(${s})">${word}</span>`;
+            })
+            .join("");
+          return;
+        }
+
+        if (motion === "flip") {
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML = words
+            .map((word, i) => {
+              const p = unit(local, i * 0.16, 0.48);
+              const rx = (1 - p) * 88;
+              return `<span class="word" style="opacity:${p};transform:rotateX(${rx}deg);transform-origin:50% 90%">${word}</span>`;
+            })
+            .join("");
+          return;
+        }
+
+        if (motion === "tracking") {
+          const p = easeOut(local / 0.75);
+          const tracking = (1 - p) * 0.52 - 0.04;
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML = `<span class="word" style="letter-spacing:${tracking}em">${scene.text}</span>`;
+          return;
+        }
+
+        if (motion === "zoomOut") {
+          const p = easeOut(local / 0.72);
+          const s = 1.75 - 0.75 * p;
+          const blur = (1 - p) * 18;
+          els.copy.style.filter = `blur(${blur}px)`;
+          els.copy.style.transform = `scale(${s})`;
+          els.copy.style.opacity = String(hold * p);
+          els.copy.innerHTML = `<span class="word">${scene.text}</span>`;
+          return;
+        }
+
+        if (motion === "rise") {
+          const p = easeOut(local / 0.62);
+          const y = (1 - p) * 90;
+          els.copy.style.clipPath = `inset(${(1 - p) * 100}% 0 0 0)`;
+          els.copy.style.transform = `translateY(${y}px)`;
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML = words
+            .map((word) => `<span class="word">${decorate(word, scene.highlight)}</span>`)
+            .join("");
+          return;
+        }
+
+        if (motion === "slam") {
+          const p = easeOutBack(local / 0.55);
+          const s = 1.85 - 0.85 * Math.min(p, 1);
+          const rot = (1 - Math.min(p, 1)) * -8;
+          els.copy.style.transform = `scale(${s}) rotate(${rot}deg)`;
+          els.copy.style.opacity = String(hold);
+          els.copy.innerHTML = `<span class="word">${scene.text}</span>`;
+          return;
+        }
+
+        els.copy.style.opacity = String(hold);
+        els.copy.innerHTML = `<span class="word">${scene.text}</span>`;
+      }
+
+      function seek(time) {
+        const t = clamp(time, 0, DURATION);
+        els.bg.style.transform = `translate(-50%, -50%) scale(${1 + 0.07 * (t / DURATION)})`;
+
+        let logoOp = 0;
+        let active = null;
+        let copyHold = 0;
+
+        for (const scene of SCENES) {
+          if (scene.endcard) continue;
+          if (scene.logo) {
+            logoOp = Math.max(logoOp, fade(t, scene.start, scene.end, 0.4, 0.28));
+            continue;
+          }
+          const op = fade(t, scene.start, scene.end, 0.2, 0.22);
+          if (op > copyHold) {
+            copyHold = op;
+            active = scene;
+          }
+        }
+
+        if (active) {
+          renderCopy(active, t);
+        } else {
+          els.copy.innerHTML = "";
+          els.copy.style.opacity = "0";
+          els.copy.style.filter = "none";
+          els.copy.style.clipPath = "none";
+          els.copy.style.transform = "none";
+        }
+
+        const lp = logoOp;
+        els.logo.style.opacity = String(lp);
+        els.logo.style.filter = `blur(${(1 - lp) * 10}px)`;
+        els.logo.style.transform = `translate(-50%, -50%) scale(${0.72 + 0.28 * easeOutBack(lp)})`;
+
+        const end = fade(t, 12.8, 16.0, 0.5, 0.01);
+        const markP = easeOut(end);
+        els.mark.style.opacity = String(end);
+        els.mark.style.transform = `translate(-50%, -50%) translateX(${(1 - markP) * -70}px) scale(${1.08 - 0.08 * markP})`;
+        els.dash.style.opacity = String(end);
+        els.dash.style.transform = `translate(-50%, -50%) translateY(${(1 - end) * 60}px) scale(${0.9 + 0.1 * end})`;
+      }
+
+      window.seek = seek;
+      window.DURATION = DURATION;
+
+      async function ready() {
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((img) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise((resolve) => {
+                  img.onload = resolve;
+                  img.onerror = resolve;
+                })
+          )
+        );
+        window.__ready = true;
+        seek(0);
+      }
+
+      ready().then(() => {
+        if (new URLSearchParams(location.search).has("render")) return;
+        let start = performance.now();
+        const loop = (now) => {
+          seek(((now - start) / 1000) % (DURATION + 1.2));
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+      });
+    </script>
+  </body>
+</html>

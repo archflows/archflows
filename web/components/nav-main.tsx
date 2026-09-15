@@ -7,6 +7,7 @@ import { ChevronRightIcon } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuBadge,
@@ -156,7 +157,13 @@ function NavSubTree({
   );
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+export function NavMain({
+  items,
+  groupLabel,
+}: {
+  items: NavItem[];
+  groupLabel?: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useSidebar();
@@ -177,6 +184,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
 
   return (
     <SidebarGroup>
+      {groupLabel ? <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel> : null}
       <SidebarGroupContent>
         <SidebarMenu className="gap-1">
           {items.map((item) => {

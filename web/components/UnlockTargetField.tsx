@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { isAddress } from "viem";
+import { ContactAddressInput } from "@/components/ContactAddressInput";
 import { shorten } from "@/lib/form-time";
 
 export type UnlockTarget = "self" | "other" | "split";
@@ -206,14 +207,12 @@ export function UnlockTargetField({
 
       {mode === "other" ? (
         <>
-          <input
-            className="af-input mono"
-            style={{ marginTop: "0.45rem" }}
-            placeholder="0x… beneficiary wallet"
-            autoComplete="off"
-            spellCheck={false}
+          <ContactAddressInput
+            compact
             value={otherAddress}
-            onChange={(e) => onOtherAddressChange(e.target.value.trim())}
+            onChange={onOtherAddressChange}
+            placeholder="0x… beneficiary wallet"
+            style={{ marginTop: "0.45rem" }}
           />
           {otherAddress && !isAddress(otherAddress) ? (
             <p className="field-error">Invalid address.</p>
@@ -227,13 +226,12 @@ export function UnlockTargetField({
         <div className="split-list">
           {splits.map((row, index) => (
             <div className="split-row" key={row.id}>
-              <input
-                className="af-input mono"
+              <ContactAddressInput
+                compact
+                className="min-w-0 flex-1"
                 placeholder={`Wallet ${index + 1}`}
-                autoComplete="off"
-                spellCheck={false}
                 value={row.address}
-                onChange={(e) => updateAddress(row.id, e.target.value.trim())}
+                onChange={(value) => updateAddress(row.id, value)}
               />
               <div className="split-pct">
                 <input

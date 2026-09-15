@@ -1,0 +1,12 @@
+{
+  "name": "arcflows-intro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "render:landscape": "node render.mjs landscape"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.11.0"
+  }
+}

@@ -20,6 +20,7 @@ import {
   GiftIcon,
   LayersIcon,
   WavesIcon,
+  BookUserIcon,
 } from "lucide-react";
 
 const navMain = [
@@ -27,6 +28,11 @@ const navMain = [
     title: "Home",
     url: "/dashboard",
     icon: <HomeIcon />,
+  },
+  {
+    title: "Contacts",
+    url: "/dashboard/contacts",
+    icon: <BookUserIcon />,
   },
   {
     title: "Locks",
