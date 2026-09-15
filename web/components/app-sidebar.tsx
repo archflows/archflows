@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LogoMark } from "@/components/Icons";
-import { NavDocuments } from "@/components/nav-documents";
+import { BrandLogo } from "@/components/BrandLogo";
 import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
@@ -21,8 +19,6 @@ import {
   HourglassIcon,
   GiftIcon,
   LayersIcon,
-  Settings2Icon,
-  CircleHelpIcon,
 } from "lucide-react";
 
 const navMain = [
@@ -42,27 +38,14 @@ const navMain = [
     icon: <HourglassIcon />,
   },
   {
-    title: "Airdrops",
-    url: "/dashboard/airdrops",
-    icon: <GiftIcon />,
-  },
-  {
     title: "Staking",
     url: "/dashboard/staking",
     icon: <LayersIcon />,
   },
-];
-
-const navSecondary = [
   {
-    title: "Settings",
-    url: "/dashboard",
-    icon: <Settings2Icon />,
-  },
-  {
-    title: "FAQ",
-    url: "/#faq",
-    icon: <CircleHelpIcon />,
+    title: "Airdrops",
+    url: "/dashboard/airdrops",
+    icon: <GiftIcon />,
   },
 ];
 
@@ -73,19 +56,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/dashboard" />}
+              className="h-10 justify-center data-[slot=sidebar-menu-button]:p-1.5!"
+              render={<Link href="/dashboard" aria-label="ArcFlow dashboard" />}
             >
-              <LogoMark size={18} />
-              <span className="text-base font-semibold">ArcFlow</span>
+              <BrandLogo height={28} className="mx-auto" />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavDocuments />
-        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

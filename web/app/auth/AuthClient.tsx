@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Wallet } from "lucide-react";
 import { useAccount, useSwitchChain } from "wagmi";
-import { LogoMark } from "@/components/Icons";
+import { BrandLogo } from "@/components/BrandLogo";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { HeroOrbit } from "@/components/HeroOrbit";
 import { ARC_TESTNET } from "@/lib/chain";
@@ -31,11 +31,8 @@ export default function AuthClient() {
   return (
     <div className="auth-shell">
       <aside className="auth-aside">
-        <Link href="/" className="brand">
-          <span className="brand-glyph">
-            <LogoMark size={14} />
-          </span>
-          ArcFlow
+        <Link href="/" className="brand brand-logo-link" aria-label="ArcFlow home">
+          <BrandLogo height={56} />
         </Link>
 
         <div className="auth-aside-visual">
@@ -67,11 +64,8 @@ export default function AuthClient() {
 
       <main className="auth-main">
         <div style={{ width: "100%", maxWidth: "24rem" }}>
-          <Link href="/" className="brand auth-brand-mobile">
-            <span className="brand-glyph">
-              <LogoMark size={14} />
-            </span>
-            ArcFlow
+          <Link href="/" className="brand brand-logo-link auth-brand-mobile" aria-label="ArcFlow home">
+            <BrandLogo height={56} />
           </Link>
 
           <p className="tag">// AUTHENTICATION</p>

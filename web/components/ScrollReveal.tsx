@@ -8,21 +8,30 @@ const SELECTOR = [
   ".hero-copy",
   ".hero-visual",
   ".mini-stat",
+  ".lp-rail",
+  ".lp-card",
+  ".lp-step",
+  ".lp-proof-panel",
   ".box-grid > .box",
   ".cta-box",
   ".faq-item",
-  ".panel",
 ].join(",");
 
 /**
  * Staggered entry animation, desktop only — mobile and reduced-motion opt out
- * so first paint stays cheap.
+ * so first paint stays cheap. Skipped on dashboard/auth.
  */
 export function ScrollReveal() {
   const pathname = usePathname();
 
   useEffect(() => {
+    const bare =
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/login");
+
     const skip =
+      bare ||
       window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

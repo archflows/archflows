@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { isAddress } from "viem";
 import { shorten } from "@/lib/form-time";
@@ -26,6 +27,82 @@ function newRow(percent = ""): SplitRow {
   return { id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, address: "", percent };
 }
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function formatPct(n: number) {
+  const r = round2(n);
+  return Number.isInteger(r) ? String(r) : r.toFixed(2).replace(/\.?0+$/, "");
+}
+
+/** Split `total` across `count` rows; last row absorbs rounding dust. */
+function distribute(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  if (count === 1) return [round2(Math.max(0, total))];
+  const base = round2(Math.max(0, total) / count);
+  const parts = Array.from({ length: count }, () => base);
+  const allocated = round2(base * (count - 1));
+  parts[count - 1] = round2(Math.max(0, total) - allocated);
+  return parts;
+}
+
+function parsePct(raw: string) {
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Keep manually-set rows fixed. Put leftover (100 − manual sum) on auto rows only.
+ */
+function applyManualBalance(
+  rows: SplitRow[],
+  manualIds: Set<string>,
+  editedId: string,
+  editedRaw: string,
+): SplitRow[] {
+  const nextManual = new Set(manualIds);
+  nextManual.add(editedId);
+
+  const withEdit = rows.map((row) =>
+    row.id === editedId ? { ...row, percent: editedRaw } : row,
+  );
+
+  const autoRows = withEdit.filter((row) => !nextManual.has(row.id));
+  const manualSum = withEdit.reduce((sum, row) => {
+    if (!nextManual.has(row.id)) return sum;
+    return sum + parsePct(row.percent);
+  }, 0);
+  const remainder = round2(Math.max(0, 100 - manualSum));
+
+  if (autoRows.length === 0) return withEdit;
+
+  const parts = distribute(remainder, autoRows.length);
+  let i = 0;
+  return withEdit.map((row) => {
+    if (nextManual.has(row.id)) return row;
+    return { ...row, percent: formatPct(parts[i++] ?? 0) };
+  });
+}
+
+/** Rebalance only auto rows after add/remove; leave manual percents untouched. */
+function rebalanceAutos(rows: SplitRow[], manualIds: Set<string>): SplitRow[] {
+  const autoRows = rows.filter((row) => !manualIds.has(row.id));
+  if (autoRows.length === 0) return rows;
+
+  const manualSum = rows.reduce((sum, row) => {
+    if (!manualIds.has(row.id)) return sum;
+    return sum + parsePct(row.percent);
+  }, 0);
+  const remainder = round2(Math.max(0, 100 - manualSum));
+  const parts = distribute(remainder, autoRows.length);
+  let i = 0;
+  return rows.map((row) => {
+    if (manualIds.has(row.id)) return row;
+    return { ...row, percent: formatPct(parts[i++] ?? 0) };
+  });
+}
+
 export function UnlockTargetField({
   mode,
   onModeChange,
@@ -35,14 +112,59 @@ export function UnlockTargetField({
   splits,
   onSplitsChange,
 }: Props) {
-  const splitTotal = splits.reduce((sum, row) => {
-    const n = Number(row.percent);
-    return sum + (Number.isFinite(n) ? n : 0);
-  }, 0);
-  const splitOk = Math.abs(splitTotal - 100) < 0.01;
+  /** Rows the user typed — these stay fixed when another share is edited. */
+  const [manualIds, setManualIds] = useState<Set<string>>(() => new Set());
 
-  function updateRow(id: string, patch: Partial<SplitRow>) {
-    onSplitsChange(splits.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  const splitTotal = splits.reduce((sum, row) => sum + parsePct(row.percent), 0);
+  const splitOk = Math.abs(splitTotal - 100) < 0.05;
+
+  function updateAddress(id: string, address: string) {
+    onSplitsChange(splits.map((row) => (row.id === id ? { ...row, address } : row)));
+  }
+
+  function updatePercent(id: string, raw: string) {
+    const cleaned = raw.replace(/[^\d.]/g, "");
+    const n = Number(cleaned);
+
+    if (cleaned === "" || !Number.isFinite(n)) {
+      setManualIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+      onSplitsChange(splits.map((row) => (row.id === id ? { ...row, percent: cleaned } : row)));
+      return;
+    }
+
+    setManualIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    onSplitsChange(applyManualBalance(splits, manualIds, id, cleaned));
+  }
+
+  function addWallet() {
+    const row = newRow();
+    onSplitsChange(rebalanceAutos([...splits, row], manualIds));
+  }
+
+  function removeWallet(id: string) {
+    if (splits.length <= 2) return;
+    const nextManual = new Set(manualIds);
+    nextManual.delete(id);
+    setManualIds(nextManual);
+    onSplitsChange(rebalanceAutos(splits.filter((row) => row.id !== id), nextManual));
+  }
+
+  function startSplit() {
+    onModeChange("split");
+    if (splits.length === 0) {
+      const a = newRow("50");
+      const b = newRow("50");
+      setManualIds(new Set());
+      onSplitsChange([a, b]);
+    }
   }
 
   return (
@@ -66,12 +188,7 @@ export function UnlockTargetField({
         <button
           type="button"
           className={mode === "split" ? "seg-btn on" : "seg-btn"}
-          onClick={() => {
-            onModeChange("split");
-            if (splits.length === 0) {
-              onSplitsChange([newRow("50"), newRow("50")]);
-            }
-          }}
+          onClick={startSplit}
         >
           Split wallets
         </button>
@@ -116,7 +233,7 @@ export function UnlockTargetField({
                 autoComplete="off"
                 spellCheck={false}
                 value={row.address}
-                onChange={(e) => updateRow(row.id, { address: e.target.value.trim() })}
+                onChange={(e) => updateAddress(row.id, e.target.value.trim())}
               />
               <div className="split-pct">
                 <input
@@ -124,7 +241,7 @@ export function UnlockTargetField({
                   inputMode="decimal"
                   placeholder="%"
                   value={row.percent}
-                  onChange={(e) => updateRow(row.id, { percent: e.target.value })}
+                  onChange={(e) => updatePercent(row.id, e.target.value)}
                 />
                 <span>%</span>
               </div>
@@ -132,7 +249,7 @@ export function UnlockTargetField({
                 type="button"
                 className="btn ghost sm"
                 disabled={splits.length <= 2}
-                onClick={() => onSplitsChange(splits.filter((r) => r.id !== row.id))}
+                onClick={() => removeWallet(row.id)}
                 title="Remove wallet"
               >
                 <Trash2Icon className="size-3.5" />
@@ -141,21 +258,17 @@ export function UnlockTargetField({
           ))}
 
           <div className="split-footer">
-            <button
-              type="button"
-              className="btn ghost sm"
-              onClick={() => onSplitsChange([...splits, newRow()])}
-            >
+            <button type="button" className="btn ghost sm" onClick={addWallet}>
               <PlusIcon className="size-3.5" />
               Add wallet
             </button>
             <span className={splitOk ? "split-total ok" : "split-total bad"}>
-              Total {splitTotal.toFixed(splitTotal % 1 ? 1 : 0)}%
+              Total {round2(splitTotal)}%
               {splitOk ? "" : " · must be 100%"}
             </span>
           </div>
           <p className="field-hint">
-            Each wallet gets its own lock for that share. Fee is $10 USDC per wallet.
+            Shares you type stay fixed. Empty / other wallets fill the rest to 100%.
           </p>
         </div>
       ) : null}
@@ -172,6 +285,6 @@ export function validateSplits(splits: SplitRow[]) {
     if (!Number.isFinite(n) || n <= 0) return "Each share must be greater than 0%.";
     total += n;
   }
-  if (Math.abs(total - 100) > 0.01) return "Split shares must add up to 100%.";
+  if (Math.abs(total - 100) > 0.05) return "Split shares must add up to 100%.";
   return null;
 }

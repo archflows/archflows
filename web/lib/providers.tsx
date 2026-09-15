@@ -14,14 +14,28 @@ const config = createConfig({
     }),
   ],
   transports: {
-    [ARC_TESTNET.id]: http("https://rpc.testnet.arc.network"),
+    [ARC_TESTNET.id]: http("https://rpc.testnet.arc.network", {
+      batch: true,
+    }),
   },
   ssr: true,
   multiInjectedProviderDiscovery: true,
 });
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            gcTime: 5 * 60_000,
+            refetchOnWindowFocus: false,
+            retry: 1,
+          },
+        },
+      }),
+  );
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

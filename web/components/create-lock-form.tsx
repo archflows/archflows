@@ -36,7 +36,8 @@ import {
   type SplitRow,
   type UnlockTarget,
 } from "@/components/UnlockTargetField";
-import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/form-shell";
+import { LockOgPreview } from "@/components/LockOgPreview";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 
@@ -101,6 +102,12 @@ export function CreateLockForm() {
     functionName: "decimals",
     query: { enabled: Boolean(tokenAddress) },
   });
+  const { data: totalSupply } = useReadContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "totalSupply",
+    query: { enabled: Boolean(tokenAddress) },
+  });
   const { data: balance } = useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -139,6 +146,17 @@ export function CreateLockForm() {
       return undefined;
     }
   }, [amount, decimals]);
+
+  const supplyShare = useMemo(() => {
+    if (parsedAmount === undefined || totalSupply === undefined || totalSupply === 0n) return undefined;
+    const scaled = (parsedAmount * 10000n) / totalSupply; // percent × 100
+    if (scaled === 0n && parsedAmount > 0n) return "<0.01%";
+    const pct = Number(scaled) / 100;
+    return `${pct.toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+    })}%`;
+  }, [parsedAmount, totalSupply]);
 
   const tokenSpend =
     parsedAmount === undefined
@@ -312,12 +330,8 @@ export function CreateLockForm() {
         }
       }
 
-      if (lastLockId === undefined) {
-        setError("Locked, but the lock id could not be read from the receipt.");
-        return;
-      }
-      if (targets.length > 1) {
-        router.push("/dashboard/locks");
+      if (targets.length > 1 || lastLockId === undefined) {
+        router.push("/dashboard/locks/positions");
       } else {
         router.push(`/lock/${lastLockId.toString()}`);
       }
@@ -331,8 +345,13 @@ export function CreateLockForm() {
   return (
     <div className="space-y-5">
       {notDeployed ? (
-        <div className="alert alert-warn">
-          Contract not deployed yet. Set <code className="mono">NEXT_PUBLIC_ARCFLOW_ADDRESS</code>.
+        <div className="form-notice form-notice-warn" role="status">
+          <div className="form-notice-body">
+            <strong>Contract not configured</strong>
+            <p>
+              Set <code className="mono">NEXT_PUBLIC_ARCFLOW_ADDRESS</code> after deploying.
+            </p>
+          </div>
         </div>
       ) : null}
 
@@ -340,38 +359,47 @@ export function CreateLockForm() {
         title="Hard lock"
         badge="Time-based"
         aside={
-          <PreviewPanel
-            title="Lock preview"
-            rows={[
-              { label: "Type", value: "Hard lock" },
-              {
-                label: "Unlocks",
-                value: mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : "—",
-              },
-              { label: "Duration", value: tooShort ? "—" : formatDuration(durationSec) },
-              {
-                label: "Unlock to",
-                value:
-                  unlockMode === "split" ? (
-                    beneficiaryPreview
-                  ) : (
-                    <span className="mono">{beneficiaryPreview}</span>
-                  ),
-              },
-              {
-                label: "Amount",
-                value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
-              },
-              {
-                label: "Fee",
-                value:
-                  unlockMode === "split"
-                    ? `$${10 * Math.max(splits.length, 1)} USDC (${Math.max(splits.length, 1)} × $10)`
-                    : "$10 USDC",
-              },
-            ]}
-            note="Nothing is claimable until unlock. Split creates one immutable lock per wallet for its share."
-          />
+          <>
+            <PreviewPanel
+              title="Lock preview"
+              rows={[
+                { label: "Type", value: "Hard lock" },
+                {
+                  label: "Unlocks",
+                  value: mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : "—",
+                },
+                { label: "Duration", value: tooShort ? "—" : formatDuration(durationSec) },
+                {
+                  label: "Unlock to",
+                  value:
+                    unlockMode === "split" ? (
+                      beneficiaryPreview
+                    ) : (
+                      <span className="mono">{beneficiaryPreview}</span>
+                    ),
+                },
+                {
+                  label: "Amount",
+                  value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
+                },
+                {
+                  label: "Fee",
+                  value:
+                    unlockMode === "split"
+                      ? `$${10 * Math.max(splits.length, 1)} USDC (${Math.max(splits.length, 1)} × $10)`
+                      : "$10 USDC",
+                },
+              ]}
+            />
+            <LockOgPreview
+              amount={amount}
+              symbol={symbol}
+              duration={tooShort ? undefined : formatDuration(durationSec)}
+              unlockLabel={mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : undefined}
+              supplyShare={supplyShare}
+              lockType="Hard lock"
+            />
+          </>
         }
       >
         <TokenSelect
@@ -425,44 +453,74 @@ export function CreateLockForm() {
           onSplitsChange={setSplits}
         />
 
-        <div className="field">
-          <span className="field-label">Unlock after</span>
-          <DurationTriple
-            days={daysInput}
-            hours={hoursInput}
-            minutes={minutesInput}
-            onDays={(v) => {
-              setDaysInput(v);
-              applyParts(v, hoursInput, minutesInput);
-            }}
-            onHours={(v) => {
-              setHoursInput(v);
-              applyParts(daysInput, v, minutesInput);
-            }}
-            onMinutes={(v) => {
-              setMinutesInput(v);
-              applyParts(daysInput, hoursInput, v);
-            }}
-          />
-          <label className="field" style={{ marginTop: "0.5rem", marginBottom: 0 }}>
-            <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-              Or exact unlock time
-            </span>
-            <input
-              className="af-input"
-              type="datetime-local"
-              min={mounted ? toLocalInput(nowSec() + MINUTE) : undefined}
-              value={mounted ? toLocalInput(unlockAt) : ""}
-              onChange={(e) => onDateChange(e.target.value)}
-            />
-          </label>
-          {tooShort ? <p className="field-error">Must be at least 1 minute from now.</p> : null}
-        </div>
+        <UnlockAfterField
+          days={daysInput}
+          hours={hoursInput}
+          minutes={minutesInput}
+          onDays={(v) => {
+            setDaysInput(v);
+            applyParts(v, hoursInput, minutesInput);
+          }}
+          onHours={(v) => {
+            setHoursInput(v);
+            applyParts(daysInput, v, minutesInput);
+          }}
+          onMinutes={(v) => {
+            setMinutesInput(v);
+            applyParts(daysInput, hoursInput, v);
+          }}
+          datetimeMin={mounted ? toLocalInput(nowSec() + MINUTE) : undefined}
+          datetimeValue={mounted ? toLocalInput(unlockAt) : ""}
+          onDatetimeChange={onDateChange}
+          error={tooShort ? "Must be at least 1 minute from now." : undefined}
+        />
 
-        {error ? <div className="alert alert-error">{error}</div> : null}
-        {splitError && unlockMode === "split" ? (
-          <div className="alert alert-warn">{splitError}</div>
-        ) : null}
+        {(() => {
+          const notice = error
+            ? { tone: "error" as const, title: "Transaction failed", body: error }
+            : splitError && unlockMode === "split"
+              ? { tone: "warn" as const, title: "Fix split shares", body: splitError }
+              : isConnected && !tokenAddress
+                ? { tone: "warn" as const, title: "Token required", body: "Pick a token from your wallet to continue." }
+                : isConnected && parsedAmount === undefined
+                  ? {
+                      tone: "warn" as const,
+                      title: "Amount required",
+                      body: "Enter how much you want to lock.",
+                    }
+                  : isConnected && shortFee
+                    ? {
+                        tone: "warn" as const,
+                        title: "USDC needed for fee",
+                        body: lockingUsdc
+                          ? "Need $10 USDC lock fee plus the amount you lock, and a little for gas."
+                          : "Each lock costs $10 USDC (+ gas). Your USDC balance is empty.",
+                        href: "https://faucet.circle.com",
+                        hrefLabel: "Get testnet USDC",
+                      }
+                    : null;
+
+          if (!notice) return null;
+
+          return (
+            <div className={`form-notice form-notice-${notice.tone}`} role="status">
+              <div className="form-notice-body">
+                <strong>{notice.title}</strong>
+                <p>{notice.body}</p>
+              </div>
+              {"href" in notice && notice.href ? (
+                <a
+                  className="form-notice-action"
+                  href={notice.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {notice.hrefLabel}
+                </a>
+              ) : null}
+            </div>
+          );
+        })()}
 
         <div style={{ marginTop: "0.5rem" }}>
           {!isConnected ? (
@@ -472,6 +530,15 @@ export function CreateLockForm() {
               type="button"
               className="btn lg block"
               disabled={!ready || busy || notDeployed}
+              title={
+                shortFee
+                  ? "Need $10+ USDC for fee and gas"
+                  : !tokenAddress
+                    ? "Select a token"
+                    : parsedAmount === undefined
+                      ? "Enter amount"
+                      : undefined
+              }
               onClick={submit}
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}

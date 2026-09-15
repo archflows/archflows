@@ -1,16 +1,18 @@
 "use client";
 
 import { CreateLockForm } from "@/components/create-lock-form";
-import MyLocksPage from "@/app/app/locks/page";
+import { ModuleTabs } from "@/components/module-tabs";
 
 export default function DashboardLocksPage() {
   return (
-    <div className="flex flex-1 flex-col gap-8 p-4 md:p-6 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:px-6 min-w-0">
+      <ModuleTabs
+        items={[
+          { href: "/dashboard/locks", label: "Create", exact: true },
+          { href: "/dashboard/locks/positions", label: "My positions" },
+        ]}
+      />
       <CreateLockForm />
-      <div className="border-t border-border pt-6">
-        <h2 className="mb-4 text-sm font-medium text-muted-foreground">Your lock positions</h2>
-        <MyLocksPage />
-      </div>
     </div>
   );
 }

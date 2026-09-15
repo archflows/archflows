@@ -270,5 +270,16 @@ Fork live (`contracts/test/LiveDistributorFork.t.sol`):
 | `cancel` sebelum `claimStart` refund penuh | PASS |
 | Non-owner tidak bisa `upgradeToAndCall` | PASS |
 
-UI dashboard masih placeholder (`ModuleSoon`). Proxy airdrop testnet sudah memakai logic terbaru. UUPS sengaja tetap hidup sampai Arc public mainnet ada.
+### UI Streamflow-parity (15 Sep 2026)
+
+Dashboard sekarang menghubungkan kontrak live:
+
+| Route | Fitur |
+|---|---|
+| `/dashboard/vesting` | Stream / payroll: create, CSV `createBatch`, list, withdraw, cancel, top-up, transfer |
+| `/dashboard/airdrops` | Create dari CSV→merkle + auto proof JSON, claim / claimTo, manage cancel/topUp/clawback |
+| `/dashboard/escrow` | Fund deal, release, refund, daftar buyer/seller |
+| `/dashboard/staking` | Create pool + stake / unstake / claim reward |
+
+Lock anti-dump tetap di `/dashboard/locks` (`ArcFlow.sol`). Stream payroll pakai `ArcFlowStream` (cancelable). Proxy airdrop testnet sudah logic terbaru; UUPS sengaja tetap hidup sampai Arc public mainnet.
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, isHex, parseUnits, size } from "viem";
+import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
-import { ARCFLOW_DISTRIBUTOR_ADDRESS, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
+import { ARCFLOW_DISTRIBUTOR_ADDRESS } from "@/lib/chain";
 import {
   DAY,
   HOUR,
@@ -17,12 +17,14 @@ import {
   parseCount,
   toLocalInput,
 } from "@/lib/form-time";
+import { downloadProofJson, treeFromCsv, type MerkleTree } from "@/lib/merkle";
+import { arcGas, MAX_U128, txMessage } from "@/lib/tx";
 import { useMounted } from "@/hooks/useMounted";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
 
-const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
+const MIN_WINDOW = HOUR;
 
 export function CreateAirdropForm() {
   const publicClient = usePublicClient();
@@ -31,8 +33,7 @@ export function CreateAirdropForm() {
   const { writeContractAsync } = useWriteContract();
 
   const [token, setToken] = useState("");
-  const [amount, setAmount] = useState("");
-  const [merkleRoot, setMerkleRoot] = useState("");
+  const [csv, setCsv] = useState("");
   const [claimDays, setClaimDays] = useState("14");
   const [claimHours, setClaimHours] = useState("0");
   const [claimMinutes, setClaimMinutes] = useState("0");
@@ -41,12 +42,12 @@ export function CreateAirdropForm() {
   const [vestHours, setVestHours] = useState("0");
   const [cliffDays, setCliffDays] = useState("0");
   const [cliffHours, setCliffHours] = useState("0");
-  const [createdId, setCreatedId] = useState<string>("");
+  const [tree, setTree] = useState<MerkleTree | null>(null);
+  const [createdId, setCreatedId] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating">("idle");
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
-  const rootOk = isHex(merkleRoot) && size(merkleRoot) === 32;
   const notDeployed = ARCFLOW_DISTRIBUTOR_ADDRESS === ZERO;
 
   const claimWindow =
@@ -54,7 +55,7 @@ export function CreateAirdropForm() {
   const claimEnd = claimStart + claimWindow;
   const vestDuration = parseCount(vestDays) * DAY + parseCount(vestHours) * HOUR;
   const vestCliff = parseCount(cliffDays) * DAY + parseCount(cliffHours) * HOUR;
-  const badWindow = claimWindow < MINUTE;
+  const badWindow = claimWindow < MIN_WINDOW;
   const badVest = vestDuration > 0 && vestCliff > vestDuration;
 
   const { data: symbol } = useReadContract({
@@ -84,33 +85,45 @@ export function CreateAirdropForm() {
     query: { enabled: Boolean(tokenAddress && address && !notDeployed) },
   });
 
-  const parsedAmount = useMemo(() => {
-    if (!amount || decimals === undefined) return undefined;
+  const csvError = useMemo(() => {
+    if (!csv.trim() || decimals === undefined) return "";
     try {
-      const value = parseUnits(amount, decimals);
-      return value > 0n ? value : undefined;
-    } catch {
-      return undefined;
+      const t = treeFromCsv(csv, decimals);
+      if (t.total > MAX_U128) return "Total exceeds uint128.";
+      return "";
+    } catch (e) {
+      return e instanceof Error ? e.message : "Invalid CSV";
     }
-  }, [amount, decimals]);
+  }, [csv, decimals]);
 
+  const liveTree = useMemo(() => {
+    if (!csv.trim() || decimals === undefined || csvError) return null;
+    try {
+      return treeFromCsv(csv, decimals);
+    } catch {
+      return null;
+    }
+  }, [csv, decimals, csvError]);
+
+  const deposit = liveTree?.total;
   const needsApprove =
-    parsedAmount !== undefined && (allowance === undefined || allowance < parsedAmount);
-  const overBalance = parsedAmount !== undefined && balance !== undefined && parsedAmount > balance;
+    deposit !== undefined && (allowance === undefined || allowance < deposit);
+  const overBalance = deposit !== undefined && balance !== undefined && deposit > balance;
   const busy = step !== "idle";
   const ready = Boolean(
-    isConnected && tokenAddress && rootOk && parsedAmount !== undefined && !overBalance && !badWindow && !badVest,
+    isConnected && tokenAddress && liveTree && deposit && !overBalance && !badWindow && !badVest,
   );
 
   async function submit() {
     setError("");
     setCreatedId("");
-    if (!address || !publicClient || !tokenAddress || !rootOk || parsedAmount === undefined) {
-      setError("Fill token, deposit amount, and a 32-byte merkle root.");
+    setTree(null);
+    if (!address || !publicClient || !tokenAddress || !liveTree || deposit === undefined) {
+      setError("Fill token and a valid recipients CSV.");
       return;
     }
     if (badWindow || badVest) {
-      setError("Fix the claim window or vest cliff settings.");
+      setError("Fix the claim window (min 1 hour) or vest cliff.");
       return;
     }
     if (notDeployed) {
@@ -127,8 +140,8 @@ export function CreateAirdropForm() {
           address: tokenAddress,
           abi: erc20Abi,
           functionName: "approve",
-          args: [ARCFLOW_DISTRIBUTOR_ADDRESS, parsedAmount],
-          ...gas,
+          args: [ARCFLOW_DISTRIBUTOR_ADDRESS, deposit],
+          ...arcGas,
         });
         await publicClient.waitForTransactionReceipt({ hash });
       }
@@ -140,29 +153,33 @@ export function CreateAirdropForm() {
         functionName: "createCampaign",
         args: [
           tokenAddress,
-          merkleRoot as `0x${string}`,
-          parsedAmount,
+          liveTree.root,
+          deposit,
           startArg,
           BigInt(claimEnd),
           BigInt(vestDuration),
           BigInt(vestCliff),
         ],
-        ...gas,
+        ...arcGas,
       });
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+      let idStr = "";
       for (const log of receipt.logs) {
         try {
           const parsed = decodeEventLog({ abi: distributorAbi, data: log.data, topics: log.topics });
           if (parsed.eventName === "CampaignCreated") {
-            setCreatedId(parsed.args.id.toString());
+            idStr = parsed.args.id.toString();
+            setCreatedId(idStr);
             break;
           }
         } catch {
           // skip
         }
       }
+      setTree(liveTree);
+      downloadProofJson(liveTree, idStr || undefined);
     } catch (err) {
-      setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
+      setError(txMessage(err));
     } finally {
       setStep("idle");
     }
@@ -179,14 +196,28 @@ export function CreateAirdropForm() {
 
       <FormShell
         title="Create airdrop campaign"
-        badge="Merkle drop"
+        badge="CSV → merkle"
         aside={
           <PreviewPanel
             title="Campaign preview"
             rows={[
               {
                 label: "Deposit",
-                value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
+                value:
+                  deposit !== undefined && decimals !== undefined
+                    ? `${Number(formatUnits(deposit, decimals)).toLocaleString("en-US", {
+                        maximumFractionDigits: 4,
+                      })}${symbol ? ` ${symbol}` : ""}`
+                    : "—",
+              },
+              { label: "Recipients", value: liveTree ? String(liveTree.leaves.length) : "—" },
+              {
+                label: "Merkle root",
+                value: (
+                  <span className="mono" style={{ fontSize: "0.7rem", wordBreak: "break-all" }}>
+                    {liveTree?.root ?? "—"}
+                  </span>
+                ),
               },
               {
                 label: "Claim opens",
@@ -202,22 +233,10 @@ export function CreateAirdropForm() {
               },
               {
                 label: "Post-claim vest",
-                value: vestDuration === 0 ? "Instant (no stream)" : formatDuration(vestDuration),
-              },
-              {
-                label: "Vest cliff",
-                value: vestDuration === 0 ? "—" : formatDuration(vestCliff),
-              },
-              {
-                label: "Merkle root",
-                value: (
-                  <span className="mono" style={{ fontSize: "0.72rem", wordBreak: "break-all" }}>
-                    {rootOk ? merkleRoot : "—"}
-                  </span>
-                ),
+                value: vestDuration === 0 ? "Instant" : formatDuration(vestDuration),
               },
             ]}
-            note="Build a merkle tree of (index, address, amount) leaves off-chain, deposit the bag here, then share proofs so recipients can claim. Optional vest streams the claim into ArcFlowStream."
+            note="On create, a proof JSON downloads automatically — share it with recipients so they can claim."
           />
         }
       >
@@ -236,39 +255,21 @@ export function CreateAirdropForm() {
         />
 
         <div className="field">
-          <label className="field-label" htmlFor="air-amount">
-            Total deposit
+          <label className="field-label" htmlFor="air-csv">
+            Recipients CSV
           </label>
-          <input
-            id="air-amount"
-            className="af-input"
-            placeholder="0.0"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-          {overBalance ? <p className="field-error">Exceeds wallet balance.</p> : null}
-          <p className="field-hint">Should cover the sum of all leaf amounts.</p>
-        </div>
-
-        <div className="field">
-          <label className="field-label" htmlFor="air-root">
-            Merkle root
-          </label>
-          <input
-            id="air-root"
+          <textarea
+            id="air-csv"
             className="af-input mono"
-            placeholder="0x… 32 bytes"
-            autoComplete="off"
-            spellCheck={false}
-            value={merkleRoot}
-            onChange={(e) => setMerkleRoot(e.target.value.trim())}
+            rows={6}
+            placeholder={"address,amount\n0xabc…,100\n0xdef…,50"}
+            value={csv}
+            onChange={(e) => setCsv(e.target.value)}
+            style={{ resize: "vertical", fontSize: "0.8rem" }}
           />
-          {merkleRoot && !rootOk ? (
-            <p className="field-error">Need a 0x-prefixed 32-byte hex root.</p>
-          ) : (
-            <p className="field-hint">Leaf encoding: keccak(keccak(abi.encode(index, account, amount))).</p>
-          )}
+          {csvError ? <p className="field-error">{csvError}</p> : null}
+          {overBalance ? <p className="field-error">Exceeds wallet balance.</p> : null}
+          <p className="field-hint">Deposit equals the sum of all amounts. Leaf = keccak(keccak(abi.encode(index, account, amount))).</p>
         </div>
 
         <div className="field">
@@ -285,6 +286,7 @@ export function CreateAirdropForm() {
               if (!Number.isNaN(ms)) setClaimStart(Math.floor(ms / 1000));
             }}
           />
+          <p className="field-hint">Set in the future if you need a cancel window before claims open.</p>
         </div>
 
         <div className="field">
@@ -297,7 +299,7 @@ export function CreateAirdropForm() {
             onHours={setClaimHours}
             onMinutes={setClaimMinutes}
           />
-          {badWindow ? <p className="field-error">Window must be at least 1 minute.</p> : null}
+          {badWindow ? <p className="field-error">Window must be at least 1 hour (on-chain MIN_WINDOW).</p> : null}
         </div>
 
         <div className="field">
@@ -309,58 +311,46 @@ export function CreateAirdropForm() {
               gap: "0.4rem",
             }}
           >
-            <label className="field" style={{ margin: 0 }}>
-              <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-                Vest days
-              </span>
-              <input
-                className="af-input"
-                inputMode="numeric"
-                value={vestDays}
-                onChange={(e) => setVestDays(e.target.value)}
-              />
-            </label>
-            <label className="field" style={{ margin: 0 }}>
-              <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-                Vest hours
-              </span>
-              <input
-                className="af-input"
-                inputMode="numeric"
-                value={vestHours}
-                onChange={(e) => setVestHours(e.target.value)}
-              />
-            </label>
-            <label className="field" style={{ margin: 0 }}>
-              <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-                Cliff days
-              </span>
-              <input
-                className="af-input"
-                inputMode="numeric"
-                value={cliffDays}
-                onChange={(e) => setCliffDays(e.target.value)}
-              />
-            </label>
-            <label className="field" style={{ margin: 0 }}>
-              <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-                Cliff hours
-              </span>
-              <input
-                className="af-input"
-                inputMode="numeric"
-                value={cliffHours}
-                onChange={(e) => setCliffHours(e.target.value)}
-              />
-            </label>
+            {(
+              [
+                ["Vest days", vestDays, setVestDays],
+                ["Vest hours", vestHours, setVestHours],
+                ["Cliff days", cliffDays, setCliffDays],
+                ["Cliff hours", cliffHours, setCliffHours],
+              ] as const
+            ).map(([label, value, set]) => (
+              <label className="field" style={{ margin: 0 }} key={label}>
+                <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
+                  {label}
+                </span>
+                <input
+                  className="af-input"
+                  inputMode="numeric"
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                />
+              </label>
+            ))}
           </div>
-          <p className="field-hint">Leave vest at 0 for instant claim. Cliff must be ≤ vest length.</p>
+          <p className="field-hint">Leave vest at 0 for instant claim into the wallet.</p>
           {badVest ? <p className="field-error">Cliff cannot exceed vest duration.</p> : null}
         </div>
 
         {error ? <div className="alert alert-error">{error}</div> : null}
         {createdId ? (
-          <div className="alert alert-warn">Campaign created · id {createdId}</div>
+          <div className="alert alert-warn">
+            Campaign #{createdId} created. Proof JSON downloaded.
+            {tree ? (
+              <button
+                type="button"
+                className="btn sm"
+                style={{ marginLeft: "0.5rem" }}
+                onClick={() => downloadProofJson(tree, createdId)}
+              >
+                Re-download proofs
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         <div style={{ marginTop: "0.5rem" }}>

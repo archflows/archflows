@@ -15,15 +15,26 @@ export const ARC_TESTNET = defineChain({
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-export const ARCFLOW_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_ADDRESS ?? ZERO) as `0x${string}`;
-export const ARCFLOW_DISTRIBUTOR_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS ??
-  ZERO) as `0x${string}`;
-export const ARCFLOW_STAKING_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS ??
-  ZERO) as `0x${string}`;
-export const ARCFLOW_STREAM_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS ??
-  ZERO) as `0x${string}`;
-export const ARCFLOW_ESCROW_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS ??
-  ZERO) as `0x${string}`;
+/** Current Arc Testnet lock vault (fee → 0x257666…E6C5). */
+export const ARCFLOW_ADDRESS =
+  "0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6" as `0x${string}`;
+
+function publicAddress(envValue: string | undefined, fallback: `0x${string}`): `0x${string}` {
+  const value = (envValue ?? "").trim();
+  if (/^0x[a-fA-F0-9]{40}$/.test(value)) return value as `0x${string}`;
+  return fallback;
+}
+
+export const ARCFLOW_DISTRIBUTOR_ADDRESS = publicAddress(
+  process.env.NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS,
+  ZERO,
+);
+export const ARCFLOW_STAKING_ADDRESS = publicAddress(
+  process.env.NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS,
+  ZERO,
+);
+export const ARCFLOW_STREAM_ADDRESS = publicAddress(process.env.NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS, ZERO);
+export const ARCFLOW_ESCROW_ADDRESS = publicAddress(process.env.NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS, ZERO);
 
 /** Arc USDC ERC-20 interface. 6 decimals. Same asset as native gas — never double-count. */
 export const USDC_ADDRESS = "0x3600000000000000000000000000000000000000" as `0x${string}`;

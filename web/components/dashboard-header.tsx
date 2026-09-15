@@ -7,9 +7,14 @@ import { Badge } from "@/components/ui/badge";
 
 function titleFromPath(pathname: string) {
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
+  if (pathname.startsWith("/dashboard/locks/positions")) return "Lock positions";
   if (pathname.startsWith("/dashboard/locks")) return "Locks";
+  if (pathname.startsWith("/dashboard/vesting/positions")) return "Vesting positions";
   if (pathname.startsWith("/dashboard/vesting")) return "Vesting";
+  if (pathname.startsWith("/dashboard/airdrops/claim")) return "Claim airdrop";
+  if (pathname.startsWith("/dashboard/airdrops/manage")) return "Airdrop campaigns";
   if (pathname.startsWith("/dashboard/airdrops")) return "Airdrops";
+  if (pathname.startsWith("/dashboard/staking/pools")) return "Stake";
   if (pathname.startsWith("/dashboard/staking")) return "Staking";
   return "Home";
 }

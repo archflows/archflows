@@ -122,7 +122,7 @@ export function TokenSelect({
                 >
                   <SelectTrigger
                     id={id}
-                    className="h-9 w-full min-w-0 rounded-[var(--radius-md)] border-[var(--line-strong)] bg-[rgba(10,14,22,0.55)] px-3 dark:bg-[rgba(10,14,22,0.55)]"
+                    className="h-9 w-full min-w-0 border-[var(--line-strong)] bg-[rgba(10,14,22,0.55)] px-3 dark:bg-[rgba(10,14,22,0.55)]"
                   >
                     <SelectValue
                       placeholder={
@@ -178,7 +178,7 @@ export function TokenSelect({
             {!customOpen ? (
               <button
                 type="button"
-                className="btn ghost sm token-select-add"
+                className="btn ghost token-select-add"
                 onClick={openCustom}
                 title="Use a custom token address"
               >
@@ -188,7 +188,7 @@ export function TokenSelect({
             ) : (
               <button
                 type="button"
-                className="btn ghost sm token-select-add"
+                className="btn ghost token-select-add"
                 onClick={closeCustom}
                 title="Back to wallet tokens"
               >

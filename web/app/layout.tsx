@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { SiteChrome } from "@/components/SiteChrome";
-import { SpaceBackdrop } from "@/components/SpaceBackdrop";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Providers } from "@/lib/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,16 +19,19 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ArcFlow — Token Lock & Vesting in Orbit on Arc",
+  title: "ArcFlow — Token locks and vesting on Arc",
   description:
-    "Immutable token locks and linear vesting on Arc. Put the dev bag in orbit, share a public proof page. Gas paid in USDC.",
+    "Immutable token locks, linear vesting, streams, airdrops, escrow, and staking on Arc. Public proof pages. Gas paid in USDC.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("dark", sans.variable, mono.variable, "font-sans")}>
-      <body className="min-h-svh text-foreground antialiased">
-        <SpaceBackdrop />
+    <html
+      lang="en"
+      className={cn("dark", sans.variable, mono.variable, "font-sans")}
+      suppressHydrationWarning
+    >
+      <body className="min-h-svh text-foreground antialiased" suppressHydrationWarning>
         <Providers>
           <TooltipProvider>
             <SiteChrome>{children}</SiteChrome>

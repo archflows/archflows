@@ -4,25 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ConnectButton } from "@/components/ConnectButton";
-import { LogoMark } from "@/components/Icons";
+import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
 const MARKETING = [
-  { href: "/#mission", label: "Mission" },
-  { href: "/#modules", label: "Modules" },
-  { href: "/#launch", label: "Launch sequence" },
+  { href: "/#product", label: "Product" },
+  { href: "/#proof", label: "Proof" },
+  { href: "/#how", label: "How it works" },
   { href: "/#faq", label: "FAQ" },
-];
-
-const APP = [
-  { href: "/app", label: "New lock" },
-  { href: "/app/locks", label: "My orbit" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const inApp = pathname.startsWith("/app") || pathname.startsWith("/lock");
-  const links = inApp ? APP : MARKETING;
+  const onLockProof = pathname.startsWith("/lock");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -32,27 +26,13 @@ export function SiteHeader() {
   return (
     <header className="nav">
       <div className="shell nav-row">
-        <Link href="/" className="brand">
-          <span className="brand-glyph">
-            <LogoMark size={14} />
-          </span>
-          ArcFlow
+        <Link href="/" className="brand brand-logo-link" aria-label="ArcFlow home">
+          <BrandLogo height={40} priority />
         </Link>
 
         <nav className="nav-mid">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "nav-link",
-                inApp &&
-                  (link.href === "/app"
-                    ? pathname === "/app"
-                    : pathname.startsWith(link.href)) &&
-                  "active",
-              )}
-            >
+          {MARKETING.map((link) => (
+            <Link key={link.href} href={link.href} className="nav-link">
               {link.label}
             </Link>
           ))}
@@ -64,11 +44,9 @@ export function SiteHeader() {
             Testnet
           </span>
           <ConnectButton />
-          {!inApp ? (
-            <Link href="/app" className="btn sm hide-mobile">
-              Launch app
-            </Link>
-          ) : null}
+          <Link href="/auth" className="btn sm hide-mobile">
+            {onLockProof ? "Dashboard" : "Launch app"}
+          </Link>
 
           <button
             className="menu-toggle"
@@ -84,12 +62,12 @@ export function SiteHeader() {
 
       <div className={cn("mobile-drawer", open && "open")}>
         <div className="shell mobile-drawer-inner">
-          {links.map((link) => (
+          {MARKETING.map((link) => (
             <Link key={link.href} href={link.href}>
               {link.label}
             </Link>
           ))}
-          <Link href="/app" className="btn" style={{ marginTop: "0.75rem" }}>
+          <Link href="/auth" className="btn" style={{ marginTop: "0.75rem" }}>
             Launch app
           </Link>
         </div>

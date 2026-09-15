@@ -22,7 +22,7 @@ export function FormShell({
         </div>
         <div className="panel-body">{children}</div>
       </div>
-      <aside className="space-y-4">{aside}</aside>
+      <aside>{aside}</aside>
     </div>
   );
 }
@@ -72,13 +72,7 @@ export function DurationTriple({
   onMinutes: (v: string) => void;
 }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: "0.4rem",
-      }}
-    >
+    <div className="unlock-after-parts">
       {(
         [
           ["Days", days, onDays],
@@ -86,10 +80,8 @@ export function DurationTriple({
           ["Minutes", minutes, onMinutes],
         ] as const
       ).map(([label, value, onChange]) => (
-        <label className="field" style={{ margin: 0 }} key={label}>
-          <span className="field-hint" style={{ marginBottom: "0.25rem", display: "block" }}>
-            {label}
-          </span>
+        <label className="unlock-part" key={label}>
+          <span>{label}</span>
           <input
             className="af-input"
             inputMode="numeric"
@@ -102,3 +94,66 @@ export function DurationTriple({
     </div>
   );
 }
+
+export function UnlockAfterField({
+  days,
+  hours,
+  minutes,
+  onDays,
+  onHours,
+  onMinutes,
+  datetimeValue,
+  datetimeMin,
+  onDatetimeChange,
+  error,
+}: {
+  days: string;
+  hours: string;
+  minutes: string;
+  onDays: (v: string) => void;
+  onHours: (v: string) => void;
+  onMinutes: (v: string) => void;
+  datetimeValue: string;
+  datetimeMin?: string;
+  onDatetimeChange: (v: string) => void;
+  error?: string;
+}) {
+  return (
+    <div className="field">
+      <span className="field-label">Unlock after</span>
+      <div className="unlock-after-row">
+        {(
+          [
+            ["Days", days, onDays],
+            ["Hours", hours, onHours],
+            ["Minutes", minutes, onMinutes],
+          ] as const
+        ).map(([label, value, onChange]) => (
+          <label className="unlock-part" key={label}>
+            <span>{label}</span>
+            <input
+              className="af-input"
+              inputMode="numeric"
+              autoComplete="off"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          </label>
+        ))}
+        <label className="unlock-part unlock-part-date">
+          <span>Or pick date</span>
+          <input
+            className="af-input"
+            type="datetime-local"
+            min={datetimeMin}
+            value={datetimeValue}
+            onChange={(e) => onDatetimeChange(e.target.value)}
+          />
+        </label>
+      </div>
+      <p className="field-hint">Manual duration and calendar stay in sync.</p>
+      {error ? <p className="field-error">{error}</p> : null}
+    </div>
+  );
+}
+

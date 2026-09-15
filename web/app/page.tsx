@@ -1,100 +1,83 @@
 import Link from "next/link";
 import {
+  ArrowRight,
+  ArrowUpRight,
+  Check,
   Clock3,
-  FileText,
-  Layers,
+  Coins,
+  Gift,
+  Handshake,
   Lock,
-  Orbit,
-  Radar,
-  Rocket,
-  Satellite,
-  ShieldCheck,
-  Signal,
+  Waves,
 } from "lucide-react";
-import { HeroOrbit } from "@/components/HeroOrbit";
+import { LandingHeroMock } from "@/components/LandingHeroMock";
 
-const TELEMETRY = [
-  { icon: Orbit, value: "0", label: "cancel paths" },
-  { icon: Signal, value: "5042002", label: "arc testnet id" },
-  { icon: Rocket, value: "USDC", label: "gas, not ETH" },
-  { icon: Radar, value: "<1s", label: "finality" },
-];
+const RAIL = ["Built on Arc", "Gas in USDC", "Sub-second finality", "Public proof URL"];
 
-const MISSION = [
+const FEATURED = [
   {
     icon: Lock,
-    title: "Hard lock",
-    body: "Seal an amount until a fixed unlock timestamp. No cancel, no shorten, no early exit — not even for you.",
+    title: "Token lock",
+    body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit — not even for the creator.",
+    meta: "Immutable · $10 USDC fee",
   },
   {
     icon: Clock3,
-    title: "Linear vest",
-    body: "Cliff, then per-second release from start to end. The beneficiary claims whatever has accrued.",
-  },
-  {
-    icon: FileText,
-    title: "Proof page",
-    body: "Every position gets a public URL. Amount, schedule, and beneficiary read straight off the contract.",
+    title: "Linear vesting",
+    body: "Cliff, then per-second release to a beneficiary. Teams and investors claim only what has accrued.",
+    meta: "start ≤ cliff ≤ end",
   },
 ];
 
 const MODULES = [
   {
-    icon: Lock,
-    title: "Wallet token lock",
-    status: "Live",
-    meta: "ERC-20 · immutable · beneficiary set at creation",
-    tags: ["Approve + lock", "Hard lock", "No admin path"],
+    icon: Waves,
+    title: "Streams",
+    body: "Payroll and continuous unlocks with CSV batch create, top-up, and transfer.",
   },
   {
-    icon: Clock3,
-    title: "Linear vesting",
-    status: "Live",
-    meta: "start ≤ cliff ≤ end · per-second accrual",
-    tags: ["Cliff", "Claim anytime", "uint128 amounts"],
+    icon: Gift,
+    title: "Airdrops",
+    body: "Merkle campaigns with instant claim or vest-to-stream. Clawback leftover after the window.",
   },
   {
-    icon: Satellite,
-    title: "Public proof orbit",
-    status: "Live",
-    meta: "/lock/{id} · no wallet needed to verify",
-    tags: ["Shareable", "On-chain read", "Countdown"],
+    icon: Handshake,
+    title: "Escrow",
+    body: "Fund a deal, release on delivery, or refund — both sides stay on-chain.",
   },
   {
-    icon: Layers,
-    title: "Batch vesting",
-    status: "Soon",
-    meta: "team tables and investor rounds in one flow",
-    tags: ["CSV", "Multi-wallet", "Phase 1"],
+    icon: Coins,
+    title: "Staking",
+    body: "Permissionless reward pools. Restake does not relock lots that already unlocked.",
   },
 ];
 
-const SEQUENCE = [
+const STEPS = [
   {
     n: "01",
-    title: "Dock your wallet",
-    body: "Connect on Arc Testnet. Gas is USDC — top up at the Circle faucet if the tank is dry.",
+    title: "Connect a wallet",
+    body: "Use any EVM wallet on Arc Testnet. The same USDC balance pays gas — top up at the Circle faucet if needed.",
   },
   {
     n: "02",
-    title: "Set the trajectory",
-    body: "Paste the token contract, pick an amount, choose hard lock or linear vest, set the duration.",
+    title: "Set the schedule",
+    body: "Choose the token, amount, hard lock or linear vest, and an unlock date. Fee is a flat $10 USDC.",
   },
   {
     n: "03",
-    title: "Broadcast the proof",
-    body: "Approve, lock, and share /lock/{id} next to the CA. Anyone can verify the unlock on-chain.",
+    title: "Share the proof",
+    body: "Publish /lock/{id}. Holders verify amount, countdown, and beneficiary on-chain — no dashboard login.",
   },
 ];
 
 const FAQ = [
   {
     q: "Can a lock be cancelled?",
-    a: "No. Once the transaction confirms, amount and schedule are immutable. There is no admin cancel path and no upgrade hatch over existing positions.",
+    a: "No. Once the transaction confirms, amount and schedule are immutable. There is no admin cancel path over existing vault positions.",
   },
   {
     q: "Is this the same as an LP lock?",
-    a: "No. LP lock means the pool cannot be pulled — that is the launchpad's job. ArcFlow locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
+    a: "No. An LP lock stops the pool from being pulled — that belongs to the launchpad. ArcFlow locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
   },
   {
     q: "What pays for gas?",
@@ -106,258 +89,231 @@ const FAQ = [
   },
   {
     q: "Is ArcFlow custodial?",
-    a: "The contract holds the tokens until claim; no human key can redirect them. You keep your wallet, we keep no admin lever over locked balances.",
+    a: "The contract holds tokens until claim; no human key can redirect them. You keep your wallet. We keep no admin lever over locked balances.",
+  },
+  {
+    q: "Is this ready for mainnet?",
+    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only — not production funds.",
   },
 ];
 
 export default function LandingPage() {
   return (
-    <main>
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="hero">
+    <main className="lp">
+      <section className="hero lp-hero">
         <div className="shell hero-grid">
           <div className="hero-copy">
-            <p className="tag tag-accent">// ArcFlow · orbital token custody on Arc</p>
-            <h1>
-              Put the dev bag <em>in orbit</em>, not on the market
-            </h1>
-            <p className="hero-lead">
-              Launchpads mint the token. ArcFlow decides when it can be sold. Lock leftover
-              allocation or the dev buy into an immutable schedule, then share one proof URL that
-              anybody can check without trusting a screenshot.
+            <p className="lp-kicker">
+              <span className="pulse-dot" />
+              Live on Arc Testnet
             </p>
-
-            <div className="chip-row">
-              <span className="chip">Immutable locks</span>
-              <span className="chip">Linear vesting</span>
-              <span className="chip">Public proof page</span>
-              <span className="chip">USDC gas</span>
-            </div>
-
+            <h1>Lock and vest tokens on Arc</h1>
+            <p className="hero-lead">
+              Immutable schedules. A public proof page anyone can verify. Gas paid in USDC — the
+              same asset you already hold.
+            </p>
             <div className="hero-actions">
-              <Link className="btn lg" href="/app">
-                Lock tokens
+              <Link className="btn lg" href="/auth">
+                Launch app
+                <ArrowRight className="size-4" />
               </Link>
-              <Link className="btn ghost lg" href="/#launch">
-                Launch sequence
+              <Link className="btn ghost lg" href="/#product">
+                View products
               </Link>
             </div>
           </div>
 
           <div className="hero-visual">
-            <HeroOrbit />
+            <LandingHeroMock />
           </div>
         </div>
 
         <div className="shell">
-          <div className="mini-stats">
-            {TELEMETRY.map((item) => (
-              <div className="mini-stat" key={item.label}>
-                <span className="box-icon">
-                  <item.icon className="size-4" />
-                </span>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
+          <ul className="lp-rail">
+            {RAIL.map((item) => (
+              <li key={item}>
+                <Check className="size-3.5" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="shell lp-section" id="product">
+        <div className="lp-head">
+          <p className="lp-eyebrow">Products</p>
+          <h2>Locks, vesting, and distribution</h2>
+          <p className="lead">
+            Lock, vest, stream, airdrop, escrow, and stake from a single dashboard. Holders verify
+            positions on-chain — not from a screenshot.
+          </p>
+        </div>
+
+        <div className="lp-bento">
+          {FEATURED.map((item) => (
+            <Link className="lp-card lp-bento-lg" href="/auth" key={item.title}>
+              <span className="lp-icon">
+                <item.icon className="size-4" />
+              </span>
+              <div className="lp-product-top">
+                <h3>{item.title}</h3>
+                <ArrowUpRight className="lp-card-arrow size-4" />
               </div>
+              <p>{item.body}</p>
+              <span className="lp-meta">{item.meta}</span>
+            </Link>
+          ))}
+          {MODULES.map((item) => (
+            <Link className="lp-card lp-bento-sm" href="/auth" key={item.title}>
+              <span className="lp-icon">
+                <item.icon className="size-4" />
+              </span>
+              <div className="lp-product-top">
+                <h3>{item.title}</h3>
+                <ArrowUpRight className="lp-card-arrow size-4" />
+              </div>
+              <p>{item.body}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="shell lp-section" id="proof">
+        <div className="lp-proof">
+          <div className="lp-proof-copy">
+            <p className="lp-eyebrow">Public proof</p>
+            <h2>A page holders can open themselves</h2>
+            <p className="lead">
+              Every vault lock gets a shareable URL. Amount, unlock time, beneficiary, and
+              claimable balance read live from the contract. No wallet required.
+            </p>
+            <ul className="lp-proof-list">
+              <li>
+                <Check className="size-3.5" />
+                Hard lock and linear vest, shown as on-chain state
+              </li>
+              <li>
+                <Check className="size-3.5" />
+                Claimable amount updates without a dashboard login
+              </li>
+              <li>
+                <Check className="size-3.5" />
+                Safe to publish next to the token contract
+              </li>
+            </ul>
+            <Link className="btn lg" href="/auth">
+              Create a lock
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+
+          <div className="lp-proof-panel">
+            <div className="lp-proof-chrome">
+              <span className="lp-proof-dots" aria-hidden>
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="mono dim">arcflow.app/lock/42</span>
+            </div>
+            <div className="lp-proof-body">
+              <div className="lp-proof-title">
+                <div>
+                  <p className="lp-eyebrow" style={{ marginBottom: 6 }}>
+                    Vault position
+                  </p>
+                  <h3>Lock #0042</h3>
+                </div>
+                <span className="live live-accent">
+                  <span className="pulse-dot" />
+                  Sealed
+                </span>
+              </div>
+              <div className="lp-proof-stats">
+                <div>
+                  <span>Locked amount</span>
+                  <strong>1,250,000 TOKEN</strong>
+                </div>
+                <div>
+                  <span>Fully unlocks</span>
+                  <strong>12 Jun 2027</strong>
+                </div>
+                <div>
+                  <span>Release</span>
+                  <strong>Hard lock</strong>
+                </div>
+                <div>
+                  <span>Claimable now</span>
+                  <strong>0</strong>
+                </div>
+              </div>
+              <div className="lp-proof-meter">
+                <div className="lp-proof-meter-row">
+                  <span>Time elapsed</span>
+                  <span>68%</span>
+                </div>
+                <div className="meter">
+                  <div className="meter-fill" style={{ width: "68%" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="shell lp-section" id="how">
+        <div className="lp-head">
+          <p className="lp-eyebrow">How it works</p>
+          <h2>Three steps to a public schedule</h2>
+        </div>
+        <div className="lp-steps">
+          {STEPS.map((step) => (
+            <article className="lp-step" key={step.n}>
+              <span className="lp-step-n">{step.n}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="shell lp-section" id="faq">
+        <div className="lp-faq">
+          <div className="lp-head" style={{ marginBottom: 0 }}>
+            <p className="lp-eyebrow">FAQ</p>
+            <h2>Before you lock</h2>
+            <p className="lead" style={{ marginBottom: 0 }}>
+              Immutable vaults, USDC gas, public proof. Contracts are not externally audited —
+              testnet only.
+            </p>
+          </div>
+          <div className="faq-list lp-faq-list">
+            {FAQ.map((item) => (
+              <details className="faq-item" key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Mission ──────────────────────────────────────────── */}
-      <section className="shell section" id="mission">
-        <p className="tag">// MISSION</p>
-        <h2>Three instruments, one guarantee</h2>
-        <p className="lead">
-          A screenshot saying &ldquo;team locked&rdquo; is not proof. ArcFlow writes the schedule
-          into a contract on Arc and gives holders a page they can read themselves.
-        </p>
-
-        <div className="box-grid box-grid-3">
-          {MISSION.map((item) => (
-            <article className="box" key={item.title}>
-              <span className="box-icon">
-                <item.icon className="size-4" />
-              </span>
-              <div className="box-top">
-                <h3>{item.title}</h3>
-                <span className="live">
-                  <span className="pulse-dot" />
-                  Live
-                </span>
-              </div>
-              <p>{item.body}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="panel" style={{ marginTop: "1.5rem" }}>
-          <div className="panel-head">
-            <span className="mono" style={{ fontSize: "0.78rem" }}>
-              // SIGNAL CHECK
-            </span>
-            <span className="live live-accent">LP lock ≠ wallet lock</span>
-          </div>
-          <div className="panel-body dim" style={{ fontSize: "0.9rem", lineHeight: 1.7 }}>
-            LP lock means the pool cannot be pulled — the pad handles that. ArcFlow handles the
-            other half: tokens in a <span style={{ color: "var(--ink)" }}>wallet</span> that cannot
-            be sold until the schedule says so. If the pad already sent 100% of supply to the pool,
-            lock your dev buy here.
-          </div>
-        </div>
-      </section>
-
-      {/* ── Modules ──────────────────────────────────────────── */}
-      <section className="shell section" id="modules">
-        <p className="tag">// MODULES</p>
-        <h2>What is in flight today</h2>
-        <p className="lead">
-          V1 ships the parts that matter for day one on Arc. Everything else waits until people are
-          actually locking.
-        </p>
-
-        <div className="box-grid box-grid-2">
-          {MODULES.map((m) => (
-            <article className="box" key={m.title}>
-              <span className="box-icon">
-                <m.icon className="size-4" />
-              </span>
-              <div className="box-top">
-                <h3>{m.title}</h3>
-                <span className={m.status === "Live" ? "live" : "live live-accent"}>
-                  {m.status === "Live" ? <span className="pulse-dot" /> : null}
-                  {m.status}
-                </span>
-              </div>
-              <p className="box-meta dim">{m.meta}</p>
-              <div className="tag-list">
-                {m.tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Readout ──────────────────────────────────────────── */}
-      <section className="shell section" id="readout">
-        <div className="readout-grid">
+      <section className="shell lp-section lp-section-last">
+        <div className="cta-box lp-cta">
           <div>
-            <p className="tag">// TELEMETRY</p>
-            <h2>The proof page is the product</h2>
-            <p className="lead">
-              One URL, no wallet required, no dashboard login. Amount, cliff, unlock time,
-              beneficiary, claimed so far — read live from the contract every second.
+            <p className="lp-eyebrow" style={{ color: "var(--ion)" }}>
+              Get started
             </p>
-            <Link className="box-link" href="/app">
-              Create a lock and get your URL →
-            </Link>
-          </div>
-
-          <div className="panel">
-            <div className="panel-head">
-              <span>
-                Lock <span className="mono dim">#0042</span>
-              </span>
-              <span className="live live-accent">Sealed</span>
-            </div>
-            <div className="stat-grid stat-grid-2" style={{ border: 0 }}>
-              <div className="stat">
-                <span>Locked amount</span>
-                <strong>1,250,000 TOKEN</strong>
-              </div>
-              <div className="stat">
-                <span>Fully unlocks</span>
-                <strong>12 Jun 2027</strong>
-              </div>
-              <div className="stat" style={{ borderTop: "1px solid var(--line)" }}>
-                <span>Release</span>
-                <strong>Hard lock</strong>
-              </div>
-              <div className="stat" style={{ borderTop: "1px solid var(--line)" }}>
-                <span>Claimable now</span>
-                <strong>0</strong>
-              </div>
-            </div>
-            <div className="panel-body" style={{ borderTop: "1px solid var(--line)" }}>
-              <div
-                className="mono dim"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "0.72rem",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <span>TIME ELAPSED</span>
-                <span>68%</span>
-              </div>
-              <div className="meter">
-                <div className="meter-fill" style={{ width: "68%" }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Launch sequence ──────────────────────────────────── */}
-      <section className="shell section" id="launch">
-        <p className="tag">// LAUNCH SEQUENCE</p>
-        <h2>Three steps from create to proof</h2>
-        <p className="lead">
-          Paste the contract seconds after the pad create — before the CA tweet goes out.
-        </p>
-
-        <div className="box-grid box-grid-3">
-          {SEQUENCE.map((step) => (
-            <article className="box" key={step.n}>
-              <span className="box-icon">
-                <ShieldCheck className="size-4" />
-              </span>
-              <p className="step-num">// STEP {step.n}</p>
-              <h3>{step.title}</h3>
-              <p style={{ marginTop: "0.45rem" }}>{step.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FAQ ──────────────────────────────────────────────── */}
-      <section className="shell section" id="faq">
-        <p className="tag">// FAQ</p>
-        <h2>Questions before you lock</h2>
-        <p className="lead">
-          Immutable schedules, USDC gas, public proof, no custodian in the middle.
-        </p>
-
-        <div className="faq-list">
-          {FAQ.map((item) => (
-            <details className="faq-item" key={item.q}>
-              <summary>{item.q}</summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────── */}
-      <section className="shell section">
-        <div className="cta-box">
-          <div className="cta-orb" />
-          <div>
-            <span className="box-icon">
-              <Rocket className="size-4" />
-            </span>
-            <p className="tag tag-accent">// GET STARTED</p>
-            <h2>Lock the bag before you tweet the CA</h2>
+            <h2>Open the app on Arc Testnet</h2>
             <p className="lead" style={{ marginBottom: 0 }}>
-              Immutable schedule, public proof URL, gas in USDC. Two minutes on Arc Testnet.
+              Two minutes to create a lock and a proof URL. Not for production funds.
             </p>
           </div>
           <div className="hero-actions">
-            <Link className="btn lg" href="/app">
-              Open ArcFlow
+            <Link className="btn lg" href="/auth">
+              Launch ArcFlow
+              <ArrowRight className="size-4" />
             </Link>
             <a
               className="btn ghost lg"

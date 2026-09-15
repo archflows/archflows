@@ -162,7 +162,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
               Nothing is locked under this id on this contract. Check the URL, or launch a new
               position.
             </p>
-            <Link href="/app" className="btn sm">
+            <Link href="/dashboard/locks" className="btn sm">
               Create a lock
             </Link>
           </div>
