@@ -97,6 +97,97 @@ contract ArcFlowDistributorTest is Test {
         assertEq(token.balanceOf(bob), BOB_AMT);
     }
 
+    function test_CancelBeforeStartRefundsFunder() public {
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(funder);
+        uint256 id = dist.createCampaign(address(token), root, TOTAL, nowTs + 1 days, nowTs + 8 days, 0, 0);
+
+        vm.prank(alice);
+        vm.expectRevert(ArcFlowDistributor.TooEarly.selector);
+        dist.claim(id, 0, alice, ALICE_AMT, _aliceProof());
+
+        vm.prank(funder);
+        assertEq(dist.cancel(id), TOTAL);
+        assertEq(token.balanceOf(funder), TOTAL * 5);
+
+        vm.prank(funder);
+        vm.expectRevert(ArcFlowDistributor.Canceled.selector);
+        dist.cancel(id);
+    }
+
+    function test_CannotCancelAfterWindowOpens() public {
+        uint256 id = _campaign(0, 0);
+        vm.prank(funder);
+        vm.expectRevert(ArcFlowDistributor.TooLate.selector);
+        dist.cancel(id);
+    }
+
+    function test_TopUpLetsRemainingClaimsThrough() public {
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(funder);
+        uint256 id = dist.createCampaign(address(token), root, ALICE_AMT, nowTs, nowTs + 7 days, 0, 0);
+
+        dist.claim(id, 0, alice, ALICE_AMT, _aliceProof());
+
+        vm.prank(bob);
+        vm.expectRevert(ArcFlowDistributor.ExceedsDeposit.selector);
+        dist.claim(id, 1, bob, BOB_AMT, _bobProof());
+
+        vm.prank(funder);
+        dist.topUp(id, BOB_AMT);
+        dist.claim(id, 1, bob, BOB_AMT, _bobProof());
+        assertEq(token.balanceOf(bob), BOB_AMT);
+    }
+
+    function test_ClaimToRedirectsOnlyByAccount() public {
+        uint256 id = _campaign(0, 0);
+        address wallet = makeAddr("newWallet");
+
+        vm.expectRevert(ArcFlowDistributor.NotRecipient.selector);
+        dist.claimTo(id, 0, alice, ALICE_AMT, _aliceProof(), wallet);
+
+        vm.prank(alice);
+        dist.claimTo(id, 0, alice, ALICE_AMT, _aliceProof(), wallet);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(token.balanceOf(wallet), ALICE_AMT);
+    }
+
+    function test_RejectsShortAndLongWindows() public {
+        uint64 nowTs = uint64(block.timestamp);
+        uint64 tooLong = dist.MAX_WINDOW() + 1;
+        vm.startPrank(funder);
+        vm.expectRevert(ArcFlowDistributor.InvalidWindow.selector);
+        dist.createCampaign(address(token), root, TOTAL, nowTs, nowTs + 30 minutes, 0, 0);
+        vm.expectRevert(ArcFlowDistributor.InvalidWindow.selector);
+        dist.createCampaign(address(token), root, TOTAL, nowTs, nowTs + tooLong, 0, 0);
+        vm.expectRevert(ArcFlowDistributor.InvalidWindow.selector);
+        dist.createCampaign(address(token), root, TOTAL, nowTs - 1, nowTs + 7 days, 0, 0);
+        vm.stopPrank();
+    }
+
+    function test_PauseBlocksCreateNotClaim() public {
+        uint256 id = _campaign(0, 0);
+        dist.setProtocolPaused(true);
+
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(funder);
+        vm.expectRevert(ArcFlowDistributor.Paused.selector);
+        dist.createCampaign(address(token), root, TOTAL, nowTs, nowTs + 7 days, 0, 0);
+
+        dist.claim(id, 0, alice, ALICE_AMT, _aliceProof());
+        assertEq(token.balanceOf(alice), ALICE_AMT);
+    }
+
+    function _aliceProof() internal view returns (bytes32[] memory proof) {
+        proof = new bytes32[](1);
+        proof[0] = bobLeaf;
+    }
+
+    function _bobProof() internal view returns (bytes32[] memory proof) {
+        proof = new bytes32[](1);
+        proof[0] = aliceLeaf;
+    }
+
     function _campaign(uint64 vestDuration, uint64 vestCliffDelay) internal returns (uint256 id) {
         uint64 nowTs = uint64(block.timestamp);
         vm.prank(funder);

@@ -37,14 +37,14 @@ Verifikasi `cast call` setelah broadcast:
 
 Frontend sudah diarahkan ke alamat baru: `NEXT_PUBLIC_ARCFLOW_ADDRESS` di `.env` dan `web/.env.local`. **Restart `next dev`** supaya Next.js membaca env baru.
 
-Stream / escrow / staking **tidak di-redeploy**. Proxy lama tetap:
+Stream / escrow **tidak di-redeploy**. Staking dan airdrop **proxy yang sama** sudah di-upgrade (15 Sep 2026):
 
 | Kontrak | Alamat |
 |---|---|
 | `ArcFlowStream` | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` |
 | `ArcFlowDistributor` | `0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8` |
 | `ArcFlowEscrow` | `0x528b3E0e78CbD1a4f9aFA011aE374ba12996B2C2` |
-| `ArcFlowStaking` | `0x2627e3f07574F47b2B5bc3EfD774576357658063` |
+| `ArcFlowStaking` (proxy) | `0x2627e3f07574F47b2B5bc3EfD774576357658063` |
 
 Lock lama `0x003DE5DF8609E37b89EC91bF1cFDD65096cA98ee` dibiarkan. Posisi yang sudah dibuat di sana tetap di kontrak itu.
 
@@ -128,60 +128,147 @@ Lock + linear vesting **selesai, lulus tes lokal, dan sudah di-deploy ke Arc Tes
 
 ---
 
-## Staking — implementasi standar (14 Sep 2026)
+## Staking — live di Arc Testnet (15 Sep 2026)
 
 Kontrak: `contracts/src/ArcFlowStaking.sol`  
-Model: Synthetix `rewardPerToken`, permissionless `createPool`, UUPS append-only.  
-Proxy live **belum di-upgrade**: `0x2627e3f07574F47b2B5bc3EfD774576357658063`
+Model: Synthetix `rewardPerToken`, permissionless `createPool`, UUPS.  
+Proxy **sudah di-upgrade** (alamat tidak berubah):
 
-Bytecode baru sudah lulus tes lokal. **Tidak di-broadcast** ke Arc Testnet sampai diminta. Upgrade proxy lama butuh `Upgrade.s.sol` + owner key.
-
-### Yang sekarang ada
-
-| Fitur | Perilaku |
+| Field | Value |
 |---|---|
-| Stake / claim / `exit` | Ada |
-| `unstake` | Auto-claim (Streamflow `unstakeAndClaim`) |
-| `unstakeOnly` | Principal saja — jalan darurat kalau reward token di-denylist |
-| Lock | `minLock` max **730 hari**; `unlockAt` overflow-safe |
-| Fund | Max durasi **3650 hari** |
-| `recoverRewards` | Hanya jika `totalStaked == 0`; sisa = reserves − pending (klaim user tidak diambil) |
-| Pause | Per pool (`setPaused`) + protokol (`setProtocolPaused`); unstake tetap jalan |
-| Cap / expiry | `setCap`, `setExpiry` (expiry hanya saat pool kosong) |
-| `transferPool` | Pindah owner pool |
-| `compound` | Hanya jika stake token == reward token; token tidak keluar kontrak |
-| Index | `poolsByCreator`, `poolsByStaker` |
-| Fee-on-transfer / reentrancy / idle schedule | Tetap |
+| Proxy | [`0x2627e3f07574F47b2B5bc3EfD774576357658063`](https://testnet.arcscan.app/address/0x2627e3f07574F47b2B5bc3EfD774576357658063) |
+| Implementation baru | [`0xB620276470dE35cC83484fAf2432aB887f4A87bE`](https://testnet.arcscan.app/address/0xB620276470dE35cC83484fAf2432aB887f4A87bE) |
+| Tx deploy impl | [`0xc3495f291d8d5485ce47206b01845dd871b42fede32e652d69462b0cdda3fcf4`](https://testnet.arcscan.app/tx/0xc3495f291d8d5485ce47206b01845dd871b42fede32e652d69462b0cdda3fcf4) |
+| Tx `upgradeToAndCall` | [`0xa7bce1f996c821b2c83961e1a568052a1c60b593486828606face5db77562747`](https://testnet.arcscan.app/tx/0xa7bce1f996c821b2c83961e1a568052a1c60b593486828606face5db77562747) |
+| Block (upgrade) | `62105466` |
+| Script | `contracts/script/Upgrade.s.sol` |
+| Owner | `0x63B2614f9AE9eAe20483aD24718B419891A2657D` |
 
-Restake **masih** memperpanjang lock seluruh posisi — itu pola lock-staking standar, bukan bug yang dihapus.
+Verifikasi `cast call` setelah broadcast:
+
+| Getter | On-chain |
+|---|---|
+| `owner()` | deployer di atas |
+| `MAX_MIN_LOCK()` | `63072000` (730 hari) |
+| `MAX_FUND_DURATION()` | `315360000` (3650 hari) |
+| `MAX_LOTS()` | `16` |
+| `nextId()` | `0` (belum ada pool) |
+
+Frontend tetap ke proxy yang sama (`NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS`). UUPS **tetap hidup**. Storage append-only — posisi lama (kalau ada) aman. Kunci owner = kunci brankas — pakai multisig, bukan hot wallet.
+
+### Aturan yang adil ke dua belah pihak
+
+**Staker**
+- Restake **tidak** mengunci ulang lot yang sudah terbuka. Setiap deposit = lot sendiri (`minLock` hanya untuk dana baru).
+- `exit` menarik semua yang sudah unlock; lot yang masih kunci tetap.
+- `unstake` auto-claim; `unstakeOnly` kalau reward token di-denylist.
+- Pause hanya menutup setoran baru — tarik dana tetap jalan.
+
+**Owner pool**
+- Dana baru tetap kena `minLock` (max 730 hari) — tidak bisa di-dump instan.
+- `recoverRewards` setelah pool kosong, tanpa mengambil klaim user.
+- Pause, cap, expiry, fund, handoff pool (2 langkah: `transferPool` + `acceptPool`).
+
+**Owner protokol**
+- Pause darurat setoran baru.
+- Ganti owner 2 langkah (`transferOwnership` + `acceptOwnership`).
+- Tidak bisa renounce saat `protocolPaused` (supaya pause tidak terkunci selamanya).
 
 ### Temuan audit → status
 
 | ID | Status |
 |---|---|
-| S-H1 | **Tetap** — owner UUPS bisa ganti logic dan menguras semua pool. Kunci owner = kunci brankas. |
+| S-H1 | **Tetap (trust)** — UUPS `onlyOwner`; owner bisa ganti logic. Lindungi dengan 2-step ownership + multisig. |
 | S-H2 | **Ditutup** — cap 2 tahun + overflow-safe unlock |
 | S-M1 | **Ditutup** — `recoverRewards` (pool baru; `rewardAccounting`) |
-| S-M2 | **Dibiarkan + didokumentasikan** — restake extends whole lock |
-| S-M3 | **Sebagian** — ada pause; Ownable tetap 1 langkah (2-step akan geser storage proxy lama) |
-| S-L1 | **Ditutup** — error `InsufficientStake` |
-| S-L2 | **Tetap** — dust integer division (kecil; bisa di-recover setelah pool kosong) |
-| S-L3 | **Ditutup** — index creator/staker |
+| S-M2 | **Ditutup** — lock per-lot, restake tidak relock |
+| S-M3 | **Ditutup** — pause + Ownable 2-step (storage append, bukan OZ Ownable2Step) |
+| S-L1 | **Ditutup** — `InsufficientStake` |
+| S-L2 | **Tetap** — dust integer division (kembali ke owner lewat recover saat pool kosong) |
+| S-L3 | **Ditutup** — index creator/staker + `lotAt` / `unlockedOf` |
 | S-I1 | **Ditutup** — unstake auto-claim |
 | S-I2 | **Tetap** — jangan stake token rebase |
-| S-I3 | **Ditutup sebagian** — `unstakeOnly` kalau USDC denylist blokir reward |
+| S-I3 | **Ditutup sebagian** — `unstakeOnly` |
+| MAX_LOTS | **Info** — setoran ke-17+ bisa memperpanjang lot unlock paling jauh (staker sendiri) |
 
-Pool yang sudah ada di proxy lama punya `rewardAccounting = false`. Setelah upgrade, `recoverRewards` di pool itu **sengaja revert** supaya tidak menyedot reward user yang belum masuk `pendingRewards`.
+### Tes (15 Sep 2026)
 
-### Tes
+**Lokal:** 24 tes `ArcFlowStakingTest` **PASS** (termasuk restake adil, recover, 2-step owner, UUPS, MAX_LOTS).
 
-75 tes Foundry project **PASS**, termasuk 19 tes staking + tes denylist `unstakeOnly`.
+**Fork proxy live** (`LiveStakingFork.t.sol`, RPC Arc Testnet, tanpa broadcast): 4/4 **PASS**
 
-### Yang sengaja tidak masuk V2
+| Tes | Hasil |
+|---|---|
+| Implementation slot = `0xB620…A87bE`, cap lock/lots | PASS |
+| `createPool` minLock > 730 hari revert | PASS |
+| create → fund → stake → skip 1 hari → unstake auto-claim → recover | PASS |
+| Non-owner tidak bisa `upgradeToAndCall` | PASS |
 
-Cooldown (bukan hard lock), multi-reward token, receipt NFT / weight by duration, Ownable2Step / timelock on-chain, emergency unstake di tengah `minLock`.
+Audit kode (security review pada diff): **tidak ada temuan medium / high / critical yang bisa dieksploitasi pihak ketiga.** S-H1 tetap asumsi trust admin.
 
 ### Produksi
 
-Belum. S-H1 belum hilang selama kontrak UUPS. Baru aman-ish kalau owner di **multisig + timelock**, atau deploy **immutable** seperti lock. Arc public mainnet belum ada.
+Belum audit firma eksternal. Arc public mainnet belum ada. Proxy staking testnet sudah memakai logic terbaru. Jangan pakai uang produksi.
+
+---
+
+## Airdrop — live di Arc Testnet (15 Sep 2026)
+
+Kontrak: `contracts/src/ArcFlowDistributor.sol`  
+Model: Merkle + claim instan / vest ke stream. UUPS **tetap hidup**.  
+Proxy **sudah di-upgrade** (alamat tidak berubah):
+
+| Field | Value |
+|---|---|
+| Proxy | [`0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8`](https://testnet.arcscan.app/address/0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8) |
+| Implementation baru | [`0x4C0A2292DABeBfF959c3F3F7A7d7942E7Ff292b1`](https://testnet.arcscan.app/address/0x4C0A2292DABeBfF959c3F3F7A7d7942E7Ff292b1) |
+| Tx deploy impl | [`0x7ae82c67d3ddd55df97fc09d7ffd87f2a09a8409e30348d44901198527dd9bf2`](https://testnet.arcscan.app/tx/0x7ae82c67d3ddd55df97fc09d7ffd87f2a09a8409e30348d44901198527dd9bf2) |
+| Tx `upgradeToAndCall` | [`0x690ebf1987c28f6d7f951e52e38a7d210b56a238b14a7b7e84ad4ce4521fe0df`](https://testnet.arcscan.app/tx/0x690ebf1987c28f6d7f951e52e38a7d210b56a238b14a7b7e84ad4ce4521fe0df) |
+| Block | `62108675` |
+| Script | `contracts/script/Upgrade.s.sol` |
+| `stream()` | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` (tidak berubah) |
+| `MIN_WINDOW()` | `3600` (1 jam) |
+| `MAX_WINDOW()` | `315360000` (3650 hari) |
+| `nextId()` | `0` |
+
+### Aturan yang adil
+
+**Penerima**
+- Jendela claim tidak bisa di-pause atau di-clawback di tengah jalan.
+- Siapa pun bisa bayar gas `claim`; token tetap ke alamat di merkle.
+- `claimTo`: hanya pemilik leaf yang boleh alihkan (dompet baru / denylist USDC).
+- Vest: stream `cancelable = false`, `transferable = true`.
+
+**Funder**
+- `cancel` hanya **sebelum** `claimStart` (set start di masa depan kalau butuh jeda).
+- `clawback` hanya setelah `claimEnd`, sisa yang tidak diklaim.
+- `topUp` kalau tree kelebihan alokasi dibanding deposit.
+- Jendela 1 jam – 3650 hari; vest 1 menit – 3650 hari; start max 365 hari ke depan; start masa lalu ditolak.
+
+**Owner protokol**
+- Pause hanya menutup **kampanye baru** / topUp — claim yang sudah jalan tetap hidup.
+- Ganti owner 2 langkah. UUPS tetap hidup (trust: kunci owner = brankas).
+
+### Tes (15 Sep 2026)
+
+Upgrade **tidak di-broadcast ulang**: proxy sudah menunjuk impl `0x4C0A…292b1`. Tes di bawah memakai bytecode live itu.
+
+| Suite | Tes | Hasil |
+|---|---|---|
+| `ArcFlowDistributorTest` | 11 (claim instan, vest, claimTo, cancel, clawback, topUp, pause, window) | PASS |
+| `SecurityTest` H-1 | clawback ditolak di tengah jendela; sisa saja yang kembali setelah `claimEnd` | PASS |
+| `LiveDistributorForkTest` (fork RPC, tanpa broadcast) | 6 | PASS |
+
+Fork live (`contracts/test/LiveDistributorFork.t.sol`):
+
+| Tes | Hasil |
+|---|---|
+| Implementation slot = `0x4C0A…292b1`, `MIN_WINDOW` / `MAX_WINDOW` / `stream()` | PASS |
+| Jendela < 1 jam revert `InvalidWindow` | PASS |
+| create → claim instan → clawback ditolak di tengah jendela → clawback sisa setelah `claimEnd` | PASS |
+| `claimTo` ke vest stream live → withdraw 50% di tengah durasi; non-owner leaf ditolak | PASS |
+| `cancel` sebelum `claimStart` refund penuh | PASS |
+| Non-owner tidak bisa `upgradeToAndCall` | PASS |
+
+UI dashboard masih placeholder (`ModuleSoon`). Proxy airdrop testnet sudah memakai logic terbaru. UUPS sengaja tetap hidup sampai Arc public mainnet ada.
 

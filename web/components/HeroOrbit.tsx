@@ -42,12 +42,12 @@ function strokePolyline(
 
 /** Padlock mark used for every orbiting position. */
 function drawLock(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, dim: boolean) {
-  const beam = dim ? "rgba(69,168,255,0.45)" : "#45a8ff";
+  const beam = dim ? "rgba(0,136,255,0.5)" : "#0088ff";
   ctx.save();
   ctx.translate(x, y);
 
-  ctx.fillStyle = "#05060d";
-  ctx.strokeStyle = dim ? "rgba(69,168,255,0.4)" : "rgba(69,168,255,0.9)";
+  ctx.fillStyle = "#00050d";
+  ctx.strokeStyle = dim ? "rgba(0,136,255,0.45)" : "rgba(0,160,255,0.95)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.rect(-s, -s, s * 2, s * 2);
@@ -76,15 +76,15 @@ function StaticOrbit() {
           rx="96"
           ry="34"
           fill="none"
-          stroke="rgba(69,168,255,0.45)"
+          stroke="rgba(0,136,255,0.5)"
           strokeDasharray="3 5"
           transform="rotate(-16 110 110)"
         />
-        <circle cx="110" cy="110" r="54" fill="rgba(8,11,22,0.9)" stroke="rgba(150,172,255,0.5)" />
-        <ellipse cx="110" cy="110" rx="54" ry="18" fill="none" stroke="rgba(150,172,255,0.28)" />
-        <ellipse cx="110" cy="110" rx="18" ry="54" fill="none" stroke="rgba(150,172,255,0.28)" />
-        <rect x="178" y="82" width="14" height="14" fill="#05060d" stroke="#45a8ff" />
-        <rect x="32" y="132" width="12" height="12" fill="#05060d" stroke="#45a8ff" />
+        <circle cx="110" cy="110" r="54" fill="rgba(2,16,28,0.92)" stroke="rgba(0,160,255,0.55)" />
+        <ellipse cx="110" cy="110" rx="54" ry="18" fill="none" stroke="rgba(0,160,255,0.32)" />
+        <ellipse cx="110" cy="110" rx="18" ry="54" fill="none" stroke="rgba(0,160,255,0.32)" />
+        <rect x="178" y="82" width="14" height="14" fill="#00050d" stroke="#0088ff" />
+        <rect x="32" y="132" width="12" height="12" fill="#00050d" stroke="#0088ff" />
       </svg>
     </div>
   );
@@ -163,7 +163,7 @@ export function HeroOrbit() {
         ctx.translate(cx, cy);
         ctx.rotate(orbit.tilt);
         ctx.setLineDash([2, 5]);
-        ctx.strokeStyle = "rgba(150,172,255,0.2)";
+        ctx.strokeStyle = "rgba(0,150,255,0.2)";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.ellipse(0, 0, radius, radius * 0.34, 0, 0, Math.PI * 2);
@@ -177,7 +177,7 @@ export function HeroOrbit() {
       ctx.translate(cx, cy);
       ctx.rotate(-0.28);
       ctx.setLineDash([4, 6]);
-      ctx.strokeStyle = "rgba(69,168,255,0.28)";
+      ctx.strokeStyle = "rgba(0,136,255,0.28)";
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.ellipse(0, 0, ringR, ringR * 0.3, 0, Math.PI, Math.PI * 2);
@@ -238,7 +238,7 @@ export function HeroOrbit() {
 
       ctx.beginPath();
       ctx.arc(cx, cy, R * 1.06, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(69,168,255,0.2)";
+      ctx.strokeStyle = "rgba(0,136,255,0.2)";
       ctx.lineWidth = 3;
       ctx.stroke();
 
@@ -247,7 +247,7 @@ export function HeroOrbit() {
       ctx.translate(cx, cy);
       ctx.rotate(-0.28);
       ctx.setLineDash([4, 6]);
-      ctx.strokeStyle = "rgba(69,168,255,0.8)";
+      ctx.strokeStyle = "rgba(0,136,255,0.8)";
       ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.ellipse(0, 0, ringR, ringR * 0.3, 0, 0, Math.PI);
@@ -268,7 +268,7 @@ export function HeroOrbit() {
         // tether back to the planet — the lock is bound to the chain
         ctx.beginPath();
         ctx.setLineDash([1.5, 4]);
-        ctx.strokeStyle = behind ? "rgba(69,168,255,0.12)" : "rgba(69,168,255,0.32)";
+        ctx.strokeStyle = behind ? "rgba(0,136,255,0.12)" : "rgba(0,136,255,0.32)";
         ctx.lineWidth = 1;
         ctx.moveTo(cx, cy);
         ctx.lineTo(x, y);

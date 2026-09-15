@@ -154,6 +154,75 @@ export const arcFlowAbi = [
   },
 ] as const;
 
+export const distributorAbi = [
+  {
+    type: "function",
+    name: "createCampaign",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "merkleRoot", type: "bytes32" },
+      { name: "amount", type: "uint128" },
+      { name: "claimStart", type: "uint64" },
+      { name: "claimEnd", type: "uint64" },
+      { name: "vestDuration", type: "uint64" },
+      { name: "vestCliffDelay", type: "uint64" },
+    ],
+    outputs: [{ name: "id", type: "uint256" }],
+  },
+  {
+    type: "event",
+    name: "CampaignCreated",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "token", type: "address", indexed: true },
+      { name: "funder", type: "address", indexed: true },
+      { name: "merkleRoot", type: "bytes32", indexed: false },
+      { name: "deposited", type: "uint128", indexed: false },
+      { name: "claimStart", type: "uint64", indexed: false },
+      { name: "claimEnd", type: "uint64", indexed: false },
+      { name: "vestDuration", type: "uint64", indexed: false },
+      { name: "vestCliffDelay", type: "uint64", indexed: false },
+    ],
+  },
+] as const;
+
+export const stakingAbi = [
+  {
+    type: "function",
+    name: "createPool",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stakeToken", type: "address" },
+      { name: "rewardToken", type: "address" },
+      { name: "minLock", type: "uint64" },
+    ],
+    outputs: [{ name: "id", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "fund",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "duration", type: "uint64" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "PoolCreated",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "stakeToken", type: "address", indexed: true },
+      { name: "rewardToken", type: "address", indexed: true },
+      { name: "owner", type: "address", indexed: false },
+      { name: "minLock", type: "uint64", indexed: false },
+    ],
+  },
+] as const;
+
 export const erc20Abi = [
   {
     type: "function",

@@ -13,8 +13,17 @@ export const ARC_TESTNET = defineChain({
   testnet: true,
 });
 
-export const ARCFLOW_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_ADDRESS ??
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+const ZERO = "0x0000000000000000000000000000000000000000";
+
+export const ARCFLOW_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_ADDRESS ?? ZERO) as `0x${string}`;
+export const ARCFLOW_DISTRIBUTOR_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS ??
+  ZERO) as `0x${string}`;
+export const ARCFLOW_STAKING_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS ??
+  ZERO) as `0x${string}`;
+export const ARCFLOW_STREAM_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS ??
+  ZERO) as `0x${string}`;
+export const ARCFLOW_ESCROW_ADDRESS = (process.env.NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS ??
+  ZERO) as `0x${string}`;
 
 /** Arc USDC ERC-20 interface. 6 decimals. Same asset as native gas — never double-count. */
 export const USDC_ADDRESS = "0x3600000000000000000000000000000000000000" as `0x${string}`;

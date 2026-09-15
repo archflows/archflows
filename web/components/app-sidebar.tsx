@@ -16,28 +16,40 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboardIcon,
-  PlusIcon,
-  ClockIcon,
+  HomeIcon,
+  LockIcon,
+  HourglassIcon,
+  GiftIcon,
+  LayersIcon,
   Settings2Icon,
   CircleHelpIcon,
 } from "lucide-react";
 
 const navMain = [
   {
-    title: "Dashboard",
+    title: "Home",
     url: "/dashboard",
-    icon: <LayoutDashboardIcon />,
+    icon: <HomeIcon />,
   },
   {
-    title: "Create lock",
-    url: "/dashboard/create",
-    icon: <PlusIcon />,
-  },
-  {
-    title: "My locks",
+    title: "Locks",
     url: "/dashboard/locks",
-    icon: <ClockIcon />,
+    icon: <LockIcon />,
+  },
+  {
+    title: "Vesting",
+    url: "/dashboard/vesting",
+    icon: <HourglassIcon />,
+  },
+  {
+    title: "Airdrops",
+    url: "/dashboard/airdrops",
+    icon: <GiftIcon />,
+  },
+  {
+    title: "Staking",
+    url: "/dashboard/staking",
+    icon: <LayersIcon />,
   },
 ];
 

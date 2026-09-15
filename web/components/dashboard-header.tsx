@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge";
 
 function titleFromPath(pathname: string) {
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
-  if (pathname.startsWith("/dashboard/locks")) return "My locks";
-  return "Dashboard";
+  if (pathname.startsWith("/dashboard/locks")) return "Locks";
+  if (pathname.startsWith("/dashboard/vesting")) return "Vesting";
+  if (pathname.startsWith("/dashboard/airdrops")) return "Airdrops";
+  if (pathname.startsWith("/dashboard/staking")) return "Staking";
+  return "Home";
 }
 
 export function DashboardHeader() {

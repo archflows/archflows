@@ -9,9 +9,8 @@ import {TokenLib} from "./lib/TokenLib.sol";
 
 /// @title ArcFlowStaking
 /// @notice Permissionless staking pools: stake, lock, earn, claim (Synthetix-style).
-/// @dev Pool fields and contract storage are append-only so the existing UUPS proxy can upgrade.
-///      The protocol owner can still replace this implementation — treat that key as able to
-///      reach every balance. Do not use a hot wallet as owner.
+/// @dev Storage is append-only so the existing UUPS proxy can keep upgrading. The protocol
+///      owner can replace this implementation — keep that key on a multisig, not a hot wallet.
 contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     struct Pool {
         address stakeToken;
@@ -40,6 +39,13 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         uint128 amount;
         uint256 rewards;
         uint256 userRewardPerTokenPaid;
+        /// @dev Next time any remaining lot unlocks. 0 = everything currently withdrawable.
+        uint64 unlockAt;
+    }
+
+    /// @dev One deposit. Restaking never re-locks an older lot.
+    struct Lot {
+        uint128 amount;
         uint64 unlockAt;
     }
 
@@ -47,6 +53,7 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     /// @dev Two years. Long enough for real lock staking, short enough to block a forever-rug.
     uint64 public constant MAX_MIN_LOCK = 730 days;
     uint64 public constant MAX_FUND_DURATION = 3650 days;
+    uint256 public constant MAX_LOTS = 16;
 
     uint256 public nextId;
     mapping(uint256 => Pool) public pools;
@@ -56,6 +63,10 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     mapping(address => uint256[]) public poolsByCreator;
     mapping(address => uint256[]) public poolsByStaker;
     mapping(uint256 => mapping(address => bool)) private _stakerIndexed;
+
+    address public pendingOwner;
+    mapping(uint256 => address) public pendingPoolOwner;
+    mapping(uint256 => mapping(address => Lot[])) private _lots;
 
     error ZeroAddress();
     error ZeroAmount();
@@ -76,7 +87,7 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         uint256 indexed id, address indexed stakeToken, address indexed rewardToken, address owner, uint64 minLock
     );
     event RewardFunded(uint256 indexed id, uint256 amount, uint64 duration, uint256 rewardRate, uint64 periodFinish);
-    event Staked(uint256 indexed id, address indexed account, uint128 amount);
+    event Staked(uint256 indexed id, address indexed account, uint128 amount, uint64 unlockAt);
     event Unstaked(uint256 indexed id, address indexed account, uint128 amount);
     event RewardPaid(uint256 indexed id, address indexed account, uint256 amount);
     event RewardsRecovered(uint256 indexed id, address indexed to, uint256 amount);
@@ -84,8 +95,10 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     event ProtocolPaused(bool paused);
     event CapSet(uint256 indexed id, uint128 cap);
     event ExpirySet(uint256 indexed id, uint64 expiresAt);
+    event PoolTransferStarted(uint256 indexed id, address indexed from, address indexed to);
     event PoolTransferred(uint256 indexed id, address indexed from, address indexed to);
     event Compounded(uint256 indexed id, address indexed account, uint256 amount);
+    event ProtocolOwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -159,16 +172,16 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         _update(id, msg.sender);
 
         uint128 received = TokenLib.pull128(p.stakeToken, msg.sender, amount);
-        _creditStake(p, u, id, msg.sender, received);
-        emit Staked(id, msg.sender, received);
+        uint64 unlockAt = _creditStake(p, u, id, msg.sender, received);
+        emit Staked(id, msg.sender, received, unlockAt);
     }
 
-    /// @notice Unstakes and claims rewards (Streamflow-style unstakeAndClaim).
+    /// @notice Unstakes unlocked lots and claims rewards.
     function unstake(uint256 id, uint128 amount) external nonReentrant {
         _unstake(id, amount, true);
     }
 
-    /// @notice Unstakes without claiming. Use if the reward token cannot be received (denylist).
+    /// @notice Unstakes unlocked lots without claiming. Use if the reward token is denylisted.
     function unstakeOnly(uint256 id, uint128 amount) external nonReentrant {
         _unstake(id, amount, false);
     }
@@ -178,25 +191,22 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         if (amount == 0) revert NothingToClaim();
     }
 
+    /// @notice Withdraws every currently unlocked lot and claims rewards. Locked lots stay.
     function exit(uint256 id) external nonReentrant {
-        Pool storage p = pools[id];
         Stake storage u = stakes[id][msg.sender];
-        if (block.timestamp < u.unlockAt) revert Locked();
+        _hydrateLots(id, msg.sender, u);
 
-        _update(id, msg.sender);
-        uint128 stakedAmount = u.amount;
-        u.amount = 0;
-        p.totalStaked -= stakedAmount;
-
-        TokenLib.push(p.stakeToken, msg.sender, stakedAmount);
-        if (stakedAmount != 0) emit Unstaked(id, msg.sender, stakedAmount);
+        uint128 free = _unlockedAmount(_lots[id][msg.sender], u);
+        if (free != 0) {
+            _unstake(id, free, true);
+            return;
+        }
 
         uint256 reward = _payout(id, msg.sender);
-        if (stakedAmount == 0 && reward == 0) revert NothingToWithdraw();
+        if (reward == 0) revert NothingToWithdraw();
     }
 
-    /// @notice Restakes claimed rewards in place. Only when stake token == reward token.
-    /// @dev Tokens never leave the contract — reserves become staked principal.
+    /// @notice Restakes claimed rewards as a new lot. Does not re-lock older deposits.
     function compound(uint256 id) external nonReentrant returns (uint256 amount) {
         Pool storage p = pools[id];
         if (p.stakeToken != p.rewardToken) revert SameTokenOnly();
@@ -209,9 +219,9 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         Stake storage u = stakes[id][msg.sender];
         // forge-lint: disable-next-line(unsafe-typecast)
         uint128 add = uint128(amount);
-        _creditStake(p, u, id, msg.sender, add);
+        uint64 unlockAt = _creditStake(p, u, id, msg.sender, add);
 
-        emit Staked(id, msg.sender, add);
+        emit Staked(id, msg.sender, add, unlockAt);
         emit Compounded(id, msg.sender, amount);
     }
 
@@ -264,14 +274,42 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         emit ExpirySet(id, expiresAt);
     }
 
+    /// @notice Starts a two-step pool handoff. Pass address(0) to cancel.
     function transferPool(uint256 id, address newOwner) external {
-        if (newOwner == address(0) || newOwner == msg.sender) revert ZeroAddress();
         Pool storage p = pools[id];
         if (msg.sender != p.owner) revert NotOwner();
+        if (newOwner == p.owner) revert ZeroAddress();
+        pendingPoolOwner[id] = newOwner;
+        emit PoolTransferStarted(id, msg.sender, newOwner);
+    }
+
+    function acceptPool(uint256 id) external {
+        if (msg.sender == address(0) || msg.sender != pendingPoolOwner[id]) revert NotOwner();
+        Pool storage p = pools[id];
         address from = p.owner;
-        p.owner = newOwner;
-        poolsByCreator[newOwner].push(id);
-        emit PoolTransferred(id, from, newOwner);
+        p.owner = msg.sender;
+        pendingPoolOwner[id] = address(0);
+        poolsByCreator[msg.sender].push(id);
+        emit PoolTransferred(id, from, msg.sender);
+    }
+
+    /// @notice Two-step protocol ownership. Instant transfer is disabled.
+    function transferOwnership(address newOwner) public override onlyOwner {
+        if (newOwner == address(0) || newOwner == owner()) revert ZeroAddress();
+        pendingOwner = newOwner;
+        emit ProtocolOwnershipTransferStarted(owner(), newOwner);
+    }
+
+    function acceptOwnership() external {
+        if (msg.sender != pendingOwner) revert NotOwner();
+        pendingOwner = address(0);
+        _transferOwnership(msg.sender);
+    }
+
+    function renounceOwnership() public override onlyOwner {
+        if (protocolPaused) revert Paused();
+        pendingOwner = address(0);
+        super.renounceOwnership();
     }
 
     function earned(uint256 id, address account) public view returns (uint256) {
@@ -292,16 +330,43 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         return poolsByStaker[staker].length;
     }
 
+    function lotCount(uint256 id, address account) external view returns (uint256) {
+        uint256 n = _lots[id][account].length;
+        if (n == 0 && stakes[id][account].amount != 0) return 1;
+        return n;
+    }
+
+    function lotAt(uint256 id, address account, uint256 index) external view returns (uint128 amount, uint64 unlockAt) {
+        Lot[] storage lots = _lots[id][account];
+        if (lots.length == 0) {
+            Stake storage u = stakes[id][account];
+            if (u.amount == 0 || index != 0) revert InsufficientStake();
+            return (u.amount, u.unlockAt);
+        }
+        Lot storage lot = lots[index];
+        return (lot.amount, lot.unlockAt);
+    }
+
+    function unlockedOf(uint256 id, address account) public view returns (uint128) {
+        return _unlockedAmount(_lots[id][account], stakes[id][account]);
+    }
+
     function _unstake(uint256 id, uint128 amount, bool claimRewards) private {
         if (amount == 0) revert ZeroAmount();
         Pool storage p = pools[id];
         Stake storage u = stakes[id][msg.sender];
-        if (block.timestamp < u.unlockAt) revert Locked();
+        _hydrateLots(id, msg.sender, u);
         if (amount > u.amount) revert InsufficientStake();
 
+        Lot[] storage lots = _lots[id][msg.sender];
+        if (amount > _unlockedAmount(lots, u)) revert Locked();
+
         _update(id, msg.sender);
+        _pullUnlocked(lots, amount);
         u.amount -= amount;
         p.totalStaked -= amount;
+        _syncUnlockAt(u, lots);
+
         TokenLib.push(p.stakeToken, msg.sender, amount);
         emit Unstaked(id, msg.sender, amount);
 
@@ -331,7 +396,10 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         p.rewardReserves -= amount;
     }
 
-    function _creditStake(Pool storage p, Stake storage u, uint256 id, address account, uint128 received) private {
+    function _creditStake(Pool storage p, Stake storage u, uint256 id, address account, uint128 received)
+        private
+        returns (uint64 unlockAt)
+    {
         uint256 nextTotal = uint256(p.totalStaked) + uint256(received);
         if (nextTotal > type(uint128).max) revert CapExceeded();
         if (p.cap != 0 && nextTotal > p.cap) revert CapExceeded();
@@ -341,12 +409,99 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
             poolsByStaker[account].push(id);
         }
 
+        _hydrateLots(id, account, u);
+        unlockAt = _addLock(p.minLock);
+        _pushLot(_lots[id][account], received, unlockAt);
+
         u.amount += received;
         // forge-lint: disable-next-line(unsafe-typecast)
         p.totalStaked = uint128(nextTotal);
+        _syncUnlockAt(u, _lots[id][account]);
+    }
 
-        uint64 unlockAt = _addLock(p.minLock);
-        if (unlockAt > u.unlockAt) u.unlockAt = unlockAt;
+    function _pushLot(Lot[] storage lots, uint128 amount, uint64 unlockAt) private {
+        if (unlockAt <= block.timestamp) {
+            uint256 n = lots.length;
+            for (uint256 i; i < n; ++i) {
+                if (lots[i].unlockAt <= block.timestamp) {
+                    lots[i].amount += amount;
+                    return;
+                }
+            }
+        } else if (lots.length != 0 && lots[lots.length - 1].unlockAt == unlockAt) {
+            lots[lots.length - 1].amount += amount;
+            return;
+        }
+
+        if (lots.length >= MAX_LOTS) {
+            uint256 idx = _latestLotIndex(lots);
+            lots[idx].amount += amount;
+            if (unlockAt > lots[idx].unlockAt) lots[idx].unlockAt = unlockAt;
+            return;
+        }
+
+        lots.push(Lot({amount: amount, unlockAt: unlockAt}));
+    }
+
+    function _latestLotIndex(Lot[] storage lots) private view returns (uint256 idx) {
+        uint64 latest = lots[0].unlockAt;
+        uint256 n = lots.length;
+        for (uint256 i = 1; i < n; ++i) {
+            if (lots[i].unlockAt >= latest) {
+                latest = lots[i].unlockAt;
+                idx = i;
+            }
+        }
+    }
+
+    function _pullUnlocked(Lot[] storage lots, uint128 amount) private {
+        uint128 remaining = amount;
+        uint256 i;
+        while (remaining != 0) {
+            if (i >= lots.length) revert Locked();
+            if (block.timestamp < lots[i].unlockAt) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+            if (lots[i].amount <= remaining) {
+                remaining -= lots[i].amount;
+                lots[i] = lots[lots.length - 1];
+                lots.pop();
+            } else {
+                lots[i].amount -= remaining;
+                remaining = 0;
+            }
+        }
+    }
+
+    function _hydrateLots(uint256 id, address account, Stake storage u) private {
+        Lot[] storage lots = _lots[id][account];
+        if (lots.length == 0 && u.amount != 0) {
+            lots.push(Lot({amount: u.amount, unlockAt: u.unlockAt}));
+        }
+    }
+
+    function _unlockedAmount(Lot[] storage lots, Stake storage u) private view returns (uint128 free) {
+        uint256 n = lots.length;
+        if (n == 0) {
+            if (u.amount != 0 && block.timestamp >= u.unlockAt) return u.amount;
+            return 0;
+        }
+        for (uint256 i; i < n; ++i) {
+            if (block.timestamp >= lots[i].unlockAt) free += lots[i].amount;
+        }
+    }
+
+    function _syncUnlockAt(Stake storage u, Lot[] storage lots) private {
+        uint64 next;
+        uint256 n = lots.length;
+        for (uint256 i; i < n; ++i) {
+            uint64 lotUnlock = lots[i].unlockAt;
+            if (block.timestamp < lotUnlock && (next == 0 || lotUnlock < next)) next = lotUnlock;
+        }
+        u.unlockAt = next;
     }
 
     function _assertCanEnter(Pool storage p) private view {
@@ -359,7 +514,8 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         uint64 applicable = uint64(_lastTimeRewardApplicable(p));
 
         if (p.totalStaked == 0 && applicable > p.lastUpdate) {
-            p.periodFinish += applicable - p.lastUpdate;
+            uint256 extended = uint256(p.periodFinish) + uint256(applicable - p.lastUpdate);
+            p.periodFinish = extended > type(uint64).max ? type(uint64).max : uint64(extended);
         }
 
         p.rewardPerTokenStored = _rewardPerToken(p);
@@ -393,6 +549,6 @@ contract ArcFlowStaking is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    /// @dev Was 46. Four slots used: protocolPaused, poolsByCreator, poolsByStaker, _stakerIndexed.
-    uint256[42] private __gap;
+    /// @dev Was 46. Seven slots used after the original three mappings.
+    uint256[39] private __gap;
 }

@@ -19,7 +19,8 @@ contract Upgrade is Script {
         string memory target = vm.envString("ARCFLOW_TARGET");
         bytes32 key = keccak256(bytes(target));
 
-        vm.startBroadcast();
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(pk);
 
         if (key == keccak256("stream")) {
             implementation = address(new ArcFlowStream());

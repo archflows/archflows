@@ -165,7 +165,7 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card shadow-none">
       <CardHeader>
         <CardTitle>Lock activity</CardTitle>
         <CardDescription>

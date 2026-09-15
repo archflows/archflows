@@ -34,7 +34,7 @@ export function NavMain({
               render={<Link href="/dashboard/create" />}
             >
               <CirclePlusIcon />
-              <span>Quick Create</span>
+              <span>New lock</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

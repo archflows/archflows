@@ -39,16 +39,40 @@ Previous lock (no fee): `0x003DE5DF8609E37b89EC91bF1cFDD65096cA98ee` — leave i
 
 ## Implementations behind the proxies
 
-Never point the frontend at these. They are the current logic contracts, verified against each proxy's ERC1967 implementation slot; all four still match the original deploy, so no upgrade has been executed yet.
+Never point the frontend at these. They are the current logic contracts, verified against each proxy's ERC1967 implementation slot.
 
 | Proxy | Current implementation |
 |---|---|
 | `ArcFlowStream` | `0x0b03EE094fFc1f5d05F02Cd32b8e7dfD489B07e3` |
-| `ArcFlowDistributor` | `0x4584A7686a859Df934D7568559d3E10e41243B70` |
+| `ArcFlowDistributor` | `0x4C0A2292DABeBfF959c3F3F7A7d7942E7Ff292b1` (upgraded 15 Sep 2026) |
 | `ArcFlowEscrow` | `0xA2e774925C9516E182fF4626c31d4957607Af52c` |
-| `ArcFlowStaking` | `0x233645B1a45F5A018C48e914AB476C0aCaCA50A0` |
+| `ArcFlowStaking` | `0xB620276470dE35cC83484fAf2432aB887f4A87bE` (upgraded 15 Sep 2026) |
 
-All four proxies are owned by the deployer address and upgradeable via `contracts/script/Upgrade.s.sol`.
+All four proxies are owned by the deployer address and upgradeable via `contracts/script/Upgrade.s.sol`. UUPS stays on until Arc public mainnet exists.
+
+**Airdrop / distributor upgrade (15 Sep 2026)** — merkle claim, claimTo, cancel-before-start, topUp. Proxy address unchanged.
+
+| | |
+|---|---|
+| Proxy | [`0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8`](https://testnet.arcscan.app/address/0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8) |
+| Implementation | [`0x4C0A2292DABeBfF959c3F3F7A7d7942E7Ff292b1`](https://testnet.arcscan.app/address/0x4C0A2292DABeBfF959c3F3F7A7d7942E7Ff292b1) |
+| Tx impl | [`0x7ae82c67d3ddd55df97fc09d7ffd87f2a09a8409e30348d44901198527dd9bf2`](https://testnet.arcscan.app/tx/0x7ae82c67d3ddd55df97fc09d7ffd87f2a09a8409e30348d44901198527dd9bf2) |
+| Tx upgrade | [`0x690ebf1987c28f6d7f951e52e38a7d210b56a238b14a7b7e84ad4ce4521fe0df`](https://testnet.arcscan.app/tx/0x690ebf1987c28f6d7f951e52e38a7d210b56a238b14a7b7e84ad4ce4521fe0df) |
+| Block | `62108675` |
+| Previous impl | `0x4584A7686a859Df934D7568559d3E10e41243B70` |
+
+**Staking upgrade (15 Sep 2026)** — lot-based lock, recover, pause, 2-step ownership. Proxy address unchanged.
+
+**Staking upgrade (15 Sep 2026)** — lot-based lock, recover, pause, 2-step ownership. Proxy address unchanged.
+
+| | |
+|---|---|
+| Proxy | [`0x2627e3f07574F47b2B5bc3EfD774576357658063`](https://testnet.arcscan.app/address/0x2627e3f07574F47b2B5bc3EfD774576357658063) |
+| Implementation | [`0xB620276470dE35cC83484fAf2432aB887f4A87bE`](https://testnet.arcscan.app/address/0xB620276470dE35cC83484fAf2432aB887f4A87bE) |
+| Tx impl | [`0xc3495f291d8d5485ce47206b01845dd871b42fede32e652d69462b0cdda3fcf4`](https://testnet.arcscan.app/tx/0xc3495f291d8d5485ce47206b01845dd871b42fede32e652d69462b0cdda3fcf4) |
+| Tx upgrade | [`0xa7bce1f996c821b2c83961e1a568052a1c60b593486828606face5db77562747`](https://testnet.arcscan.app/tx/0xa7bce1f996c821b2c83961e1a568052a1c60b593486828606face5db77562747) |
+| Block | `62105466` |
+| Previous impl | `0x233645B1a45F5A018C48e914AB476C0aCaCA50A0` |
 
 ## Deploy transactions
 
@@ -71,6 +95,20 @@ Full receipts: `contracts/broadcast/Deploy.s.sol/5042002/run-latest.json`.
 | Asset | Address | Notes |
 |---|---|---|
 | USDC (ERC-20 view) | `0x3600000000000000000000000000000000000000` | 6 decimals. Same asset as native gas, which is shown with 18 decimals — never double-count. |
+| ArcFlow Mock (`AFMOCK`) | [`0x36FD4DFAD3fee0948C44276584448fa371A54d4b`](https://testnet.arcscan.app/address/0x36FD4DFAD3fee0948C44276584448fa371A54d4b) | 18 decimals. Public `mint` (max 1M per call). Deployed 15 Sep 2026 for lock / vest / stake / airdrop demos. |
+
+**Mock token deploy (15 Sep 2026)**
+
+| | |
+|---|---|
+| Address | [`0x36FD4DFAD3fee0948C44276584448fa371A54d4b`](https://testnet.arcscan.app/address/0x36FD4DFAD3fee0948C44276584448fa371A54d4b) |
+| Tx deploy | [`0xe91b8c63e47760152f2326b4971bf6c7e5e19899171e319fcd9c1c7712720898`](https://testnet.arcscan.app/tx/0xe91b8c63e47760152f2326b4971bf6c7e5e19899171e319fcd9c1c7712720898) |
+| Tx seed mint | [`0x27e9bea64cfa856f74021c131498dda6958ed9a67e6cd76fcf957134bd662ab1`](https://testnet.arcscan.app/tx/0x27e9bea64cfa856f74021c131498dda6958ed9a67e6cd76fcf957134bd662ab1) |
+| Block | `62111049` |
+| Script | `contracts/script/DeployMockToken.s.sol` |
+| Name / symbol | `ArcFlow Mock` / `AFMOCK` |
+| Decimals | 18 |
+| Seeded to deployer | 1,000,000 AFMOCK |
 
 ## Mainnet
 

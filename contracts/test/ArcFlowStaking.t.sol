@@ -6,6 +6,12 @@ import {ArcFlowStaking} from "../src/ArcFlowStaking.sol";
 import {Deployers} from "./helpers/Deployers.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 
+contract ArcFlowStakingV2 is ArcFlowStaking {
+    function version() external pure returns (string memory) {
+        return "v2";
+    }
+}
+
 contract ArcFlowStakingTest is Test {
     ArcFlowStaking staking;
     MockERC20 stakeToken;
@@ -281,6 +287,17 @@ contract ArcFlowStakingTest is Test {
         vm.prank(owner);
         staking.transferPool(id, nextOwner);
 
+        // Until the new owner accepts, the current owner still controls the pool.
+        vm.prank(owner);
+        staking.fund(id, REWARD, 10 days);
+
+        vm.prank(alice);
+        vm.expectRevert(ArcFlowStaking.NotOwner.selector);
+        staking.acceptPool(id);
+
+        vm.prank(nextOwner);
+        staking.acceptPool(id);
+
         vm.prank(owner);
         vm.expectRevert(ArcFlowStaking.NotOwner.selector);
         staking.fund(id, REWARD, 10 days);
@@ -321,7 +338,7 @@ contract ArcFlowStakingTest is Test {
         assertApproxEqAbs(both.balanceOf(alice), STAKE + REWARD, 1e10);
     }
 
-    function test_RestakeExtendsWholeLock() public {
+    function test_RestakeDoesNotRelockUnlockedLots() public {
         uint256 id = _pool(7 days);
         vm.prank(alice);
         staking.stake(id, STAKE / 2);
@@ -329,15 +346,99 @@ contract ArcFlowStakingTest is Test {
         skip(6 days);
         vm.prank(alice);
         staking.stake(id, STAKE / 2);
+        assertEq(staking.unlockedOf(id, alice), 0);
+        assertEq(staking.lotCount(id, alice), 2);
 
         vm.prank(alice);
         vm.expectRevert(ArcFlowStaking.Locked.selector);
         staking.unstake(id, STAKE / 2);
 
+        skip(1 days);
+        assertEq(staking.unlockedOf(id, alice), STAKE / 2);
+        vm.prank(alice);
+        staking.unstake(id, STAKE / 2);
+        assertEq(stakeToken.balanceOf(alice), STAKE / 2);
+
+        vm.prank(alice);
+        vm.expectRevert(ArcFlowStaking.Locked.selector);
+        staking.unstake(id, STAKE / 2);
+
+        skip(6 days);
+        vm.prank(alice);
+        staking.unstake(id, STAKE / 2);
+        assertEq(stakeToken.balanceOf(alice), STAKE);
+    }
+
+    function test_ExitWithdrawsUnlockedOnly() public {
+        uint256 id = _pool(7 days);
+        vm.prank(alice);
+        staking.stake(id, STAKE / 2);
         skip(7 days);
         vm.prank(alice);
-        staking.unstake(id, STAKE);
-        assertEq(stakeToken.balanceOf(alice), STAKE);
+        staking.stake(id, STAKE / 2);
+
+        vm.prank(alice);
+        staking.exit(id);
+        assertEq(stakeToken.balanceOf(alice), STAKE / 2);
+        assertEq(staking.unlockedOf(id, alice), 0);
+        (uint128 left,,,) = staking.stakes(id, alice);
+        assertEq(left, STAKE / 2);
+    }
+
+    function test_TwoStepProtocolOwnership() public {
+        address next = makeAddr("protocol");
+        staking.transferOwnership(next);
+        assertEq(staking.owner(), address(this));
+
+        vm.expectRevert(ArcFlowStaking.NotOwner.selector);
+        staking.acceptOwnership();
+
+        vm.prank(next);
+        staking.acceptOwnership();
+        assertEq(staking.owner(), next);
+
+        vm.expectRevert();
+        staking.setProtocolPaused(true);
+    }
+
+    function test_OwnerCanUpgradeAndStateSurvives() public {
+        uint256 id = _pool(0);
+        vm.prank(alice);
+        staking.stake(id, STAKE);
+
+        staking.upgradeToAndCall(address(new ArcFlowStakingV2()), "");
+        assertEq(ArcFlowStakingV2(address(staking)).version(), "v2");
+        assertEq(staking.unlockedOf(id, alice), STAKE);
+        assertApproxEqAbs(staking.earned(id, alice), 0, 1);
+    }
+
+    function test_NonOwnerCannotUpgrade() public {
+        address impl = address(new ArcFlowStakingV2());
+        vm.prank(alice);
+        vm.expectRevert();
+        staking.upgradeToAndCall(impl, "");
+    }
+
+    function test_MaxLotsMergesIntoLatest() public {
+        uint256 id = _pool(1 days);
+        uint128 piece = 1e18;
+        stakeToken.mint(alice, piece * 17);
+
+        for (uint256 i; i < 16; ++i) {
+            vm.prank(alice);
+            staking.stake(id, piece);
+            skip(1);
+        }
+        assertEq(staking.lotCount(id, alice), 16);
+
+        (uint128 lastAmt, uint64 lastUnlock) = staking.lotAt(id, alice, 15);
+        vm.prank(alice);
+        staking.stake(id, piece);
+        assertEq(staking.lotCount(id, alice), 16);
+
+        (uint128 mergedAmt, uint64 mergedUnlock) = staking.lotAt(id, alice, 15);
+        assertEq(mergedAmt, lastAmt + piece);
+        assertGe(mergedUnlock, lastUnlock);
     }
 
     function test_InsufficientStake() public {
