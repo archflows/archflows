@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1920" />
+    <title>ArcFlow clip</title>
+    <style>
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-SemiBold.ttf") format("truetype");
+        font-weight: 600;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("fonts/IBMPlexMono-Medium.woff2") format("woff2");
+        font-weight: 500;
+        font-display: block;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #08090c;
+        color: #fff;
+        font-family: Sora, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+
+      /* base plate from content/bahan, slow push-in like the intro video */
+      #bg {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 118%;
+        height: 118%;
+        object-fit: cover;
+        transform: translate(-50%, -50%);
+        will-change: transform;
+      }
+
+      #veil {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(5, 8, 20, 0.7) 0%,
+          rgba(5, 8, 20, 0.42) 38%,
+          rgba(5, 8, 20, 0.34) 58%,
+          rgba(5, 8, 20, 0.66) 100%
+        );
+      }
+
+      #glow {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 1500px;
+        height: 1500px;
+        margin: -750px 0 0 -750px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(59, 122, 255, 0.24) 0%,
+          rgba(0, 80, 224, 0.1) 38%,
+          transparent 68%
+        );
+        will-change: transform, opacity;
+      }
+
+      #logo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 760px;
+        height: auto;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        will-change: transform, opacity;
+      }
+
+      #copy {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 120px;
+        text-align: center;
+        font-weight: 700;
+        line-height: 1.06;
+        letter-spacing: -0.045em;
+        white-space: pre-line;
+        opacity: 0;
+        will-change: transform, opacity;
+      }
+
+      #copy .line {
+        display: block;
+        will-change: transform, opacity, clip-path;
+      }
+
+      #copy .accent {
+        color: #4d8aff;
+      }
+
+      #endcard {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 34px;
+        opacity: 0;
+        will-change: transform, opacity;
+      }
+
+      #endcard img.mark {
+        width: 640px;
+        height: auto;
+        display: block;
+      }
+
+      /* when a clip ends on a product shot, lift the endcard out of its way */
+      .has-shot #endcard {
+        justify-content: flex-start;
+        padding-top: 140px;
+        gap: 28px;
+      }
+      .has-shot #endcard img.mark {
+        width: 520px;
+      }
+
+      #endcard .tagline {
+        font-size: 44px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: #e2e8f0;
+      }
+
+      #endcard .meta {
+        font-family: "IBM Plex Mono", monospace;
+        font-weight: 500;
+        font-size: 24px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #9ec2ff;
+      }
+
+      #shot-wrap {
+        position: absolute;
+        left: 50%;
+        bottom: -80px;
+        transform: translateX(-50%);
+        opacity: 0;
+        will-change: transform, opacity;
+        filter: drop-shadow(0 34px 70px rgba(0, 20, 80, 0.6));
+      }
+
+      #shot {
+        width: 1150px;
+        height: auto;
+        display: block;
+        border: 1px solid rgba(210, 225, 255, 0.14);
+        border-radius: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <img id="bg" src="/bahan/bcakgound.png" alt="" />
+      <div id="veil"></div>
+      <div id="glow"></div>
+      <img id="logo" src="/bahan/archflows logo.png" alt="ArcFlow" />
+      <div id="copy"></div>
+      <div id="endcard">
+        <img class="mark" src="/bahan/archflows logo.png" alt="ArcFlow" />
+        <div class="tagline">Lock. Vest. Stream. On Arc.</div>
+        <div class="meta">arcflows.finance</div>
+      </div>
+      <div id="shot-wrap"><img id="shot" src="" alt="" /></div>
+    </div>
+
+    <script>
+      const els = {
+        bg: document.getElementById("bg"),
+        glow: document.getElementById("glow"),
+        logo: document.getElementById("logo"),
+        copy: document.getElementById("copy"),
+        endcard: document.getElementById("endcard"),
+        shotWrap: document.getElementById("shot-wrap"),
+        shot: document.getElementById("shot"),
+      };
+
+      let SCENES = [];
+      let DURATION = 10;
+
+      function clamp(v, a, b) {
+        return Math.max(a, Math.min(b, v));
+      }
+      function easeOut(t) {
+        return 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+      }
+      function fade(t, start, end, fadeIn = 0.22, fadeOut = 0.22) {
+        if (t < start || t > end) return 0;
+        return Math.min(easeOut((t - start) / fadeIn), easeOut((end - t) / fadeOut));
+      }
+      function esc(value) {
+        return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // per-line entrance, keyed off how far into the scene we are
+      const MOTIONS = {
+        slam(p) {
+          return `transform:scale(${1.14 - 0.14 * p});opacity:${p}`;
+        },
+        rise(p) {
+          return `transform:translateY(${(1 - p) * 46}px);opacity:${p}`;
+        },
+        wipe(p) {
+          return `clip-path:inset(0 ${(1 - p) * 100}% 0 0);opacity:${Math.min(1, p * 1.6)}`;
+        },
+      };
+
+      function renderCopy(scene, t) {
+        const local = t - scene.start;
+        const motion = MOTIONS[scene.motion] ?? MOTIONS.rise;
+        els.copy.style.fontSize = `${scene.size ?? 118}px`;
+        els.copy.innerHTML = scene.text
+          .split("\n")
+          .map((line, i) => {
+            const p = easeOut((local - i * 0.1) / 0.32);
+            const html = scene.highlight
+              ? esc(line).replace(
+                  esc(scene.highlight),
+                  `<span class="accent">${esc(scene.highlight)}</span>`
+                )
+              : esc(line);
+            return `<span class="line" style="${motion(p)}">${html}</span>`;
+          })
+          .join("");
+      }
+
+      function seek(time) {
+        const t = clamp(time, 0, DURATION);
+
+        let copyOpacity = 0;
+        let logoOpacity = 0;
+        let endOpacity = 0;
+        let shotOpacity = 0;
+        let active = null;
+
+        for (const scene of SCENES) {
+          if (scene.logo) {
+            logoOpacity = Math.max(logoOpacity, fade(t, scene.start, scene.end, 0.4, 0.3));
+            continue;
+          }
+          if (scene.endcard) {
+            endOpacity = Math.max(endOpacity, fade(t, scene.start, scene.end, 0.45, 0.01));
+            if (scene.shot) shotOpacity = endOpacity;
+            continue;
+          }
+          const opacity = fade(t, scene.start, scene.end);
+          if (opacity > copyOpacity) {
+            copyOpacity = opacity;
+            active = scene;
+          }
+        }
+
+        if (active) renderCopy(active, t);
+
+        els.copy.style.opacity = String(copyOpacity);
+        els.logo.style.opacity = String(logoOpacity);
+        els.logo.style.transform = `translate(-50%, -50%) scale(${0.94 + 0.06 * logoOpacity})`;
+
+        els.endcard.style.opacity = String(endOpacity);
+        els.endcard.style.transform = `scale(${0.97 + 0.03 * endOpacity})`;
+
+        els.shotWrap.style.opacity = String(shotOpacity);
+        els.shotWrap.style.transform = `translateX(-50%) translateY(${(1 - shotOpacity) * 70}px)`;
+
+        // slow push-in on the plate plus a breathing glow, so no frame is frozen
+        const progress = t / DURATION;
+        els.bg.style.transform = `translate(-50%, -50%) scale(${1 + 0.07 * progress})`;
+        els.glow.style.transform = `scale(${0.9 + 0.22 * progress})`;
+        els.glow.style.opacity = String(0.55 + 0.45 * Math.max(copyOpacity, endOpacity));
+      }
+
+      async function build() {
+        const data = await (await fetch("posts.json")).json();
+        const params = new URLSearchParams(location.search);
+        const slug = params.get("slug");
+        const index = slug
+          ? data.clips.findIndex((clip) => clip.slug === slug)
+          : Number(params.get("i") ?? 0);
+        const clip = data.clips[index];
+        if (!clip) throw new Error(`no clip at ${slug ?? index}`);
+
+        SCENES = clip.scenes;
+        DURATION = clip.duration;
+        window.DURATION = DURATION;
+
+        if (clip.shot) {
+          els.shot.src = clip.shot;
+          document.getElementById("stage").classList.add("has-shot");
+        } else {
+          els.shotWrap.hidden = true;
+        }
+
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images]
+            // an img left with an empty src never fires load or error
+            .filter((img) => img.getAttribute("src"))
+            .map((img) =>
+              img.complete && img.naturalWidth > 0
+                ? Promise.resolve()
+                : new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                  })
+            )
+        );
+        seek(0);
+        window.__ready = true;
+      }
+
+      window.seek = seek;
+      window.DURATION = DURATION;
+      window.__buildError = null;
+
+      build()
+        .then(() => {
+          // opt-in only: a running rAF loop would overwrite the explicit
+          // seek() calls the renderer makes for each frame
+          if (!new URLSearchParams(location.search).has("preview")) return;
+          const startedAt = performance.now();
+          const loop = (now) => {
+            seek(((now - startedAt) / 1000) % (DURATION + 1.2));
+            requestAnimationFrame(loop);
+          };
+          requestAnimationFrame(loop);
+        })
+        .catch((err) => {
+          window.__buildError = String(err);
+          window.__ready = true;
+        });
+    </script>
+  </body>
+</html>

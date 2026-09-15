@@ -1,0 +1,12 @@
+{
+  "name": "arcflows-posts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "render:clips": "node render.mjs clips"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.11.0"
+  }
+}

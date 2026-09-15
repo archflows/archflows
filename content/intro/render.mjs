@@ -5,6 +5,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
+import { findChrome } from "../posts/chrome.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -17,7 +18,7 @@ const OUT = path.join(
   landscape ? "arcflows-intro-landscape.mp4" : "arcflows-intro.mp4"
 );
 const FPS = 30;
-const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const CHROME = findChrome();
 
 const MIME = {
   ".html": "text/html; charset=utf-8",

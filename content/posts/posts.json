@@ -1,0 +1,150 @@
+{
+  "site": "arcflows.finance",
+  "handle": "@arcflow",
+  "posts": [
+    {
+      "slug": "01-lp-lock-is-the-pad",
+      "template": "statement",
+      "eyebrow": "Positioning",
+      "headline": "LP lock is the pad.\nWallet lock is *ArcFlow*.",
+      "lead": "The pool cannot be pulled. That is the launchpad's job. Whether the dev wallet can sell tomorrow is ours.",
+      "footer": "arcflows.finance",
+      "tweet": "LP lock is the pad.\nWallet lock is ArcFlow.\n\nLocking the pool means nobody pulls liquidity.\nIt says nothing about the bag still sitting in the dev wallet.\n\nTwo different promises. Only one of them is ours.\n\narcflows.finance",
+      "alt": "Dark ArcFlow card reading 'LP lock is the pad. Wallet lock is ArcFlow.' with the word ArcFlow in blue."
+    },
+    {
+      "slug": "02-one-form",
+      "template": "hero",
+      "eyebrow": "Workflow 01",
+      "headline": "Set the lock on *one form*.",
+      "lead": "Pick the token, drag the amount, choose the date. Approve and lock in the same flow.",
+      "shot": "/bahan/dsabord.png",
+      "footer": "arcflows.finance",
+      "tweet": "Set the lock on one form.\n\nPick the token. Drag the amount. Choose the date.\nApprove and lock in the same flow.\n\nNo dashboard tour, no six-step wizard. One screen, then it is on-chain.\n\nArc Testnet, chain 5042002. Gas is the USDC you already hold.",
+      "alt": "The ArcFlow dashboard showing the lock form, lock preview and share preview, under the headline 'Set the lock on one form.'"
+    },
+    {
+      "slug": "03-public-proof",
+      "template": "proof",
+      "eyebrow": "On-chain proof",
+      "headline": "If it is not on\nthis page, it is\n*not locked*.",
+      "amount": "22.4848",
+      "symbol": "USDC",
+      "status": "Hard lock",
+      "duration": "29 days 23 hours 59 min",
+      "ca": "0x41DF...B352",
+      "stats": [
+        { "label": "Unlocks", "value": "15 Oct 2026, 03:40 UTC" },
+        { "label": "Of total supply", "value": "<0.01%" }
+      ],
+      "footer": "arcflows.finance",
+      "lockUrl": "arcflows.finance/lock/12",
+      "note": "No wallet needed to verify",
+      "tweet": "\"Dev locked, trust me\" is not proof. A screenshot is not proof.\n\nEvery ArcFlow position gets a page: amount, beneficiary, unlock time, contract address. Read straight from the chain.\n\nNo wallet needed to open it.\n\nIf it is not on that page, it is not locked.",
+      "alt": "ArcFlow public proof card showing 22.4848 USDC hard locked, unlock date and contract address."
+    },
+    {
+      "slug": "04-lp-vs-wallet",
+      "template": "split",
+      "eyebrow": "Know the difference",
+      "headline": "Two locks.\nTwo *promises*.",
+      "columns": [
+        {
+          "kind": "muted",
+          "tag": "LP lock",
+          "title": "The pool stays put",
+          "items": [
+            "Liquidity cannot be pulled",
+            "Handled by the launchpad",
+            "Says nothing about the dev wallet"
+          ]
+        },
+        {
+          "kind": "brand",
+          "tag": "Wallet lock",
+          "title": "The bag cannot move",
+          "items": [
+            "Tokens leave the dev wallet",
+            "Held by an immutable schedule",
+            "Public proof page per position"
+          ]
+        }
+      ],
+      "footer": "arcflows.finance",
+      "tweet": "Two locks people keep mixing up.\n\nLP lock: the pool cannot be pulled. The pad does this.\n\nWallet lock: the tokens leave the dev wallet and sit under a schedule that cannot move. This is ArcFlow.\n\nA token can have the first and still get dumped on you.",
+      "alt": "Side-by-side comparison of LP lock and wallet lock, listing what each one actually guarantees."
+    },
+    {
+      "slug": "05-gas-in-usdc",
+      "template": "stat",
+      "eyebrow": "Built on Arc",
+      "stat": "USDC",
+      "statCaption": "is the gas",
+      "headline": "No second token\njust to *sign*.",
+      "lead": "Arc settles in the dollar you are already holding. Nothing to bridge, nothing to top up before you can lock.",
+      "meta": ["Arc Testnet", "Chain 5042002", "$10 USDC lock fee", "Sub-second finality"],
+      "footer": "arcflows.finance",
+      "note": "Immutable schedules · public proof pages",
+      "tweet": "On Arc, gas is USDC.\n\nNo second token to bridge before you can sign. No \"insufficient native balance\" on the one transaction that matters.\n\nYou hold dollars, you pay in dollars, it confirms in under a second.\n\nArc Testnet, chain 5042002.",
+      "alt": "Large 'USDC is the gas' statement card with Arc Testnet chain 5042002 and sub-second finality noted below."
+    },
+    {
+      "slug": "06-read-it-before-you-sign",
+      "template": "shot",
+      "eyebrow": "Workflow 02",
+      "headline": "Read it before\nyou *sign*.",
+      "lead": "Every field spelled out first: type, unlock time, duration, beneficiary, amount, fee. No surprises in the signature.",
+      "bullets": ["Exact unlock timestamp", "Beneficiary wallet", "Fee shown up front"],
+      "shot": "assets/lock-preview.png",
+      "footer": "arcflows.finance",
+      "note": "Immutable once signed",
+      "tweet": "Before you sign anything, ArcFlow shows you the whole lock in plain language.\n\nType, unlock time, duration, who receives it, the amount, the fee.\n\nRead it, then sign. After that the schedule cannot move, so it is worth ten seconds.",
+      "alt": "ArcFlow lock preview panel listing type, unlock date, duration, beneficiary, amount and fee before signing."
+    },
+    {
+      "slug": "07-lock-vest-stream",
+      "template": "modules",
+      "eyebrow": "Token operations on Arc",
+      "headline": "Lock. Vest.\nStream. *On Arc*.",
+      "lead": "One dashboard for token distribution. Holders verify on-chain, not from a screenshot.",
+      "modules": [
+        { "name": "Token lock", "note": "Sealed until a fixed date", "state": "live" },
+        { "name": "Linear vesting", "note": "Cliff, then per-second", "state": "live" },
+        { "name": "Streams", "note": "Continuous payout", "state": "live" },
+        { "name": "Airdrops", "note": "Claim without instant dump", "state": "soon" },
+        { "name": "Escrow", "note": "Milestone release", "state": "soon" },
+        { "name": "Staking", "note": "Rewards on locked supply", "state": "soon" }
+      ],
+      "footer": "arcflows.finance",
+      "tweet": "Lock. Vest. Stream. On Arc.\n\nLive now: token locks, linear vesting with a cliff, and streams.\nComing: airdrops, escrow, staking.\n\nOne dashboard for token distribution, with a public proof page for every position.\n\nTestnet. Contracts are not externally audited yet.",
+      "alt": "ArcFlow module grid listing token lock, linear vesting and streams as live, with airdrops, escrow and staking marked coming soon."
+    }
+  ],
+  "clips": [
+    {
+      "slug": "clip-lock-vest-stream",
+      "duration": 9,
+      "scenes": [
+        { "start": 0.0, "end": 1.9, "logo": true },
+        { "start": 1.7, "end": 3.3, "text": "Lock.", "size": 200, "motion": "slam" },
+        { "start": 3.1, "end": 4.7, "text": "Vest.", "size": 200, "motion": "slam" },
+        { "start": 4.5, "end": 6.1, "text": "Stream.", "size": 180, "motion": "slam" },
+        { "start": 5.9, "end": 7.4, "text": "On Arc.", "size": 170, "motion": "rise", "highlight": "Arc." },
+        { "start": 7.2, "end": 9.0, "endcard": true }
+      ]
+    },
+    {
+      "slug": "clip-one-form",
+      "duration": 11,
+      "shot": "/bahan/dsabord.png",
+      "scenes": [
+        { "start": 0.0, "end": 1.8, "logo": true },
+        { "start": 1.6, "end": 3.4, "text": "Set the lock\non one form.", "size": 118, "motion": "rise" },
+        { "start": 3.2, "end": 5.0, "text": "Pick the token.\nDrag the amount.", "size": 104, "motion": "wipe" },
+        { "start": 4.8, "end": 6.6, "text": "Approve, sign,\nit is on-chain.", "size": 104, "motion": "wipe" },
+        { "start": 6.4, "end": 8.2, "text": "Gas paid in USDC.", "size": 110, "motion": "rise", "highlight": "USDC." },
+        { "start": 8.0, "end": 11.0, "endcard": true, "shot": true }
+      ]
+    }
+  ]
+}
