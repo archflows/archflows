@@ -504,7 +504,6 @@ function DealList({
     </div>
   );
 }
-}
 
 export function MyEscrowsPanel() {
   const { address, isConnected } = useAccount();

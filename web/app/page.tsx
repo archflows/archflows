@@ -141,9 +141,15 @@ const MODULES = [
 
 const FLOW = [
   {
-    n: "01",
-    title: "Connect a wallet",
-    body: `Use any EVM wallet on ${NETWORK_NAME}. The same USDC balance pays gas${isTestnet ? " — top up at the Circle faucet if needed" : ""}.`,
+    src: "/fomrlock.png",
+    w: 621,
+    h: 654,
+    step: "01",
+    title: "Set the lock on one form",
+    body: [
+      "Pick the token from the connected wallet, then set how much to seal. A slider and percent chips keep the last $10 USDC for the protocol fee, so MAX never drains the gas and fee balance by accident.",
+      "Send the unlock to your own address, another wallet, or a split. Days, hours, and minutes stay in sync with the calendar date. After the transaction confirms on Arc, the schedule cannot be cancelled, shortened, or pulled early.",
+    ],
   },
   {
     src: "/lock-preview.png",
@@ -157,9 +163,38 @@ const FLOW = [
     ],
   },
   {
-    n: "03",
-    title: "Share the proof",
-    body: "Share a public proof page. Holders verify amount, countdown, and beneficiary — no dashboard login.",
+    src: "/possition.png",
+    w: 536,
+    h: 247,
+    step: "03",
+    title: "Track locked and unlocked here",
+    body: [
+      "After confirm, the position lands under Your positions for this wallet. Switch Locked and Unlocked without leaving the page. Locks you created and schedules vesting to you sit in the same list.",
+      "Open the public lock URL when a holder needs amount, countdown, and beneficiary without signing in. Claim from the same screen once the clock hits the unlock, with no extra dashboard login.",
+    ],
+  },
+];
+
+const PILLARS = [
+  {
+    icon: Shield,
+    title: "The schedule cannot move",
+    body: "After the transaction confirms, nobody can cancel, shorten, or redirect it. Not the creator, not an admin key. Only the beneficiary set at creation can claim, and only when the clock allows.",
+  },
+  {
+    icon: Fuel,
+    title: "Gas is the USDC you already hold",
+    body: "Arc does not ask for a second gas token. The same USDC pays the lock fee and the transaction. Native gas and the USDC ERC-20 are one asset with two decimal views. Never double-count.",
+  },
+  {
+    icon: Globe,
+    title: "Holders verify without signing in",
+    body: "Every position publishes at a public lock URL. Amount, unlock time, and beneficiary read live from the contract. Paste it next to the token page. No dashboard account required.",
+  },
+  {
+    icon: Timer,
+    title: "Confirmations land in under a second",
+    body: "Arc finalizes fast enough that the preview you signed is the position that appears. You do not wait through extra blocks to know the vault already holds the tokens.",
   },
 ];
 

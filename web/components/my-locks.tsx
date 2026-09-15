@@ -284,7 +284,6 @@ function LockRowReady({
             {kind === "vest" && !isDone && cliff > start
               ? ` · cliff ${dateFmt.format(new Date(Number(cliff) * 1000))}`
               : ""}
-              : ""}
             {liveClaimable > 0n ? ` · claimable ${fmtAmt(liveClaimable, dec)}` : ""}
             {claimed > 0n ? ` · claimed ${fmtAmt(claimed, dec)}` : ""}
           </p>

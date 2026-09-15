@@ -307,7 +307,6 @@ export function CreateVestForm() {
               symbol={symbol}
               duration={tooShort || cliffPastEnd || cliffIsHardLock ? undefined : formatDuration(vestSec)}
               unlockLabel={mounted ? `${dateFmt.format(new Date(endAt * 1000))} UTC` : undefined}
-              lockType="Linear vest"
             />
           </>
         }
@@ -467,8 +466,8 @@ export function CreateVestForm() {
                 : step === "locking"
                   ? "Creating vest…"
                   : needsApprove
-                    ? "Approve & create vest, $10"
-                    : "Create vesting, $10"}
+                    ? "Approve & create vest"
+                    : "Create vesting"}
             </button>
           )}
         </div>

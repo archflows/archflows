@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, IBM_Plex_Mono } from "next/font/google";
+import { Sora, IBM_Plex_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ScrollReveal } from "@/components/ScrollReveal";

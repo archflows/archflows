@@ -12,15 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TokenListSkeleton } from "@/components/page-skeleton";
 import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
 import { USDC_ADDRESS } from "@/lib/chain";
 import { cn } from "@/lib/utils";
@@ -72,17 +63,6 @@ export function TokenSelect({
     return list;
   }, [tokens, preferUsdc]);
 
-  const items = useMemo(
-    () =>
-      sorted.map((t) => ({
-        value: t.address,
-        label: `${t.symbol}, ${Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
-          "en-US",
-          { maximumFractionDigits: 4 },
-        )}`,
-      })),
-    [sorted],
-  );
   const selected = sorted.find((t) => t.address.toLowerCase() === value.toLowerCase());
 
   const filtered = useMemo(() => {
@@ -142,84 +122,42 @@ export function TokenSelect({
         <p className="field-hint">Connect a wallet to load its tokens.</p>
       ) : (
         <>
-          <div className="token-select-row">
-            <div className="token-select-main">
-              {!customOpen ? (
-                <Select
-                  value={selectValue}
-                  onValueChange={(next) => {
-                    if (next) onChange(next);
-                  }}
-                  items={items}
-                >
-                  <SelectTrigger
-                    id={id}
-                    className="h-9 w-full min-w-0 border-[var(--line-strong)] bg-[rgba(10,14,22,0.55)] px-3 dark:bg-[rgba(10,14,22,0.55)]"
-                  >
-                    <SelectValue
-                      placeholder={
-                        isLoading ? "Loading wallet tokens…" : "Select a token from wallet"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72 min-w-[var(--anchor-width)]">
-                    <SelectGroup>
-                      {isLoading ? <TokenListSkeleton rows={4} /> : null}
-                      {sorted.length === 0 && !isLoading ? (
-                        <div className="px-2 py-3 text-xs text-muted-foreground">
-                          No ERC-20 balances found on Arc Testnet yet.
-                        </div>
-                      ) : null}
-                      {!isLoading
-                        ? sorted.map((t) => (
-                            <SelectItem key={t.address} value={t.address}>
-                              <span className="flex w-full items-center justify-between gap-3">
-                                <span>
-                                  <span className="font-medium">{t.symbol}</span>
-                                  <span className="ml-2 font-mono text-[10px] text-muted-foreground">
-                                    {t.address.slice(0, 6)}…{t.address.slice(-4)}
-                                  </span>
-                                </span>
-                                <span className="tabular-nums text-xs text-muted-foreground">
-                                  {Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
-                                    "en-US",
-                                    { maximumFractionDigits: 4 },
-                                  )}
-                                </span>
-                              </span>
-                            </SelectItem>
-                          ))
-                        : null}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <input
-                  id={id}
-                  className="af-input mono"
-                  placeholder="0x… paste token contract"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={custom}
-                  onChange={(e) => {
-                    const next = e.target.value.trim();
-                    setCustom(next);
-                    onChange(isAddress(next) ? next : "");
-                  }}
-                />
-              )}
-            </div>
-
-            {!customOpen ? (
-              <button
-                type="button"
-                className="btn ghost token-select-add"
-                onClick={openCustom}
-                title="Use a custom token address"
-              >
-                <PlusIcon className="size-3.5" />
-                <span className="token-select-add-label">Custom</span>
-              </button>
+          <button
+            id={id}
+            type="button"
+            className="af-input"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.75rem",
+              textAlign: "left",
+              cursor: "pointer",
+              height: "auto",
+              minHeight: "var(--af-control-h)",
+              maxHeight: "none",
+              padding: "0.45rem 0.7rem",
+            }}
+            onClick={() => setOpen(true)}
+          >
+            {selected ? (
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span className="token-glyph">{selected.symbol.slice(0, 3).toUpperCase()}</span>
+                <span className="min-w-0">
+                  <span className="block truncate font-medium text-white">{selected.symbol}</span>
+                  <span className="block truncate font-mono text-[10px] text-white/55">
+                    {shortAddr(selected.address)}
+                  </span>
+                </span>
+              </span>
+            ) : isLoading ? (
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span className="skeleton size-[30px] shrink-0 rounded-md" />
+                <span className="grid min-w-0 gap-1.5">
+                  <span className="skeleton h-3.5 w-16" />
+                  <span className="skeleton h-2.5 w-28" />
+                </span>
+              </span>
             ) : (
               <span className="text-white/55">Choose a token</span>
             )}

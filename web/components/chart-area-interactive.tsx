@@ -187,13 +187,6 @@ export function ChartAreaInteractive({
           <Select
             value={timeRange}
             onValueChange={(value) => {
-              setTimeRange(value);
-            }}
-            className="@[767px]/card:hidden"
-          >
-          <Select
-            value={timeRange}
-            onValueChange={(value) => {
               if (value !== null) setTimeRange(value);
             }}
           >
@@ -289,7 +282,6 @@ export function ChartAreaInteractive({
               />
             </AreaChart>
           </ChartContainer>
-        )}
         )}
       </CardContent>
     </Card>

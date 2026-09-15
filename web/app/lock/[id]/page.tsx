@@ -9,21 +9,19 @@ import { ArrowLeft, ArrowUpRight, Copy, Loader2 } from "lucide-react";
 import { LockOgPreview } from "@/components/LockOgPreview";
 import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
 import { LockProofSkeleton } from "@/components/skeletons";
+import { TxExplorerLink } from "@/components/TxExplorerLink";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_ADDRESS, EXPLORER_URL, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
 import { confirmTx } from "@/lib/tx";
 import { persistLockClaim } from "@/lib/backend";
-import { TxExplorerLink } from "@/components/TxExplorerLink";
 import { useProofRecord } from "@/hooks/useProofRecord";
 import { isTxHash } from "@/lib/proof";
 import { copyToClipboard } from "@/lib/clipboard";
 import { clickOrExplain } from "@/lib/guard-click";
 import { isHardLock as hardLockSchedule } from "@/lib/position-kind";
-import { ProofPageSkeleton } from "@/components/page-skeleton";
-import { lockShareText, proofAbsoluteUrl, twitterIntentUrl } from "@/lib/share";
-import { formatCountdown } from "@/lib/form-time";
-import { formatDuration } from "@/lib/form-time";
+import { formatCountdown, formatDuration } from "@/lib/form-time";
 import { lockProofStatus } from "@/lib/lock-status";
+import { lockShareText, proofAbsoluteUrl, twitterIntentUrl } from "@/lib/share";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -47,22 +45,13 @@ function amountText(value: bigint | undefined, decimals: number) {
   });
 }
 
-function countdown(seconds: bigint) {
-  if (seconds <= 0n) return "Unlocked";
-  const total = Number(seconds);
-  const d = Math.floor(total / 86400);
-  const h = Math.floor((total % 86400) / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h left`;
-  if (h > 0) return `${h}h ${m}m left`;
-  return `${m}m ${total % 60}s left`;
-}
 export default function LockPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: key } = use(params);
   const router = useRouter();
   const { data: proof, isLoading: proofLoading } = useProofRecord("lock", key);
   const recordId = isTxHash(key) ? proof?.id ?? null : (proof?.id ?? key);
   const lockId = recordId ? BigInt(recordId) : undefined;
+  const readsEnabled = lockId !== undefined;
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -78,6 +67,16 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
     const t = setInterval(() => setNow(BigInt(Math.floor(Date.now() / 1000))), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (proof?.txHash) setLockTxHash(proof.txHash);
+    if (proof?.unlockTxHash) setUnlockTxHash(proof.unlockTxHash);
+  }, [proof]);
+
+  useEffect(() => {
+    if (isTxHash(key) || !isTxHash(proof?.txHash)) return;
+    router.replace(`/lock/${proof.txHash}`);
+  }, [key, proof?.txHash, router]);
 
   const { data: position, isPending: positionPending, refetch } = useReadContract({
     address: ARCFLOW_ADDRESS,
@@ -142,6 +141,9 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
   const released = (claimed ?? 0n) + (claimable ?? 0n);
   const isHardLock = hardLockSchedule(cliff, end);
   const isDone = end !== undefined && now >= end;
+  const timeLeft = end !== undefined
+    ? formatCountdown(Number(end - now), isHardLock ? "Unlocked" : "Vested")
+    : "—";
 
   const unlockedPct = useMemo(() => {
     if (!amount || amount === 0n) return 0;
@@ -232,32 +234,25 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
   }
 
   if (isTxHash(key) && proofLoading) {
-    return <ProofPageSkeleton />;
+    return <LockProofSkeleton />;
   }
 
   if (isTxHash(key) && !recordId) {
     return (
-      <main className="shell" style={{ maxWidth: "46rem", padding: "3rem 0" }}>
-        <div className="panel">
-          <div className="panel-head">
-            <span>Lock transaction not found</span>
-            <span className="live">Empty</span>
+      <main className="proof">
+        <section className="shell proof-empty">
+          <p className="proof-kicker">Lock transaction</p>
+          <h1>Nothing here</h1>
+          <p>This hash is not a lock or vest on this contract. Check the URL or create a new lock.</p>
+          <div className="proof-empty-actions">
+            <Link className="btn" href="/dashboard/locks">
+              Create a lock
+            </Link>
+            <Link className="btn ghost" href="/explorer">
+              Open explorer
+            </Link>
           </div>
-          <div className="panel-body" style={{ display: "grid", gap: "1rem", justifyItems: "start" }}>
-            <p className="dim" style={{ margin: 0 }}>
-              This hash is not a lock or vest on this contract. Check the URL, or launch a new
-              position.
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              <Link href="/dashboard/locks" className="btn sm">
-                Create a lock
-              </Link>
-              <Link href="/dashboard/vesting" className="btn ghost sm">
-                Create a vest
-              </Link>
-            </div>
-          </div>
-        </div>
+        </section>
       </main>
     );
   }
@@ -268,9 +263,9 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
 
   if (position && !enabled) {
     return (
-<main className="proof">
+      <main className="proof">
         <section className="shell proof-empty">
-          <p className="proof-kicker">Lock #{id}</p>
+          <p className="proof-kicker">Lock #{recordId ?? key}</p>
           <h1>Nothing here</h1>
           <p>This id has no position on the vault. Check the URL or create a new lock.</p>
           <div className="proof-empty-actions">
@@ -283,19 +278,14 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </section>
       </main>
-          </div>
-        </section>
-      </main>
     );
   }
 
   const status = isDone ? "Fully unlocked" : isHardLock ? "Hard locked" : "Vesting";
-  const stillLocked =
-    amount !== undefined ? amountText(amount - released, dec) : "—";
+  const stillLocked = amount !== undefined ? amountText(amount - released, dec) : "—";
   const durationLabel =
-    start !== undefined && end !== undefined
-      ? formatDuration(Number(end - start))
-      : undefined;
+    start !== undefined && end !== undefined ? formatDuration(Number(end - start)) : undefined;
+  const displayId = recordId ?? key;
 
   return (
     <main className="proof">
@@ -309,6 +299,25 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
               <ArrowLeft className="size-4" />
               Explorer
             </Link>
+            <a
+              className="btn ghost sm"
+              href={twitterIntentUrl(
+                lockShareText({
+                  amount: amountText(amount, dec),
+                  symbol: symbol ?? "TOKEN",
+                  unlockAt: Number(end ?? 0n),
+                  proofUrl: proofAbsoluteUrl(
+                    "lock",
+                    shownLockTx ?? (isTxHash(key) ? key : null),
+                    recordId ?? undefined,
+                  ),
+                }),
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Share on X
+            </a>
           </div>
 
           <div className="proof-hero">
@@ -328,12 +337,9 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                 </span>
               </div>
 
-                </span>
-              </div>
-
               <p className="proof-sub">
-                Lock #{id} · {isHardLock ? "Hard lock" : "Linear vest"}
-                {end !== undefined ? ` · ${countdown(end - now)}` : ""}
+                Lock #{displayId} · {isHardLock ? "Hard lock" : "Linear vest"}
+                {end !== undefined ? ` · ${timeLeft}` : ""}
               </p>
 
               <div className="proof-progress">
@@ -355,7 +361,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                 </div>
               </div>
 
-              <button type="button" className="proof-copy" onClick={copyLink}>
+              <button type="button" className="proof-copy" onClick={() => void copyLink()}>
                 <Copy className="size-3.5" />
                 {copied ? "Copied" : "Copy proof link"}
               </button>
@@ -375,16 +381,15 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                     ? lockProofStatus({ amount, claimed, end, nowSec: Number(now) })
                     : "Locked"
                 }
-                lockId={id}
+                lockId={displayId}
                 tokenAddress={token}
               />
-            </div>
             </div>
           </div>
         </div>
       </section>
 
-<section className="proof-ribbon" aria-label="Position metrics">
+      <section className="proof-ribbon" aria-label="Position metrics">
         <div className="shell proof-ribbon-inner">
           <div>
             <span>Claimed</span>
@@ -408,163 +413,9 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
             </strong>
           </div>
           <div>
-            <span>Duration</span>
-            <strong>{durationLabel ?? "—"}</strong>
+            <span>Time left</span>
+            <strong style={{ fontVariantNumeric: "tabular-nums" }}>{timeLeft}</strong>
           </div>
-        </div>
-      </section>
-
-      <div className="stat-grid stat-grid-2" style={{ marginTop: "1rem" }}>
-        {[
-          ["Claimed", amountText(claimed, dec), symbol ?? ""],
-          ["Claimable now", amountText(claimable, dec), symbol ?? ""],
-          [
-            isHardLock ? "Still locked" : "Still vesting",
-            amount !== undefined ? amountText(amount - released, dec) : "—",
-            symbol ?? "",
-          ],
-          [
-            isHardLock ? "Fully unlocks" : "Fully vested",
-            end ? dateFmt.format(new Date(Number(end) * 1000)) : "—",
-            end
-              ? formatCountdown(Number(end - now), isHardLock ? "Unlocked" : "Vested")
-              : "UTC",
-          ],
-        ].map(([label, value, unit], i) => (
-          <div
-            className="stat"
-            key={label}
-            style={i > 1 ? { borderTop: "1px solid var(--line)" } : undefined}
-          >
-            <span>{label}</span>
-            <strong>{value}</strong>
-            <span style={{ marginTop: "0.25rem", marginBottom: 0 }}>{unit}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <div className="panel-head">
-          <span>On-chain details</span>
-          <span className="mono dim" style={{ fontSize: "0.72rem" }}>
-            // IMMUTABLE
-          </span>
-        </div>
-        <div>
-          <div className="kv">
-            <span className="kv-key">Token</span>
-            <span className="kv-val">
-              {token && token !== ZERO ? (
-                <a
-                  className="mono"
-                  style={{ fontSize: "0.78rem", color: "var(--beam)" }}
-                  href={`${EXPLORER_URL}/address/${token}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {symbol ? `${symbol} · ` : ""}
-                  {short(token)}
-                </a>
-              ) : (
-                "—"
-              )}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Beneficiary</span>
-            <span className="kv-val mono" style={{ fontSize: "0.78rem" }}>
-              {short(beneficiary)}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Locked by</span>
-            <span className="kv-val mono" style={{ fontSize: "0.78rem" }}>
-              {short(creator)}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Release</span>
-            <span className="kv-val">{isHardLock ? "Hard lock" : "Linear vest"}</span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Lock tx</span>
-            <span className="kv-val">
-              <TxExplorerLink hash={shownLockTx}>Lock</TxExplorerLink>
-              {!shownLockTx ? "—" : null}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Unlock tx</span>
-            <span className="kv-val">
-              <TxExplorerLink hash={shownUnlockTx}>Unlock</TxExplorerLink>
-              {!shownUnlockTx ? "—" : null}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">{isHardLock ? "Unlocks at" : "Fully vested"}</span>
-            <span className="kv-val">
-              {end ? `${dateFmt.format(new Date(Number(end) * 1000))} UTC` : "—"}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Time left</span>
-            <span className="kv-val" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {end !== undefined
-                ? formatCountdown(Number(end - now), isHardLock ? "Unlocked" : "Vested")
-                : "—"}
-            </span>
-          </div>
-          <div className="kv">
-            <span className="kv-key">Cliff</span>
-            <span className="kv-val">
-              {cliff ? dateFmt.format(new Date(Number(cliff) * 1000)) : "—"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="alert alert-error" style={{ marginTop: "1rem" }}>
-          {error}
-        </div>
-      ) : null}
-
-      {isBeneficiary ? (
-        <div className="cta-box" style={{ marginTop: "1.25rem", padding: "1.25rem" }}>
-          <div className="cta-orb" />
-          <div>
-            <p className="tag tag-accent" style={{ marginBottom: "0.3rem" }}>
-              // YOUR POSITION
-            </p>
-            <p className="dim" style={{ margin: 0, fontSize: "0.9rem" }}>
-              {claimable && claimable > 0n
-                ? isHardLock
-                  ? `${amountText(claimable, dec)} ${symbol ?? "tokens"} have unlocked and are ready to claim.`
-                  : `${amountText(claimable, dec)} ${symbol ?? "tokens"} have vested and are ready to claim.`
-                : isHardLock
-                  ? `Nothing unlocked yet. ${end !== undefined && now < end ? `${formatCountdown(Number(end - now))} remaining.` : "Come back after the unlock date."}`
-                  : "Nothing vested yet. Come back after the cliff."}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy}
-            onClick={() =>
-              clickOrExplain(
-                !claimable || claimable === 0n
-                  ? isHardLock
-                    ? "Nothing unlocked yet."
-                    : "Nothing vested yet."
-                  : null,
-                () => void claim(),
-              )
-            }
-          >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {busy ? "Claiming…" : isHardLock ? "Claim unlocked" : "Claim vested"}
-          </button>
-
         </div>
       </section>
 
@@ -581,11 +432,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                 <dt>Token</dt>
                 <dd>
                   {token && token !== ZERO ? (
-                    <a
-                      href={`${EXPLORER_URL}/address/${token}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <a href={`${EXPLORER_URL}/address/${token}`} target="_blank" rel="noreferrer">
                       {symbol ? `${symbol} · ` : ""}
                       {short(token)}
                       <ArrowUpRight className="size-3.5" />
@@ -608,12 +455,16 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                 <dd>{isHardLock ? "Hard lock" : "Linear vest"}</dd>
               </div>
               <div>
-                <dt>Cliff</dt>
-                <dd>{cliff ? dateFmt.format(new Date(Number(cliff) * 1000)) : "—"}</dd>
+                <dt>Unlocks at</dt>
+                <dd>{end ? `${dateFmt.format(new Date(Number(end) * 1000))} UTC` : "—"}</dd>
               </div>
               <div>
-                <dt>Fully unlocks</dt>
-                <dd>{end ? `${dateFmt.format(new Date(Number(end) * 1000))} UTC` : "—"}</dd>
+                <dt>Time left</dt>
+                <dd style={{ fontVariantNumeric: "tabular-nums" }}>{timeLeft}</dd>
+              </div>
+              <div>
+                <dt>Cliff</dt>
+                <dd>{cliff ? dateFmt.format(new Date(Number(cliff) * 1000)) : "—"}</dd>
               </div>
               {supplyShare ? (
                 <div>
@@ -621,6 +472,24 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                   <dd>{supplyShare}</dd>
                 </div>
               ) : null}
+              <div>
+                <dt>Lock tx</dt>
+                <dd>
+                  <TxExplorerLink hash={shownLockTx} variant="text">
+                    Lock
+                  </TxExplorerLink>
+                  {!shownLockTx ? "—" : null}
+                </dd>
+              </div>
+              <div>
+                <dt>Unlock tx</dt>
+                <dd>
+                  <TxExplorerLink hash={shownUnlockTx} variant="text">
+                    Unlock
+                  </TxExplorerLink>
+                  {!shownUnlockTx ? "—" : null}
+                </dd>
+              </div>
               <div>
                 <dt>Vault</dt>
                 <dd>
@@ -663,17 +532,28 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
               <p>
                 {claimable && claimable > 0n
                   ? `${amountText(claimable, dec)} ${symbol ?? "tokens"} ready to pull to this wallet.`
-                  : "Nothing unlocked yet. Come back after the cliff."}
+                  : isHardLock
+                    ? `Nothing unlocked yet. ${end !== undefined && now < end ? `${timeLeft} remaining.` : "Come back after the unlock date."}`
+                    : "Nothing vested yet. Come back after the cliff."}
               </p>
             </div>
             <button
               type="button"
               className="btn"
-              disabled={busy || !claimable || claimable === 0n}
-              onClick={claim}
+              disabled={busy}
+              onClick={() =>
+                clickOrExplain(
+                  !claimable || claimable === 0n
+                    ? isHardLock
+                      ? "Nothing unlocked yet."
+                      : "Nothing vested yet."
+                    : null,
+                  () => void claim(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {busy ? "Claiming…" : "Claim unlocked"}
+              {busy ? "Claiming…" : isHardLock ? "Claim unlocked" : "Claim vested"}
             </button>
           </div>
         ) : (

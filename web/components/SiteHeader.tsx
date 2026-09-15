@@ -43,7 +43,6 @@ export function SiteHeader() {
             <span className="pulse-dot" />
             {NETWORK_BADGE}
           </span>
-          <ConnectButton />
           <Link href="/auth" className="btn sm hide-mobile">
             {onLockProof ? "Dashboard" : "Launch app"}
           </Link>
