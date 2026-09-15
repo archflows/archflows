@@ -37,7 +37,7 @@ import {
   type UnlockTarget,
 } from "@/components/UnlockTargetField";
 import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/form-shell";
-import { LockOgPreview } from "@/components/LockOgPreview";
+import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 
@@ -108,6 +108,20 @@ export function CreateLockForm() {
     functionName: "totalSupply",
     query: { enabled: Boolean(tokenAddress) },
   });
+  const { data: tokenLocked } = useReadContract({
+    address: ARCFLOW_ADDRESS,
+    abi: arcFlowAbi,
+    functionName: "totalLocked",
+    args: tokenAddress ? [tokenAddress] : undefined,
+    query: { enabled: Boolean(tokenAddress && !notDeployed) },
+  });
+  const { data: burnedBalance } = useReadContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: ["0x000000000000000000000000000000000000dEaD"],
+    query: { enabled: Boolean(tokenAddress) },
+  });
   const { data: balance } = useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -157,6 +171,20 @@ export function CreateLockForm() {
       minimumFractionDigits: 0,
     })}%`;
   }, [parsedAmount, totalSupply]);
+
+  const tokenomics = useMemo(() => {
+    if (totalSupply === undefined) {
+      return { circulating: 0n, locked: 0n, burned: 0n };
+    }
+    const burned = burnedBalance ?? 0n;
+    const locked = (tokenLocked ?? 0n) + (parsedAmount ?? 0n);
+    const left = totalSupply - burned - locked;
+    return {
+      circulating: left < 0n ? 0n : left,
+      locked: locked < 0n ? 0n : locked,
+      burned,
+    };
+  }, [totalSupply, burnedBalance, tokenLocked, parsedAmount]);
 
   const tokenSpend =
     parsedAmount === undefined
@@ -382,24 +410,31 @@ export function CreateLockForm() {
                   label: "Amount",
                   value: `${amount || "—"}${symbol ? ` ${symbol}` : ""}`,
                 },
-                {
-                  label: "Fee",
-                  value:
-                    unlockMode === "split"
-                      ? `$${10 * Math.max(splits.length, 1)} USDC (${Math.max(splits.length, 1)} × $10)`
-                      : "$10 USDC",
-                },
               ]}
             />
-            <LockOgPreview
-              amount={amount}
-              symbol={symbol}
-              duration={tooShort ? undefined : formatDuration(durationSec)}
-              unlockLabel={mounted ? `${dateFmt.format(new Date(unlockAt * 1000))} UTC` : undefined}
-              supplyShare={supplyShare}
-              status="Locked"
-              tokenAddress={token || undefined}
-            />
+            <div className="panel create-tok-panel">
+              <div className="panel-head">
+                <span>Tokenomics</span>
+                {supplyShare ? (
+                  <span className="live live-accent">This lock {supplyShare}</span>
+                ) : (
+                  <span className="dim" style={{ fontSize: "0.72rem" }}>
+                    Pick token + amount
+                  </span>
+                )}
+              </div>
+              <div className="panel-body create-tok-body">
+                <LockTokenomicsPie
+                  circulating={tokenomics.circulating}
+                  locked={tokenomics.locked}
+                  burned={tokenomics.burned}
+                  totalSupply={totalSupply}
+                  symbol={symbol}
+                  decimals={decimals ?? 18}
+                  compact
+                />
+              </div>
+            </div>
           </>
         }
       >

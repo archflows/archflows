@@ -45,8 +45,7 @@ export default function AuthClient() {
         <div className="auth-card">
           <h1>Connect your wallet</h1>
           <p className="auth-lead">
-            No email, no password. Connect on Arc Testnet to manage locks, vesting, and public
-            proof pages.
+            Sign in with a wallet to create locks, vesting schedules, and public proof pages.
           </p>
 
           <div className="auth-action">
@@ -79,12 +78,6 @@ export default function AuthClient() {
               </p>
             ) : null}
           </div>
-
-          <ul className="auth-facts">
-            <li>Arc Testnet</li>
-            <li>Gas in USDC</li>
-            <li>Chain {ARC_TESTNET.id}</li>
-          </ul>
         </div>
       </main>
     </div>

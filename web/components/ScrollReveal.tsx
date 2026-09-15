@@ -6,7 +6,6 @@ import { useEffect } from "react";
 /** Landing blocks that should enter one-by-one, Notion-style. */
 const SELECTOR = [
   ".lp-hero .hero-copy > *",
-  ".lp-hero-shot",
   ".lp-marquee",
   ".lp .lp-head",
   ".lp-card",

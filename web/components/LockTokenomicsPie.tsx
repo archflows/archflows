@@ -23,6 +23,7 @@ type Props = {
   totalSupply?: bigint;
   symbol?: string;
   decimals?: number;
+  compact?: boolean;
 };
 
 const chartConfig = {
@@ -45,6 +46,7 @@ export function LockTokenomicsPie({
   totalSupply,
   symbol = "",
   decimals = 18,
+  compact = false,
 }: Props) {
   const slices: Slice[] = [
     { key: "circulating", label: "Circulating", value: circulating < 0n ? 0n : circulating, color: "#0050e0" },
@@ -62,6 +64,10 @@ export function LockTokenomicsPie({
       fill: s.color,
     }));
 
+  const innerRadius = compact ? 42 : 62;
+  const outerRadius = compact ? 64 : 92;
+  const chartSize = compact ? 168 : 240;
+
   function pct(value: bigint) {
     if (total === 0n) return "0%";
     const scaled = Number((value * 10000n) / total) / 100;
@@ -75,13 +81,13 @@ export function LockTokenomicsPie({
   }
 
   return (
-    <div className="proof-tok-pie">
+    <div className={`proof-tok-pie${compact ? " is-compact" : ""}`}>
       <div className="proof-tok-pie-visual">
         {chartData.length > 0 ? (
           <ChartContainer
             config={chartConfig}
             className="proof-tok-chart"
-            initialDimension={{ width: 240, height: 240 }}
+            initialDimension={{ width: chartSize, height: chartSize }}
           >
             <PieChart>
               <ChartTooltip
@@ -92,8 +98,8 @@ export function LockTokenomicsPie({
                 data={chartData}
                 dataKey="value"
                 nameKey="name"
-                innerRadius={62}
-                outerRadius={92}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
                 strokeWidth={2}
                 stroke="rgba(8,9,12,0.9)"
                 paddingAngle={2}

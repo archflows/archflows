@@ -19,7 +19,6 @@ import {
   HourglassIcon,
   GiftIcon,
   LayersIcon,
-  CompassIcon,
 } from "lucide-react";
 
 const navMain = [
@@ -37,11 +36,6 @@ const navMain = [
     title: "Vesting",
     url: "/dashboard/vesting",
     icon: <HourglassIcon />,
-  },
-  {
-    title: "Explorer",
-    url: "/explorer",
-    icon: <CompassIcon />,
   },
   {
     title: "Staking",

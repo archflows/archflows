@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,6 +13,8 @@ import {
   Timer,
   Waves,
 } from "lucide-react";
+import { FlowMock } from "@/components/FlowMock";
+import { HeroShot } from "@/components/HeroShot";
 
 const MARQUEE = [
   { name: "Arc", src: "/marquee/arc.svg" },
@@ -132,9 +133,7 @@ const MODULES = [
 
 const FLOW = [
   {
-    src: "/fomrlock.png",
-    w: 621,
-    h: 654,
+    mock: "form" as const,
     step: "01",
     title: "Set the lock on one form",
     body: [
@@ -143,9 +142,7 @@ const FLOW = [
     ],
   },
   {
-    src: "/lock-preview.png",
-    w: 704,
-    h: 648,
+    mock: "preview" as const,
     step: "02",
     title: "Confirm the preview, then sign",
     body: [
@@ -154,9 +151,7 @@ const FLOW = [
     ],
   },
   {
-    src: "/possition.png",
-    w: 536,
-    h: 247,
+    mock: "positions" as const,
     step: "03",
     title: "Track locked and unlocked here",
     body: [
@@ -242,17 +237,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="lp-hero-shot">
-            <Image
-              src="/dasbaord.png"
-              alt="ArcFlows dashboard, locks and vesting on Arc"
-              width={1920}
-              height={1080}
-              quality={95}
-              sizes="(max-width: 1440px) 100vw, 1440px"
-              priority
-            />
-          </div>
+          <HeroShot />
         </div>
       </section>
 
@@ -331,14 +316,7 @@ export default function LandingPage() {
           {FLOW.map((item) => (
             <article className="lp-flow-row" key={item.step}>
               <div className="lp-flow-shot">
-                <Image
-                  src={item.src}
-                  alt={item.title}
-                  width={item.w}
-                  height={item.h}
-                  quality={92}
-                  sizes="(max-width: 720px) 100vw, 52vw"
-                />
+                <FlowMock kind={item.mock} />
               </div>
               <div className="lp-flow-copy">
                 <p className="lp-flow-step">{item.step}</p>
@@ -377,27 +355,15 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="lp-proof-panel">
-            <div className="lp-proof-chrome">
-              <span className="lp-proof-dots" aria-hidden>
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="mono dim">arcflows.app/lock/42</span>
+          <div className="lp-proof-panel panel" aria-hidden>
+            <div className="panel-head">
+              <span>Vault position</span>
+              <span className="live live-accent">Sealed</span>
             </div>
             <div className="lp-proof-body">
               <div className="lp-proof-title">
-                <div>
-                  <p className="lp-eyebrow" style={{ marginBottom: 6 }}>
-                    Vault position
-                  </p>
-                  <h3>Lock #0042</h3>
-                </div>
-                <span className="live live-accent">
-                  <span className="pulse-dot" />
-                  Sealed
-                </span>
+                <h3>Lock #0042</h3>
+                <span className="mono dim">/lock/42</span>
               </div>
               <div className="lp-proof-stats">
                 <div>
