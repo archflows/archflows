@@ -25,7 +25,7 @@ export function LandingHeroMock() {
         </div>
         <div className="lp-mock-field">
           <span>Unlock date</span>
-          <b>12 Jun 2027 · 14:00 UTC</b>
+          <b>12 Jun 2027, 14:00 UTC</b>
         </div>
         <div className="lp-mock-row lp-mock-fee">
           <span>Protocol fee</span>

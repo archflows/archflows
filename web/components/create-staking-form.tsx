@@ -195,7 +195,7 @@ export function CreateStakingForm() {
 
       <FormShell
         title="Create staking pool"
-        badge="Stake · earn"
+        badge="Stake, earn"
         aside={
           <PreviewPanel
             title="Pool preview"
@@ -243,7 +243,7 @@ export function CreateStakingForm() {
           hint={
             rewardSymbol
               ? rewardBalance !== undefined && rewardDecimals !== undefined
-                ? `${rewardSymbol} · balance ${Number(
+                ? `${rewardSymbol}, balance ${Number(
                     formatUnits(rewardBalance, rewardDecimals),
                   ).toLocaleString("en-US", { maximumFractionDigits: 4 })}`
                 : rewardSymbol

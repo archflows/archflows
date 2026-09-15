@@ -54,7 +54,7 @@ export function TokenSelect({
     () =>
       sorted.map((t) => ({
         value: t.address,
-        label: `${t.symbol} · ${Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
+        label: `${t.symbol}, ${Number(formatUnits(BigInt(t.balance), t.decimals)).toLocaleString(
           "en-US",
           { maximumFractionDigits: 4 },
         )}`,

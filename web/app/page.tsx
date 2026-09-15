@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -10,22 +11,32 @@ import {
   Lock,
   Waves,
 } from "lucide-react";
-import { LandingHeroMock } from "@/components/LandingHeroMock";
 
-const RAIL = ["Built on Arc", "Gas in USDC", "Sub-second finality", "Public proof URL"];
+const MARQUEE = [
+  { name: "Arc", src: "/marquee/arc.svg" },
+  { name: "Circle", src: "/marquee/circle.png" },
+  { name: "USDC", src: "/marquee/usdc.svg" },
+  { name: "MetaMask", src: "/marquee/metamask.svg" },
+  { name: "Arcscan", src: "/marquee/arcscan.svg" },
+  { name: "EVM", src: "/marquee/ethereum.svg" },
+  { name: "Foundry", src: "/marquee/foundry.png" },
+  { name: "wagmi", src: "/marquee/wagmi.png" },
+];
+
+const MARQUEE_ROW = [...MARQUEE, ...MARQUEE];
 
 const FEATURED = [
   {
     icon: Lock,
     title: "Token lock",
-    body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit — not even for the creator.",
-    meta: "Immutable · $10 USDC fee",
+    body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit, not even for the creator.",
+    meta: "Immutable, $10 USDC fee",
   },
   {
     icon: Clock3,
     title: "Linear vesting",
     body: "Cliff, then per-second release to a beneficiary. Teams and investors claim only what has accrued.",
-    meta: "start ≤ cliff ≤ end",
+    meta: "start, cliff, then end",
   },
 ];
 
@@ -43,7 +54,7 @@ const MODULES = [
   {
     icon: Handshake,
     title: "Escrow",
-    body: "Fund a deal, release on delivery, or refund — both sides stay on-chain.",
+    body: "Fund a deal, release on delivery, or refund. Both sides stay on-chain.",
   },
   {
     icon: Coins,
@@ -52,11 +63,36 @@ const MODULES = [
   },
 ];
 
+const FLOW = [
+  {
+    src: "/fomrlock.png",
+    w: 621,
+    h: 654,
+    featured: true,
+    title: "Create a lock",
+    body: "Pick the token, amount, beneficiary, and unlock time. Fee is a flat $10 USDC.",
+  },
+  {
+    src: "/lock-preview.png",
+    w: 704,
+    h: 648,
+    title: "Confirm the schedule",
+    body: "Type, duration, destination, and fee on one screen before you sign.",
+  },
+  {
+    src: "/possition.png",
+    w: 536,
+    h: 247,
+    title: "Track positions",
+    body: "See what is still locked and what has already unlocked for this wallet.",
+  },
+];
+
 const STEPS = [
   {
     n: "01",
     title: "Connect a wallet",
-    body: "Use any EVM wallet on Arc Testnet. The same USDC balance pays gas — top up at the Circle faucet if needed.",
+    body: "Use any EVM wallet on Arc Testnet. The same USDC balance pays gas. Top up at the Circle faucet if needed.",
   },
   {
     n: "02",
@@ -66,7 +102,7 @@ const STEPS = [
   {
     n: "03",
     title: "Share the proof",
-    body: "Publish /lock/{id}. Holders verify amount, countdown, and beneficiary on-chain — no dashboard login.",
+    body: "Publish /lock/{id}. Holders verify amount, countdown, and beneficiary on-chain. No dashboard login.",
   },
 ];
 
@@ -77,15 +113,15 @@ const FAQ = [
   },
   {
     q: "Is this the same as an LP lock?",
-    a: "No. An LP lock stops the pool from being pulled — that belongs to the launchpad. ArcFlow locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
+    a: "No. An LP lock stops the pool from being pulled. That belongs to the launchpad. ArcFlow locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
   },
   {
     q: "What pays for gas?",
-    a: "USDC on Arc. The native view uses 18 decimals; the USDC ERC-20 at 0x3600…0000 uses 6. Same asset, two views — never double-count. The mempool floor is 20 Gwei maxFeePerGas.",
+    a: "USDC on Arc. The native view uses 18 decimals; the USDC ERC-20 at 0x3600…0000 uses 6. Same asset, two views. Never double-count. The mempool floor is 20 Gwei maxFeePerGas.",
   },
   {
     q: "Who can claim?",
-    a: "Only the beneficiary set at creation. Anyone can open the public proof page, but nobody else can move the tokens — including the creator.",
+    a: "Only the beneficiary set at creation. Anyone can open the public proof page, but nobody else can move the tokens, including the creator.",
   },
   {
     q: "Is ArcFlow custodial?",
@@ -93,24 +129,24 @@ const FAQ = [
   },
   {
     q: "Is this ready for mainnet?",
-    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only — not production funds.",
+    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only, not production funds.",
   },
 ];
 
 export default function LandingPage() {
   return (
     <main className="lp">
-      <section className="hero lp-hero">
-        <div className="shell hero-grid">
+      <section className="hero lp-hero lp-hero-stage">
+        <div className="lp-hero-arc" aria-hidden />
+        <div className="shell lp-hero-inner">
           <div className="hero-copy">
-            <p className="lp-kicker">
-              <span className="pulse-dot" />
-              Live on Arc Testnet
-            </p>
-            <h1>Lock and vest tokens on Arc</h1>
+            <h1>
+              ARC Token Distribution
+              <br />
+              <em>Platform - ArcFlow</em>
+            </h1>
             <p className="hero-lead">
-              Immutable schedules. A public proof page anyone can verify. Gas paid in USDC — the
-              same asset you already hold.
+              Lock, vest, and distribute tokens on Arc with public proof anyone can verify.
             </p>
             <div className="hero-actions">
               <Link className="btn lg" href="/auth">
@@ -123,20 +159,38 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="hero-visual">
-            <LandingHeroMock />
+          <div className="lp-hero-shot">
+            <Image
+              src="/dasbaord.png"
+              alt="ArcFlow dashboard, locks and vesting on Arc"
+              width={1920}
+              height={1080}
+              priority
+            />
           </div>
         </div>
+      </section>
 
-        <div className="shell">
-          <ul className="lp-rail">
-            {RAIL.map((item) => (
-              <li key={item}>
-                <Check className="size-3.5" />
-                {item}
-              </li>
-            ))}
-          </ul>
+      <section className="lp-marquee" aria-label="Built with">
+        <div className="lp-marquee-track">
+          {[0, 1].map((copy) => (
+            <div className="lp-marquee-group" key={copy} aria-hidden={copy === 1}>
+              {MARQUEE_ROW.map((item, i) => (
+                <div className="lp-marquee-item" key={`${copy}-${item.name}-${i}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="lp-marquee-logo"
+                    src={item.src}
+                    alt=""
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                  />
+                  <span>{item.name}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </section>
 
@@ -146,7 +200,7 @@ export default function LandingPage() {
           <h2>Locks, vesting, and distribution</h2>
           <p className="lead">
             Lock, vest, stream, airdrop, escrow, and stake from a single dashboard. Holders verify
-            positions on-chain — not from a screenshot.
+            positions on-chain, not from a screenshot.
           </p>
         </div>
 
@@ -174,6 +228,39 @@ export default function LandingPage() {
                 <ArrowUpRight className="lp-card-arrow size-4" />
               </div>
               <p>{item.body}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="shell lp-section" id="workflow">
+        <div className="lp-head">
+          <p className="lp-eyebrow">Workflow</p>
+          <h2>From create to claim</h2>
+          <p className="lead">
+            Set the lock, check the preview, then track it from the same wallet.
+          </p>
+        </div>
+        <div className="lp-flow">
+          {FLOW.map((item) => (
+            <Link
+              className={item.featured ? "lp-flow-card lp-flow-card-lg" : "lp-flow-card"}
+              href="/auth"
+              key={item.title}
+            >
+              <div className="lp-flow-shot">
+                <Image
+                  src={item.src}
+                  alt={item.title}
+                  width={item.w}
+                  height={item.h}
+                  sizes={item.featured ? "(max-width: 720px) 100vw, 50vw" : "(max-width: 720px) 100vw, 40vw"}
+                />
+              </div>
+              <div className="lp-flow-copy">
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
             </Link>
           ))}
         </div>
@@ -284,8 +371,8 @@ export default function LandingPage() {
             <p className="lp-eyebrow">FAQ</p>
             <h2>Before you lock</h2>
             <p className="lead" style={{ marginBottom: 0 }}>
-              Immutable vaults, USDC gas, public proof. Contracts are not externally audited —
-              testnet only.
+              Immutable vaults, USDC gas, public proof. Contracts are not externally audited.
+              Testnet only.
             </p>
           </div>
           <div className="faq-list lp-faq-list">

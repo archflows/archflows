@@ -180,10 +180,10 @@ function LockRow({ id }: { id: bigint }) {
           </div>
 
           <p className="truncate font-mono text-[11px] text-muted-foreground">
-            LOCK #{id.toString()} · {isDone ? "unlocked" : "unlocks"}{" "}
+            LOCK #{id.toString()}, {isDone ? "unlocked" : "unlocks"}{" "}
             {end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"}
             {claimed !== undefined && claimed > 0n
-              ? ` · claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
+              ? `, claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}`
               : ""}
@@ -331,7 +331,7 @@ function Locks({
             Your positions
           </CardTitle>
           <CardDescription>
-            Locks tied to this wallet — still locked or already unlocked.
+            Locks tied to this wallet, still locked or already unlocked.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">

@@ -410,7 +410,7 @@ export function CreateLockForm() {
           hint={
             symbol
               ? balance !== undefined && decimals !== undefined
-                ? `${symbol} · balance ${Number(formatUnits(balance, decimals)).toLocaleString(
+                ? `${symbol}, balance ${Number(formatUnits(balance, decimals)).toLocaleString(
                     "en-US",
                     { maximumFractionDigits: 4 },
                   )}`
@@ -550,11 +550,11 @@ export function CreateLockForm() {
                     : "Locking…"
                   : needsApprove
                     ? unlockMode === "split"
-                      ? `Approve & split lock · $${10 * Math.max(splits.length, 1)}`
-                      : "Approve & lock · $10"
+                      ? `Approve & split lock, $${10 * Math.max(splits.length, 1)}`
+                      : "Approve & lock, $10"
                     : unlockMode === "split"
-                      ? `Split lock · $${10 * Math.max(splits.length, 1)}`
-                      : "Lock until unlock · $10"}
+                      ? `Split lock, $${10 * Math.max(splits.length, 1)}`
+                      : "Lock until unlock, $10"}
             </button>
           )}
         </div>

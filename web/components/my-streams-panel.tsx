@@ -109,18 +109,18 @@ function StreamRow({ id, role }: { id: bigint; role: Tab }) {
           {canceled ? "Canceled" : "Streaming"}
         </span>
         <span className="mono dim" style={{ fontSize: "0.72rem" }}>
-          #{id.toString()} · ends {end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"}
+          #{id.toString()}, ends {end ? dateFmt.format(new Date(Number(end) * 1000)) : "—"}
         </span>
       </div>
       <p className="mono dim" style={{ margin: "0.35rem 0 0", fontSize: "0.72rem" }}>
         {role === "receiving" ? `from ${shorten(sender)}` : `to ${shorten(recipient)}`}
         {withdrawable !== undefined
-          ? ` · withdrawable ${Number(formatUnits(withdrawable, dec)).toLocaleString("en-US", {
+          ? `, withdrawable ${Number(formatUnits(withdrawable, dec)).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             })}`
           : ""}
         {withdrawn !== undefined && withdrawn > 0n
-          ? ` · withdrawn ${Number(formatUnits(withdrawn, dec)).toLocaleString("en-US", {
+          ? `, withdrawn ${Number(formatUnits(withdrawn, dec)).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             })}`
           : ""}

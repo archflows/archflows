@@ -33,7 +33,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
               </Link>
               <p className="dim" style={{ maxWidth: "24rem", margin: "0.75rem 0 0" }}>
                 Token operations on Arc. Immutable locks, linear vesting, streams, airdrops,
-                escrow, and staking — with a public proof page for every position.
+                escrow, and staking, with a public proof page for every position.
               </p>
             </div>
 
@@ -67,8 +67,8 @@ export function SiteChrome({ children }: { children: ReactNode }) {
           </div>
 
           <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} ArcFlow — Lock. Vest. Stream. On Arc.</span>
-            <span>Arc Testnet · chain 5042002 · gas in USDC</span>
+            <span>© {new Date().getFullYear()} ArcFlow. Lock. Vest. Stream. On Arc.</span>
+            <span>Arc Testnet, chain 5042002, gas in USDC</span>
           </div>
         </div>
       </footer>

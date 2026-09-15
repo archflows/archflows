@@ -52,13 +52,13 @@ export default function AuthClient() {
             Dock your wallet to manage orbits
           </h1>
           <p className="dim" style={{ margin: 0, maxWidth: "24rem", fontSize: "0.92rem", lineHeight: 1.7 }}>
-            Connect on Arc Testnet — gas is USDC. After auth you land in the console: overview,
+            Connect on Arc Testnet. Gas is USDC. After auth you land in the console: overview,
             positions, and the create flow.
           </p>
         </div>
 
         <p className="mono dim" style={{ fontSize: "0.72rem", margin: 0 }}>
-          // arc testnet · chain 5042002 · rpc rpc.testnet.arc.network
+          // arc testnet, chain 5042002, rpc rpc.testnet.arc.network
         </p>
       </aside>
 

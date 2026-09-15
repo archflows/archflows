@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, IBM_Plex_Mono } from "next/font/google";
+import { Sora, IBM_Plex_Mono } from "next/font/google";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Providers } from "@/lib/providers";
@@ -7,9 +7,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const sans = Inter({
+const sans = Sora({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sora",
 });
 
 const mono = IBM_Plex_Mono({
@@ -19,7 +19,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ArcFlow — Token locks and vesting on Arc",
+  title: "ArcFlow. Token locks and vesting on Arc",
   description:
     "Immutable token locks, linear vesting, streams, airdrops, escrow, and staking on Arc. Public proof pages. Gas paid in USDC.",
 };

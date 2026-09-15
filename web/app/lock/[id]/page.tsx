@@ -186,7 +186,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
         }}
       >
         <div>
-          <p className="tag tag-accent">// PROOF OF LOCK · ARC TESTNET</p>
+          <p className="tag tag-accent">// PROOF OF LOCK, ARC TESTNET</p>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem" }}>
             <h1
               style={{
@@ -318,7 +318,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {symbol ? `${symbol} · ` : ""}
+                  {symbol ? `${symbol}, ` : ""}
                   {short(token)}
                 </a>
               ) : (

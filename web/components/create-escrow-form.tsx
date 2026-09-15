@@ -220,7 +220,7 @@ export function CreateEscrowForm() {
         />
       </div>
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {createdId ? <div className="alert alert-warn">Deal created · #{createdId}</div> : null}
+      {createdId ? <div className="alert alert-warn">Deal created, #{createdId}</div> : null}
       {!isConnected ? (
         <WalletConnectButton />
       ) : (
@@ -310,7 +310,7 @@ function DealRow({ id, tab }: { id: bigint; tab: Tab }) {
       </div>
       <p className="mono dim" style={{ margin: "0.3rem 0 0", fontSize: "0.72rem" }}>
         {tab === "buying" ? `seller ${shorten(seller)}` : `buyer ${shorten(buyer)}`}
-        {unlockAt ? ` · buyer refund after ${dateFmt.format(new Date(Number(unlockAt) * 1000))}` : ""}
+        {unlockAt ? `, buyer refund after ${dateFmt.format(new Date(Number(unlockAt) * 1000))}` : ""}
       </p>
       {funded ? (
         <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.55rem" }}>

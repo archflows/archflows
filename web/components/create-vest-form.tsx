@@ -158,7 +158,7 @@ export function CreateVestForm() {
       return;
     }
     if (tooShort || cliffPastEnd) {
-      setError("Vest duration must be ≥ 1 minute, and cliff cannot exceed the vest length.");
+      setError("Vest duration must be at least 1 minute, and cliff cannot exceed the vest length.");
       return;
     }
     if (shortFee) {
@@ -285,7 +285,7 @@ export function CreateVestForm() {
           hint={
             symbol
               ? balance !== undefined && decimals !== undefined
-                ? `${symbol} · balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
+                ? `${symbol}, balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
                     maximumFractionDigits: 4,
                   })}`
                 : symbol
@@ -373,7 +373,7 @@ export function CreateVestForm() {
         </div>
 
         <div className="field">
-          <span className="field-label">Total vest length (start → fully unlocked)</span>
+          <span className="field-label">Total vest length (start to fully unlocked)</span>
           <DurationTriple
             days={vestDays}
             hours={vestHours}
@@ -404,8 +404,8 @@ export function CreateVestForm() {
                 : step === "locking"
                   ? "Creating vest…"
                   : needsApprove
-                    ? "Approve & create vest · $10"
-                    : "Create vesting · $10"}
+                    ? "Approve & create vest, $10"
+                    : "Create vesting, $10"}
             </button>
           )}
         </div>

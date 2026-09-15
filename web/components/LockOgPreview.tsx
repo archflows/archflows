@@ -79,7 +79,7 @@ export function LockOgPreview({
             </div>
           </div>
           <div className="lock-og-foot">
-            <span>arcflow · Arc Testnet</span>
+            <span>arcflow, Arc Testnet</span>
             <span>/lock/{"{id}"}</span>
           </div>
         </div>

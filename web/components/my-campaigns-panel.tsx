@@ -86,12 +86,12 @@ function CampaignRow({ id }: { id: bigint }) {
         <strong>#{id.toString()}</strong>
         <span className="live live-accent">{canceled ? "Canceled" : afterEnd ? "Ended" : beforeStart ? "Scheduled" : "Live"}</span>
         <span className="mono dim" style={{ fontSize: "0.72rem" }}>
-          {symbol ?? "Token"} · deposited{" "}
+          {symbol ?? "Token"}, deposited{" "}
           {deposited !== undefined
             ? Number(formatUnits(deposited, dec)).toLocaleString("en-US", { maximumFractionDigits: 4 })
             : "—"}
           {claimed !== undefined
-            ? ` · claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
+            ? `, claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
                 maximumFractionDigits: 4,
               })}`
             : ""}
@@ -99,12 +99,12 @@ function CampaignRow({ id }: { id: bigint }) {
       </div>
       <p className="mono dim" style={{ margin: "0.3rem 0 0", fontSize: "0.72rem" }}>
         {claimStart && claimEnd
-          ? `${dateFmt.format(new Date(Number(claimStart) * 1000))} → ${dateFmt.format(
+          ? `${dateFmt.format(new Date(Number(claimStart) * 1000))} to ${dateFmt.format(
               new Date(Number(claimEnd) * 1000),
             )}`
           : ""}
         {unclaimed !== undefined
-          ? ` · unclaimed ${Number(formatUnits(unclaimed, dec)).toLocaleString("en-US", {
+          ? `, unclaimed ${Number(formatUnits(unclaimed, dec)).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             })}`
           : ""}

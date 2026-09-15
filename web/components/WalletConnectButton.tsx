@@ -133,7 +133,7 @@ export function WalletConnectButton({
             await ensureArcNetwork(ethereum);
             await switchChainAsync({ chainId: ARC_TESTNET.id });
           } catch {
-            setError("Connected — switch the wallet network to Arc Testnet (5042002).");
+            setError("Connected. Switch the wallet network to Arc Testnet (5042002).");
           }
         }
       }
