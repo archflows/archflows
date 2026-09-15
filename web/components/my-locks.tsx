@@ -272,7 +272,7 @@ function LockRowReady({
             />
           </div>
 
-          <p className="truncate font-mono text-[11px] text-white/70">
+<p className="truncate font-mono text-[11px] text-white/70">
             {kind === "vest" ? "VEST" : "LOCK"} #{id.toString()} ·{" "}
             {kind === "vest"
               ? isDone
@@ -283,6 +283,7 @@ function LockRowReady({
                 : `unlocks ${dateFmt.format(new Date(Number(end) * 1000))} · ${formatCountdown(Number(end - now), "Unlocked")}`}
             {kind === "vest" && !isDone && cliff > start
               ? ` · cliff ${dateFmt.format(new Date(Number(cliff) * 1000))}`
+              : ""}
               : ""}
             {liveClaimable > 0n ? ` · claimable ${fmtAmt(liveClaimable, dec)}` : ""}
             {claimed > 0n ? ` · claimed ${fmtAmt(claimed, dec)}` : ""}
@@ -498,7 +499,7 @@ function Locks({
             {vest ? "Your vests" : "Your locks"}
           </CardTitle>
           <CardDescription>
-            {vest
+{vest
               ? "Linear schedules for this wallet — still releasing or fully vested."
               : "Hard locks for this wallet — still frozen or already unlocked."}
           </CardDescription>

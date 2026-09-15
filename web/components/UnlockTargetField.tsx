@@ -264,7 +264,7 @@ export function UnlockTargetField({
             </button>
             <span className={splitOk ? "split-total ok" : "split-total bad"}>
               Total {round2(splitTotal)}%
-              {splitOk ? "" : " · must be 100%"}
+              {splitOk ? "" : ", must be 100%"}
             </span>
           </div>
           <p className="field-hint">

@@ -1,20 +1,99 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
-  Check,
   Clock3,
   Coins,
+  Fuel,
   Gift,
+  Globe,
   Handshake,
   Lock,
+  Shield,
+  Timer,
   Waves,
 } from "lucide-react";
 import { LandingHeroMock } from "@/components/LandingHeroMock";
 import { LandingLiveCounts, LandingLiveProof } from "@/components/LandingLiveProof";
 import { NETWORK_NAME, isTestnet } from "@/lib/chain";
 
-const RAIL = ["Built on Arc", "Gas in USDC", "Sub-second finality", "Public proof URL"];
+const MARQUEE = [
+  { name: "Arc", src: "/marquee/arc.svg" },
+  { name: "Circle", src: "/marquee/circle.png" },
+  { name: "USDC", src: "/marquee/usdc.svg" },
+  { name: "MetaMask", src: "/marquee/metamask.svg" },
+  { name: "Arcscan", src: "/marquee/arcscan.svg" },
+  { name: "EVM", src: "/marquee/ethereum.svg" },
+  { name: "Foundry", src: "/marquee/foundry.png" },
+  { name: "wagmi", src: "/marquee/wagmi.png" },
+];
+
+/** Enough logos to fill wide viewports so the -50% loop never shows a gap. */
+const MARQUEE_SET = [...MARQUEE, ...MARQUEE, ...MARQUEE];
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "Finally a lock page our holders can open themselves. Amount, unlock time, beneficiary, all from the contract.",
+    name: "Rina K.",
+    handle: "@rinabuilds",
+    avatar: "RK",
+  },
+  {
+    quote: "Gas in USDC on Arc is such a clean flow. No second token just to pay fees.",
+    name: "Devon Miles",
+    handle: "@devononchain",
+    avatar: "DM",
+  },
+  {
+    quote: "We shipped team vesting in one afternoon. Cliff, linear release, public proof URL. Done.",
+    name: "Maya Chen",
+    handle: "@mayavc",
+    avatar: "MC",
+  },
+  {
+    quote: "The share card is what sold us. Investors stop asking for screenshots.",
+    name: "Omar S.",
+    handle: "@omardeploys",
+    avatar: "OS",
+  },
+  {
+    quote: "Immutable locks without an admin cancel path. That is what we needed for community trust.",
+    name: "Jules Park",
+    handle: "@julespark",
+    avatar: "JP",
+  },
+  {
+    quote: "Clean dashboard, fast finality, and the proof page actually reads live state.",
+    name: "Theo N.",
+    handle: "@theonodes",
+    avatar: "TN",
+  },
+  {
+    quote: "Cliff then linear release is exactly how we set team unlocks. No spreadsheet drama.",
+    name: "Ava R.",
+    handle: "@avareleases",
+    avatar: "AR",
+  },
+  {
+    quote: "Public proof URL beats Discord screenshots every time. Holders can verify themselves.",
+    name: "Ken I.",
+    handle: "@kenindexes",
+    avatar: "KI",
+  },
+];
+
+const TESTIMONIALS_ROW_B = [
+  TESTIMONIALS[3],
+  TESTIMONIALS[4],
+  TESTIMONIALS[5],
+  TESTIMONIALS[6],
+  TESTIMONIALS[7],
+  TESTIMONIALS[0],
+  TESTIMONIALS[1],
+  TESTIMONIALS[2],
+];
 
 const FEATURED = [
   {
@@ -60,16 +139,22 @@ const MODULES = [
   },
 ];
 
-const STEPS = [
+const FLOW = [
   {
     n: "01",
     title: "Connect a wallet",
     body: `Use any EVM wallet on ${NETWORK_NAME}. The same USDC balance pays gas${isTestnet ? " — top up at the Circle faucet if needed" : ""}.`,
   },
   {
-    n: "02",
-    title: "Set the schedule",
-    body: "Choose the token, amount, hard lock or linear vest, and an unlock date. Fee is a flat $10 USDC.",
+    src: "/lock-preview.png",
+    w: 704,
+    h: 648,
+    step: "02",
+    title: "Confirm the preview, then sign",
+    body: [
+      "The preview restates type, unlock time in UTC, duration, destination, amount, and the $10 USDC fee on one screen. Read each line against the wallet prompt so the on-chain call matches what you filled in.",
+      "Nothing leaves the wallet until you approve. If a field is wrong, go back and edit the form. The vault does not store a draft, and the signed payload is the schedule that will exist on-chain.",
+    ],
   },
   {
     n: "03",
@@ -85,18 +170,18 @@ const FAQ = [
   },
   {
     q: "Is this the same as an LP lock?",
-    a: "No. An LP lock stops the pool from being pulled — that belongs to the launchpad. ArcFlow locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
+    a: "No. An LP lock stops the pool from being pulled. That belongs to the launchpad. ArcFlows locks tokens sitting in a wallet so they cannot be sold until the schedule allows.",
   },
   {
     q: "What pays for gas?",
-    a: "USDC on Arc. The native view uses 18 decimals; the USDC ERC-20 at 0x3600…0000 uses 6. Same asset, two views — never double-count. The mempool floor is 20 Gwei maxFeePerGas.",
+    a: "USDC on Arc. The native view uses 18 decimals; the USDC ERC-20 at 0x3600…0000 uses 6. Same asset, two views. Never double-count. The mempool floor is 20 Gwei maxFeePerGas.",
   },
   {
     q: "Who can claim?",
-    a: "Only the beneficiary set at creation. Anyone can open the public proof page, but nobody else can move the tokens — including the creator.",
+    a: "Only the beneficiary set at creation. Anyone can open the public proof page, but nobody else can move the tokens, including the creator.",
   },
   {
-    q: "Is ArcFlow custodial?",
+    q: "Is ArcFlows custodial?",
     a: "The contract holds tokens until claim; no human key can redirect them. You keep your wallet. We keep no admin lever over locked balances.",
   },
   {
@@ -110,8 +195,9 @@ const FAQ = [
 export default function LandingPage() {
   return (
     <main className="lp">
-      <section className="hero lp-hero">
-        <div className="shell hero-grid">
+      <section className="hero lp-hero lp-hero-stage">
+        <div className="lp-hero-arc" aria-hidden />
+        <div className="shell lp-hero-inner">
           <div className="hero-copy">
             <p className="lp-kicker">
               <span className="pulse-dot" />
@@ -121,8 +207,7 @@ export default function LandingPage() {
             </p>
             <h1>Lock and vest tokens on Arc</h1>
             <p className="hero-lead">
-              Immutable schedules. A public proof page anyone can verify. Gas paid in USDC — the
-              same asset you already hold.
+              Lock, vest, and distribute tokens on Arc with public proof anyone can verify.
             </p>
             <div className="hero-actions">
               <Link className="btn lg" href="/auth">
@@ -135,20 +220,40 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="hero-visual">
-            <LandingHeroMock />
+          <div className="lp-hero-shot">
+            <Image
+              src="/dasbaord.png"
+              alt="ArcFlows dashboard, locks and vesting on Arc"
+              width={1920}
+              height={1080}
+              quality={95}
+              sizes="(max-width: 1440px) 100vw, 1440px"
+              priority
+            />
           </div>
         </div>
+      </section>
 
-        <div className="shell">
-          <ul className="lp-rail">
-            {RAIL.map((item) => (
-              <li key={item}>
-                <Check className="size-3.5" />
-                {item}
-              </li>
-            ))}
-          </ul>
+      <section className="lp-marquee" aria-label="Built with">
+        <div className="lp-marquee-track">
+          {[0, 1].map((copy) => (
+            <div className="lp-marquee-group" key={copy} aria-hidden={copy === 1}>
+              {MARQUEE_SET.map((item, i) => (
+                <div className="lp-marquee-item" key={`${copy}-${item.name}-${i}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="lp-marquee-logo"
+                    src={item.src}
+                    alt=""
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                  />
+                  <span>{item.name}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </section>
 
@@ -158,7 +263,7 @@ export default function LandingPage() {
           <h2>Locks, vesting, and distribution</h2>
           <p className="lead">
             Lock, vest, stream, airdrop, escrow, and stake from a single dashboard. Holders verify
-            positions on-chain — not from a screenshot.
+            positions on-chain, not from a screenshot.
           </p>
         </div>
 
@@ -204,29 +309,59 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="shell lp-section" id="workflow">
+        <div className="lp-head">
+          <p className="lp-eyebrow">Workflow</p>
+          <h2>Create, confirm, then track</h2>
+          <p className="lead">
+            Three screens from the same app. Set a lock, read the preview, then follow it from
+            this wallet.
+          </p>
+        </div>
+        <div className="lp-flow">
+          {FLOW.map((item) => (
+            <article className="lp-flow-row" key={item.step}>
+              <div className="lp-flow-shot">
+                <Image
+                  src={item.src}
+                  alt={item.title}
+                  width={item.w}
+                  height={item.h}
+                  quality={92}
+                  sizes="(max-width: 720px) 100vw, 52vw"
+                />
+              </div>
+              <div className="lp-flow-copy">
+                <p className="lp-flow-step">{item.step}</p>
+                <h3>{item.title}</h3>
+                {item.body.map((para) => (
+                  <p key={para.slice(0, 24)}>{para}</p>
+                ))}
+                <Link className="lp-flow-link" href="/auth">
+                  Open the app
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="shell lp-section" id="proof">
         <div className="lp-proof">
           <div className="lp-proof-copy">
             <p className="lp-eyebrow">Public proof</p>
-            <h2>A page holders can open themselves</h2>
+            <h2>Anyone can open the lock</h2>
             <p className="lead">
-              Every vault lock gets a shareable URL. Amount, unlock time, beneficiary, and
-              claimable balance read live from the contract. No wallet required.
+              Every vault position gets a public URL. Amount, unlock time, beneficiary, and
+              claimable balance read from the contract while the page is open. A holder does
+              not need a dashboard login, and a screenshot is not the source of truth.
             </p>
-            <ul className="lp-proof-list">
-              <li>
-                <Check className="size-3.5" />
-                Hard lock and linear vest, shown as on-chain state
-              </li>
-              <li>
-                <Check className="size-3.5" />
-                Claimable amount updates without a dashboard login
-              </li>
-              <li>
-                <Check className="size-3.5" />
-                Safe to publish next to the token contract
-              </li>
-            </ul>
+            <p>
+              Hard lock and linear vest show as live state. When the clock allows a claim, the
+              claimable figure updates on that same URL. Safe to publish beside the token
+              contract.
+            </p>
             <Link className="btn lg" href="/auth">
               Create a lock
               <ArrowRight className="size-4" />
@@ -239,16 +374,92 @@ export default function LandingPage() {
 
       <section className="shell lp-section" id="how">
         <div className="lp-head">
-          <p className="lp-eyebrow">How it works</p>
-          <h2>Three steps to a public schedule</h2>
+          <p className="lp-eyebrow">On Arc</p>
+          <h2>What stays true after you sign</h2>
+          <p className="lead">
+            Once the transaction lands, the vault, the gas, and the public page are the same
+            facts for everyone. USDC pays the fee. Holders do not need an account. Arc confirms
+            in under a second.
+          </p>
         </div>
-        <div className="lp-steps">
-          {STEPS.map((step) => (
-            <article className="lp-step" key={step.n}>
-              <span className="lp-step-n">{step.n}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
+        <div className="lp-pillars">
+          {PILLARS.map((item) => (
+            <article className="lp-pillar" key={item.title}>
+              <span className="lp-icon">
+                <item.icon className="size-4" />
+              </span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
             </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section lp-testimonials" id="voices">
+        <div className="shell lp-testimonials-head">
+          <div>
+            <h2>
+              What our <em>users</em> say
+            </h2>
+            <p className="lead" style={{ marginBottom: 0 }}>
+              Teams locking and vesting on Arc. See what builders are saying.
+            </p>
+          </div>
+          <a
+            className="lp-testimonials-follow"
+            href="https://x.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Follow us on X
+            <ArrowRight className="size-4" />
+          </a>
+        </div>
+
+        <div className="lp-testimonials-rows" aria-label="User testimonials">
+          {(
+            [
+              { items: TESTIMONIALS, reverse: false },
+              { items: TESTIMONIALS_ROW_B, reverse: true },
+            ] as const
+          ).map((row, rowIndex) => (
+            <div
+              className={`lp-testimonials-rail${row.reverse ? " is-reverse" : ""}`}
+              key={rowIndex}
+            >
+              <div className="lp-testimonials-track">
+                {[0, 1].map((copy) => (
+                  <div
+                    className="lp-testimonials-group"
+                    key={copy}
+                    aria-hidden={copy === 1}
+                  >
+                    {row.items.map((item) => (
+                      <article
+                        className="lp-quote-card"
+                        key={`${rowIndex}-${copy}-${item.handle}`}
+                      >
+                        <p>{item.quote}</p>
+                        <div className="lp-quote-meta">
+                          <div className="lp-quote-user">
+                            <span className="lp-quote-avatar" aria-hidden>
+                              {item.avatar}
+                            </span>
+                            <span>
+                              <strong>{item.name}</strong>
+                              <small>{item.handle}</small>
+                            </span>
+                          </div>
+                          <span className="lp-quote-x" aria-hidden>
+                            𝕏
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -259,8 +470,8 @@ export default function LandingPage() {
             <p className="lp-eyebrow">FAQ</p>
             <h2>Before you lock</h2>
             <p className="lead" style={{ marginBottom: 0 }}>
-              Immutable vaults, USDC gas, public proof. Contracts are not externally audited —
-              testnet only.
+              Immutable vaults, USDC gas, public proof. Contracts are not externally audited.
+              Testnet only.
             </p>
           </div>
           <div className="faq-list lp-faq-list">
@@ -287,7 +498,7 @@ export default function LandingPage() {
           </div>
           <div className="hero-actions">
             <Link className="btn lg" href="/auth">
-              Launch ArcFlow
+              Launch the app
               <ArrowRight className="size-4" />
             </Link>
             <a
@@ -299,6 +510,12 @@ export default function LandingPage() {
               Get testnet USDC
             </a>
           </div>
+          <ul className="lp-cta-meta">
+            <li>Arc Testnet</li>
+            <li>Chain 5042002</li>
+            <li>$10 USDC fee</li>
+            <li>Gas in USDC</li>
+          </ul>
         </div>
       </section>
     </main>

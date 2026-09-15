@@ -9,9 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { EXPLORER_URL } from "@/lib/chain";
+import { StatCardsSkeleton } from "@/components/skeletons";
+import { ARCFLOW_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { arcFlowAbi } from "@/lib/abi";
+import { shorten } from "@/lib/form-time";
+import { useAccount, useReadContract } from "wagmi";
+import { EXPLORER_URL as _EXPLORER_URL } from "@/lib/chain";
 import { useLiveConfig, useLiveStats } from "@/hooks/useLiveStats";
-import { useAccount } from "wagmi";
+import { useAccount as useWagmiAccount } from "wagmi";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { Bone } from "@/components/page-skeleton";
 
@@ -26,16 +31,32 @@ export function SectionCards() {
   const contracts = (apiConfig as { contracts?: { lock?: string } } | null)?.contracts;
   const lockAddr = contracts?.lock;
 
-  const created = stats?.wallet?.locksCreated ?? 0;
-  const receiving = stats?.wallet?.locksReceiving ?? 0;
-  const protocol =
-    (stats?.totals.locks ?? 0) +
-    (stats?.totals.streams ?? 0) +
-    (stats?.totals.campaigns ?? 0) +
-    (stats?.totals.escrow ?? 0) +
-    (stats?.totals.pools ?? 0);
-  const apiLive = Boolean(apiConfig && stats);
-  const dash = (value: number) => (isLoading && !stats ? "—" : String(value));
+  const { data: createdCount, isPending: createdPending } = useReadContract({
+    address: ARCFLOW_ADDRESS,
+    abi: arcFlowAbi,
+    functionName: "creatorLockCount",
+    args: address ? [address] : undefined,
+    query: { enabled: Boolean(address && !notDeployed) },
+  });
+  const { data: receivedCount, isPending: receivedPending } = useReadContract({
+    address: ARCFLOW_ADDRESS,
+    abi: arcFlowAbi,
+    functionName: "beneficiaryLockCount",
+    args: address ? [address] : undefined,
+    query: { enabled: Boolean(address && !notDeployed) },
+  });
+
+  const countsPending = Boolean(address && !notDeployed && (createdPending || receivedPending));
+
+  if (countsPending) {
+    return <StatCardsSkeleton count={4} />;
+  }
+
+  const created = notDeployed ? "—" : String(Number(createdCount ?? 0n));
+  const receiving = notDeployed ? "—" : String(Number(receivedCount ?? 0n));
+  const active = notDeployed
+    ? "—"
+    : String(Number(createdCount ?? 0n) + Number(receivedCount ?? 0n));
 
   return (
     <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -103,7 +124,7 @@ export function SectionCards() {
         <CardFooter className={FOOTER}>
           <div className="line-clamp-1 text-[0.95rem] font-medium">Locks · streams · campaigns</div>
           <div className="text-[0.8rem] leading-snug text-white">
-            {stats
+{stats
               ? `${stats.totals.locks} locks · ${stats.totals.streams} streams · ${stats.totals.campaigns} airdrops`
               : "Live protocol totals"}
           </div>
@@ -125,7 +146,7 @@ export function SectionCards() {
           </CardAction>
         </CardHeader>
         <CardFooter className={FOOTER}>
-          <div className="text-[0.95rem] font-medium">Service health</div>
+<div className="text-[0.95rem] font-medium">Service health</div>
           {lockAddr ? (
             <a
               href={`${EXPLORER_URL}/address/${lockAddr}`}

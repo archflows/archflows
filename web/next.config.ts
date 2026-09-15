@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
     maxInactiveAge: 60 * 60 * 1000,
     pagesBufferLength: 8,
   },
+  images: {
+    qualities: [75, 92, 95],
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts", "wagmi", "viem", "@reown/appkit"],
   },

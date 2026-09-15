@@ -238,7 +238,7 @@ export function StakePoolPanel() {
         </div>
         {pool && stakeToken !== ZERO ? (
           <div className="mono dim" style={{ fontSize: "0.78rem", lineHeight: 1.55 }}>
-            Stake {stakeSymbol ?? shorten(stakeToken)} · reward {rewardSymbol ?? shorten(rewardToken)}
+            Stake {stakeSymbol ?? shorten(stakeToken)}, reward {rewardSymbol ?? shorten(rewardToken)}
             <br />
             TVL{" "}
             {totalStaked !== undefined
@@ -246,7 +246,7 @@ export function StakePoolPanel() {
                   maximumFractionDigits: 4,
                 })
               : "—"}
-            {minLock ? ` · min lock ${formatDuration(Number(minLock))}` : " · no min lock"}
+            {minLock ? `, min lock ${formatDuration(Number(minLock))}` : ", no min lock"}
             <br />
             Your stake{" "}
             {stake?.[0] !== undefined
@@ -255,7 +255,7 @@ export function StakePoolPanel() {
                 })
               : "0"}
             {unlocked !== undefined
-              ? ` · unlocked ${Number(formatUnits(unlocked, sDec)).toLocaleString("en-US", {
+              ? `, unlocked ${Number(formatUnits(unlocked, sDec)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}`
               : ""}

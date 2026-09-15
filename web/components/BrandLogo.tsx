@@ -5,24 +5,25 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   className?: string;
-  /** Visual height of the logo in px. Width scales from the wide wordmark. */
+  /** Visual height of the logo in px. Width scales from the wordmark. */
   height?: number;
   priority?: boolean;
 };
 
-/** Official ArcFlow wordmark (lightweight PNG). */
+/** Official ArcFlows wordmark (transparent PNG). */
 export function BrandLogo({ className, height = 52, priority = false }: Props) {
-  const width = Math.round(height * (1448 / 336));
+  const width = Math.round(height * (1024 / 234));
 
   return (
     <Image
-      src="/logo-arc-png.png"
-      alt="ArcFlow"
+      src="/logoarcflows-v2.png"
+      alt="ArcFlows"
       width={width}
       height={height}
       priority={priority}
+      unoptimized
       className={cn("brand-logo", className)}
-      style={{ height, width: "auto" }}
+      style={{ height, width: "auto", background: "transparent" }}
     />
   );
 }

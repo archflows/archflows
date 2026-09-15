@@ -1,9 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { useAccount } from "wagmi";
-import { useLiveStats } from "@/hooks/useLiveStats";
+
+import { useIsMobile } from "@/hooks/use-mobile";
+import type { WalletPositionRow } from "@/hooks/useWalletPositions";
+import { fetchArcFlowLogsFromExplorer } from "@/lib/arcflow-logs";
+import { ARCFLOW_ADDRESS } from "@/lib/chain";
+import { ZERO } from "@/lib/form-time";
 import {
   Card,
   CardAction,
@@ -13,64 +18,179 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 
-export function ChartAreaInteractive() {
+const BRAND = "#6ea8ff";
+const MUTED = "#c5d0e0";
+
+const chartConfig = {
+  activity: { label: "Activity" },
+  locks: { label: "Created", color: BRAND },
+  claims: { label: "Claimed", color: MUTED },
+} satisfies ChartConfig;
+
+function isoDay(unix: number) {
+  const d = new Date(unix * 1000);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function rangeDays(timeRange: string) {
+  if (timeRange === "30d") return 30;
+  if (timeRange === "7d") return 7;
+  return 90;
+}
+
+function useClaimedTimestamps(owner?: `0x${string}`) {
+  const [times, setTimes] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    if (!owner || ARCFLOW_ADDRESS === ZERO) {
+      setTimes([]);
+      return;
+    }
+    let live = true;
+    fetchArcFlowLogsFromExplorer()
+      .then((logs) => {
+        if (!live) return;
+        const needle = owner.toLowerCase();
+        setTimes(
+          logs
+            .filter(
+              (log) =>
+                log.eventName === "Claimed" &&
+                String(log.args.beneficiary ?? "").toLowerCase() === needle,
+            )
+            .map((log) => log.timestamp)
+            .filter((unix) => unix > 0),
+        );
+      })
+      .catch(() => {
+        if (live) setTimes([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [owner]);
+
+  return times;
+}
+
+function buildSeries(
+  rows: WalletPositionRow[],
+  claimedAt: number[],
+  timeRange: string,
+) {
+  const days = rangeDays(timeRange);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  const startSec = Math.floor(start.getTime() / 1000);
+  const endSec = Math.floor(today.getTime() / 1000) + 86_400;
+
+  const created = new Map<string, number>();
+  const claimed = new Map<string, number>();
+
+  for (const row of rows) {
+    const createdAt = Number(row.start);
+    if (createdAt >= startSec && createdAt < endSec) {
+      const key = isoDay(createdAt);
+      created.set(key, (created.get(key) ?? 0) + 1);
+    }
+  }
+  for (const unix of claimedAt) {
+    if (unix >= startSec && unix < endSec) {
+      const key = isoDay(unix);
+      claimed.set(key, (claimed.get(key) ?? 0) + 1);
+    }
+  }
+
+  const out: { date: string; locks: number; claims: number }[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    const key = isoDay(Math.floor(d.getTime() / 1000));
+    out.push({
+      date: key,
+      locks: created.get(key) ?? 0,
+      claims: claimed.get(key) ?? 0,
+    });
+  }
+  return out;
+}
+
+export function ChartAreaInteractive({
+  rows,
+  pending,
+}: {
+  rows: WalletPositionRow[];
+  pending?: boolean;
+}) {
   const isMobile = useIsMobile();
-  const [timeRange, setTimeRange] = React.useState("30d");
   const { address } = useAccount();
-  const { data: stats } = useLiveStats(address);
-  const series = stats?.series ?? [];
+  const claimedAt = useClaimedTimestamps(address);
+  const [timeRange, setTimeRange] = React.useState("90d");
 
   React.useEffect(() => {
     if (isMobile) setTimeRange("7d");
   }, [isMobile]);
 
-  const filteredData = React.useMemo(() => {
-    const days = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
-    return series.slice(-days);
-  }, [series, timeRange]);
-
-  const max = Math.max(1, ...filteredData.map((row) => (row.locks ?? 0) + (row.claims ?? 0)));
+  const filteredData = React.useMemo(
+    () => buildSeries(rows, claimedAt, timeRange),
+    [rows, claimedAt, timeRange],
+  );
+  const hasActivity = filteredData.some((d) => d.locks > 0 || d.claims > 0);
 
   return (
-    <Card className="@container/card shadow-none ring-0">
+    <Card className="dash-chart-card @container/card shadow-none ring-0">
       <CardHeader>
         <CardTitle>Lock activity</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">Locks created vs claims</span>
-          <span className="@[540px]/card:hidden">Live activity</span>
+          <span className="hidden @[540px]/card:block">
+            Locks created vs claimed for this wallet
+          </span>
+          <span className="@[540px]/card:hidden">This wallet</span>
         </CardDescription>
         <CardAction>
-          <div className="hidden items-center gap-1 rounded-lg border border-border p-0.5 @[767px]/card:flex">
-            {(
-              [
-                ["90d", "Last 3 months"],
-                ["30d", "Last 30 days"],
-                ["7d", "Last 7 days"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={cn(
-                  "cursor-pointer rounded-md px-3 py-1 text-sm",
-                  timeRange === value
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-                onClick={() => setTimeRange(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            multiple={false}
+            value={timeRange ? [timeRange] : []}
+            onValueChange={(value) => {
+              setTimeRange(value[0] ?? "90d");
+            }}
+            variant="outline"
+            className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
+          >
+            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
+            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
+            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+          </ToggleGroup>
+
+          <Select
+            value={timeRange}
+            onValueChange={(value) => {
+              setTimeRange(value);
+            }}
+            className="@[767px]/card:hidden"
+          >
           <Select
             value={timeRange}
             onValueChange={(value) => {
@@ -99,35 +219,77 @@ export function ChartAreaInteractive() {
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {filteredData.length === 0 ? (
-          <div className="flex h-[180px] items-center justify-center text-sm text-white/70">
-            No activity in this window yet.
+        {pending ? (
+          <div className="h-[250px] animate-pulse rounded-xl bg-muted/40" />
+        ) : !hasActivity ? (
+          <div className="flex h-[250px] items-center justify-center rounded-xl bg-black/20 text-sm text-white/80">
+            No lock activity in this window yet.
           </div>
         ) : (
-          <div className="flex h-[180px] items-end gap-px sm:gap-0.5">
-            {filteredData.map((row) => {
-              const locks = row.locks ?? 0;
-              const claims = row.claims ?? 0;
-              const lockH = Math.max(locks ? 6 : 0, Math.round((locks / max) * 160));
-              const claimH = Math.max(claims ? 4 : 0, Math.round((claims / max) * 160));
-              return (
-                <div
-                  key={row.date}
-                  className="flex min-w-0 flex-1 flex-col justify-end gap-px"
-                  title={`${row.date}: ${locks} locks, ${claims} claims`}
-                >
-                  <div
-                    className="w-full rounded-sm bg-white/25"
-                    style={{ height: claimH }}
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[250px] w-full [&_.recharts-cartesian-axis-tick_text]:fill-slate-400"
+          >
+            <AreaChart data={filteredData}>
+              <defs>
+                <linearGradient id="fillLocks" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BRAND} stopOpacity={0.55} />
+                  <stop offset="100%" stopColor={BRAND} stopOpacity={0.04} />
+                </linearGradient>
+                <linearGradient id="fillClaims" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={MUTED} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={MUTED} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="rgba(148, 163, 184, 0.14)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={32}
+                tick={{ fill: "#94a3b8", fontSize: 12 }}
+                tickFormatter={(value) => {
+                  const date = new Date(`${value}T00:00:00Z`);
+                  return date.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC",
+                  });
+                }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => {
+                      return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC",
+                      });
+                    }}
+                    indicator="dot"
                   />
-                  <div
-                    className="w-full rounded-sm bg-[#0050e0]"
-                    style={{ height: lockH }}
-                  />
-                </div>
-              );
-            })}
-          </div>
+                }
+              />
+              <Area
+                dataKey="claims"
+                type="monotone"
+                fill="url(#fillClaims)"
+                stroke={MUTED}
+                strokeWidth={2}
+              />
+              <Area
+                dataKey="locks"
+                type="monotone"
+                fill="url(#fillLocks)"
+                stroke={BRAND}
+                strokeWidth={2.5}
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
         )}
       </CardContent>
     </Card>

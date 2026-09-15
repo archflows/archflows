@@ -355,10 +355,10 @@ export function CreateStreamForm() {
                   canTopup ? "top-up" : null,
                 ]
                   .filter(Boolean)
-                  .join(" · ") || "immutable",
+                  .join(", ") || "immutable",
               },
             ]}
-            note="This uses ArcFlowStream — cancelable payroll / vesting. Anti-dump locks stay on the Locks page."
+            note="This uses ArcFlowStream, cancelable payroll / vesting. Anti-dump locks stay on the Locks page ($10 fee, immutable)."
           />
         }
       >
@@ -370,7 +370,7 @@ export function CreateStreamForm() {
           preferUsdc
           hint={
             symbol && balance !== undefined && decimals !== undefined
-              ? `${symbol} · balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
+              ? `${symbol}, balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}`
               : "Pick a token held by the connected wallet."
@@ -422,7 +422,7 @@ export function CreateStreamForm() {
             <p className="field-hint">
               One row per person. Max {MAX_BATCH}. Amounts use token decimals.
               {payrollRows
-                ? ` · ${payrollRows.rows.length} rows · total ${
+                ? `, ${payrollRows.rows.length} rows, total ${
                     decimals !== undefined
                       ? Number(formatUnits(payrollRows.total, decimals)).toLocaleString("en-US")
                       : ""
@@ -515,7 +515,7 @@ export function CreateStreamForm() {
         {error ? <div className="alert alert-error">{error}</div> : null}
         {createdIds.length > 0 ? (
           <div className="alert alert-warn">
-            Created stream{createdIds.length > 1 ? "s" : ""} ·{" "}
+            Created stream{createdIds.length > 1 ? "s" : ""},{" "}
             {createdIds.slice(0, 8).map((id) => `#${id}`).join(", ")}
             {createdIds.length > 8 ? ` +${createdIds.length - 8} more` : ""}
             {createdTx ? (
@@ -575,7 +575,7 @@ export function CreateStreamForm() {
                       : "Approve & create stream"
                     : mode === "payroll"
                       ? `Create ${payrollRows?.rows.length ?? 0} streams`
-                      : `Create stream → ${shorten(recipientAddress)}`}
+                      : `Create stream to ${shorten(recipientAddress)}`}
             </button>
           )}
         </div>

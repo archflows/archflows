@@ -66,7 +66,17 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
     query: { enabled: Boolean(address && token) },
   });
 
-  if (!c) return null;
+  if (!c) {
+    return (
+      <div className="sk-list-row border-b border-border px-4 py-3" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "14rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   const dec = decimals ?? 18;
   const now = Math.floor(Date.now() / 1000);
   const beforeStart = claimStart !== undefined && now < Number(claimStart);
@@ -92,12 +102,12 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
         <strong>#{id.toString()}</strong>
         <span className="live live-accent">{canceled ? "Canceled" : afterEnd ? "Ended" : beforeStart ? "Scheduled" : "Live"}</span>
         <span className="mono dim" style={{ fontSize: "0.72rem" }}>
-          {symbol ?? "Token"} · deposited{" "}
+          {symbol ?? "Token"}, deposited{" "}
           {deposited !== undefined
             ? Number(formatUnits(deposited, dec)).toLocaleString("en-US", { maximumFractionDigits: 4 })
             : "—"}
           {claimed !== undefined
-            ? ` · claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
+            ? `, claimed ${Number(formatUnits(claimed, dec)).toLocaleString("en-US", {
                 maximumFractionDigits: 4,
               })}`
             : ""}
@@ -105,12 +115,12 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
       </div>
       <p className="mono dim" style={{ margin: "0.3rem 0 0", fontSize: "0.72rem" }}>
         {claimStart && claimEnd
-          ? `${dateFmt.format(new Date(Number(claimStart) * 1000))} → ${dateFmt.format(
+          ? `${dateFmt.format(new Date(Number(claimStart) * 1000))} to ${dateFmt.format(
               new Date(Number(claimEnd) * 1000),
             )}`
           : ""}
         {unclaimed !== undefined
-          ? ` · unclaimed ${Number(formatUnits(unclaimed, dec)).toLocaleString("en-US", {
+          ? `, unclaimed ${Number(formatUnits(unclaimed, dec)).toLocaleString("en-US", {
               maximumFractionDigits: 4,
             })}`
           : ""}
@@ -230,22 +240,24 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
   );
 }
 
-function IndexedCampaign({
-  owner,
-  index,
-  txMap,
-}: {
-  owner: `0x${string}`;
-  index: number;
-  txMap?: Map<string, string>;
-}) {
-  const { data: id } = useReadContract({
+function IndexedCampaign({ owner, index, txMap }: { owner: `0x${string}`; index: number; txMap?: Map<string, string>; }) {
+  const { data: id, isPending } = useReadContract({
     address: ARCFLOW_DISTRIBUTOR_ADDRESS,
     abi: distributorAbi,
     functionName: "campaignsByFunder",
     args: [owner, BigInt(index)],
   });
-  if (id === undefined) return null;
+  if (isPending || id === undefined) {
+    return (
+      <div className="sk-list-row border-b border-border px-4 py-3" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "14rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   return <CampaignRow id={id} indexedHash={txMap?.get(id.toString())} />;
 }
 

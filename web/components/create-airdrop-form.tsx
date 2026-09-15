@@ -205,7 +205,7 @@ export function CreateAirdropForm() {
 
       <FormShell
         title="Create airdrop campaign"
-        badge="CSV → merkle"
+        badge="CSV to merkle"
         aside={
           <PreviewPanel
             title="Campaign preview"
@@ -245,7 +245,7 @@ export function CreateAirdropForm() {
                 value: vestDuration === 0 ? "Instant" : formatDuration(vestDuration),
               },
             ]}
-            note="On create, a proof JSON downloads automatically — share it with recipients so they can claim."
+            note="On create, a proof JSON downloads automatically. Share it with recipients so they can claim."
           />
         }
       >
@@ -256,7 +256,7 @@ export function CreateAirdropForm() {
           onChange={setToken}
           hint={
             symbol && balance !== undefined && decimals !== undefined
-              ? `${symbol} · balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
+              ? `${symbol}, balance ${Number(formatUnits(balance, decimals)).toLocaleString("en-US", {
                   maximumFractionDigits: 4,
                 })}`
               : "Token you will deposit for the drop."

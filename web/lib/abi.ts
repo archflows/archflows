@@ -143,6 +143,13 @@ export const arcFlowAbi = [
     outputs: [{ type: "uint256" }],
   },
   {
+    type: "function",
+    name: "nextId",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
     type: "event",
     name: "Locked",
     inputs: [
@@ -162,6 +169,15 @@ export const arcFlowAbi = [
     inputs: [
       { name: "id", type: "uint256", indexed: true },
       { name: "from", type: "address", indexed: true },
+      { name: "amount", type: "uint128", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "Claimed",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "beneficiary", type: "address", indexed: true },
       { name: "amount", type: "uint128", indexed: false },
     ],
   },

@@ -320,7 +320,17 @@ function DealRow({
   const status = d?.[6];
   const { symbol, decimals } = useTokenMeta(token);
 
-  if (!d) return null;
+  if (!d) {
+    return (
+      <div className="sk-list-row" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "12rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
   const dec = decimals ?? 18;
   const statusLabel = ["Empty", "Funded", "Released", "Refunded"][status ?? 0] ?? "?";
   const now = Math.floor(Date.now() / 1000);
@@ -368,7 +378,7 @@ function DealRow({
       </div>
       <p className="mono dim" style={{ margin: "0.3rem 0 0", fontSize: "0.72rem" }}>
         {tab === "buying" ? `seller ${shorten(seller)}` : `buyer ${shorten(buyer)}`}
-        {unlockAt ? ` · buyer refund after ${dateFmt.format(new Date(Number(unlockAt) * 1000))}` : ""}
+        {unlockAt ? `, buyer refund after ${dateFmt.format(new Date(Number(unlockAt) * 1000))}` : ""}
       </p>
       <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.55rem", flexWrap: "wrap" }}>
         <TxExplorerLink hash={txHash ?? indexedHash} />
@@ -390,6 +400,27 @@ function DealRow({
       {error ? <p className="field-error">{error}</p> : null}
     </div>
   );
+}
+
+function IndexedDeal({ owner, index, tab }: { owner: `0x${string}`; index: number; tab: Tab }) {
+  const { data: id, isPending } = useReadContract({
+    address: ARCFLOW_ESCROW_ADDRESS,
+    abi: escrowAbi,
+    functionName: tab === "buying" ? "dealsByBuyer" : "dealsBySeller",
+    args: [owner, BigInt(index)],
+  });
+  if (isPending || id === undefined) {
+    return (
+      <div className="sk-list-row" aria-hidden>
+        <div className="skeleton" style={{ width: "2.25rem", height: "2.25rem", borderRadius: 8 }} />
+        <div className="sk-stack" style={{ flex: 1, gap: "0.35rem" }}>
+          <div className="skeleton" style={{ width: "8rem", height: "0.7rem", borderRadius: 999 }} />
+          <div className="skeleton" style={{ width: "12rem", height: "0.55rem", borderRadius: 999 }} />
+        </div>
+      </div>
+    );
+  }
+  return <DealRow id={id} tab={tab} />;
 }
 
 function DealList({
@@ -472,6 +503,7 @@ function DealList({
       })}
     </div>
   );
+}
 }
 
 export function MyEscrowsPanel() {

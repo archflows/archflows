@@ -3,23 +3,28 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+/** Landing blocks that should enter one-by-one, Notion-style. */
 const SELECTOR = [
-  ".reveal-target",
-  ".hero-copy",
-  ".hero-visual",
-  ".mini-stat",
-  ".lp-rail",
+  ".lp-hero .hero-copy > *",
+  ".lp-hero-shot",
+  ".lp-marquee",
+  ".lp .lp-head",
   ".lp-card",
-  ".lp-step",
+  ".lp-flow-row",
+  ".lp-proof-copy > *",
   ".lp-proof-panel",
-  ".box-grid > .box",
-  ".cta-box",
-  ".faq-item",
+  ".lp-pillar",
+  ".lp-testimonials-head > *",
+  ".lp-testimonials-rows",
+  ".lp-faq-list .faq-item",
+  ".lp-cta > *",
 ].join(",");
 
+const GROUP_SEL = ".lp-hero, .lp-marquee, .lp-section, .lp-testimonials";
+
 /**
- * Staggered entry animation, desktop only — mobile and reduced-motion opt out
- * so first paint stays cheap. Skipped on dashboard/auth.
+ * Staggered section reveals for marketing pages.
+ * Reduced-motion users get an instant paint. Mobile keeps a lighter rise.
  */
 export function ScrollReveal() {
   const pathname = usePathname();
@@ -32,25 +37,23 @@ export function ScrollReveal() {
 
     const root = document.documentElement;
 
-    // Skip DOM work entirely on app routes — pathname changes on every nav.
     if (bare) {
-      root.classList.remove("reveal-on");
+      root.classList.remove("reveal-on", "reveal-mobile");
       return;
     }
-
-    const skip =
-      window.matchMedia("(max-width: 900px)").matches ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     root.querySelectorAll(".reveal").forEach((el) => {
       el.classList.remove("reveal", "is-in");
       (el as HTMLElement).style.removeProperty("--ri");
     });
 
-    if (skip) {
-      root.classList.remove("reveal-on");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      root.classList.remove("reveal-on", "reveal-mobile");
       return;
     }
+
+    const mobile = window.matchMedia("(max-width: 900px)").matches;
+    root.classList.toggle("reveal-mobile", mobile);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -60,28 +63,36 @@ export function ScrollReveal() {
           observer.unobserve(entry.target);
         }
       },
-      { rootMargin: "0px 0px -6% 0px", threshold: 0.06 },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
     );
 
     const frame = requestAnimationFrame(() => {
-      const nodes = document.querySelectorAll<HTMLElement>(SELECTOR);
-      nodes.forEach((el, i) => {
+      const nodes = Array.from(document.querySelectorAll<HTMLElement>(SELECTOR));
+      const groupIndex = new Map<Element, number>();
+
+      nodes.forEach((el) => {
+        const group = el.closest(GROUP_SEL) ?? root;
+        const i = groupIndex.get(group) ?? 0;
+        groupIndex.set(group, i + 1);
+
         el.classList.add("reveal");
-        el.style.setProperty("--ri", String(i % 6));
+        el.style.setProperty("--ri", String(Math.min(i, 10)));
+
         const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.94 && rect.bottom > 40) {
+        if (rect.top < window.innerHeight * 0.92 && rect.bottom > 24) {
           el.classList.add("is-in");
         } else {
           observer.observe(el);
         }
       });
+
       root.classList.add("reveal-on");
     });
 
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
-      root.classList.remove("reveal-on");
+      root.classList.remove("reveal-on", "reveal-mobile");
     };
   }, [pathname]);
 

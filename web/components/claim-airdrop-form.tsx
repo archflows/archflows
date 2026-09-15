@@ -181,7 +181,7 @@ export function ClaimAirdropForm() {
               label: "Window",
               value:
                 campaign && campaign[5] && campaign[6]
-                  ? `${dateFmt.format(new Date(Number(campaign[5]) * 1000))} → ${dateFmt.format(
+                  ? `${dateFmt.format(new Date(Number(campaign[5]) * 1000))} to ${dateFmt.format(
                       new Date(Number(campaign[6]) * 1000),
                     )}`
                   : "—",

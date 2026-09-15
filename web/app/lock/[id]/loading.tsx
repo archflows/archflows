@@ -1,5 +1,5 @@
-import { ProofPageSkeleton } from "@/components/page-skeleton";
+import { LockProofSkeleton } from "@/components/skeletons";
 
 export default function LockLoading() {
-  return <ProofPageSkeleton />;
+  return <LockProofSkeleton />;
 }
