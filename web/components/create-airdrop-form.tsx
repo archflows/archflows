@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { decodeEventLog, formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
@@ -18,11 +19,14 @@ import {
   toLocalInput,
 } from "@/lib/form-time";
 import { downloadProofJson, treeFromCsv, type MerkleTree } from "@/lib/merkle";
-import { arcGas, MAX_U128, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, eventArgs, MAX_U128, txMessage } from "@/lib/tx";
+import { clickOrExplain } from "@/lib/guard-click";
 import { useMounted } from "@/hooks/useMounted";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { resolveTs, upsertCampaign } from "@/lib/backend";
+import { proofPath } from "@/lib/proof";
 
 const MIN_WINDOW = HOUR;
 
@@ -44,6 +48,7 @@ export function CreateAirdropForm() {
   const [cliffHours, setCliffHours] = useState("0");
   const [tree, setTree] = useState<MerkleTree | null>(null);
   const [createdId, setCreatedId] = useState("");
+  const [createdTx, setCreatedTx] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "creating">("idle");
 
@@ -127,7 +132,7 @@ export function CreateAirdropForm() {
       return;
     }
     if (notDeployed) {
-      setError("Set NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS.");
+      setError("Distributor contract is not configured.");
       return;
     }
 
@@ -143,7 +148,7 @@ export function CreateAirdropForm() {
           args: [ARCFLOW_DISTRIBUTOR_ADDRESS, deposit],
           ...arcGas,
         });
-        await publicClient.waitForTransactionReceipt({ hash });
+        await confirmTx(publicClient, hash);
       }
 
       setStep("creating");
@@ -162,19 +167,24 @@ export function CreateAirdropForm() {
         ],
         ...arcGas,
       });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
-      let idStr = "";
-      for (const log of receipt.logs) {
-        try {
-          const parsed = decodeEventLog({ abi: distributorAbi, data: log.data, topics: log.topics });
-          if (parsed.eventName === "CampaignCreated") {
-            idStr = parsed.args.id.toString();
-            setCreatedId(idStr);
-            break;
-          }
-        } catch {
-          // skip
-        }
+      const receipt = await confirmTx(publicClient, tx);
+      const created = eventArgs<{ id: bigint }>(receipt, distributorAbi, "CampaignCreated");
+      const idStr = created[0]?.id.toString() ?? "";
+      if (idStr) setCreatedId(idStr);
+      if (idStr) setCreatedTx(tx);
+      if (idStr) {
+        await upsertCampaign({
+          id: idStr,
+          token: tokenAddress,
+          funder: address,
+          merkleRoot: liveTree.root,
+          deposited: deposit.toString(),
+          claimStart: resolveTs(startArg, nowSec()),
+          claimEnd,
+          vestDuration,
+          vestCliffDelay: vestCliff,
+          txHash: tx,
+        });
       }
       setTree(liveTree);
       downloadProofJson(liveTree, idStr || undefined);
@@ -189,8 +199,7 @@ export function CreateAirdropForm() {
     <div className="space-y-5">
       {notDeployed ? (
         <div className="alert alert-warn">
-          Distributor not configured. Set{" "}
-          <code className="mono">NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS</code>.
+          Distributor contract is not configured.
         </div>
       ) : null}
 
@@ -339,7 +348,8 @@ export function CreateAirdropForm() {
         {error ? <div className="alert alert-error">{error}</div> : null}
         {createdId ? (
           <div className="alert alert-warn">
-            Campaign #{createdId} created. Proof JSON downloaded.
+            Campaign #{createdId} created. Proof JSON downloaded.{" "}
+            <Link href={proofPath("airdrop", createdTx, createdId)}>Open proof</Link>
             {tree ? (
               <button
                 type="button"
@@ -360,8 +370,27 @@ export function CreateAirdropForm() {
             <button
               type="button"
               className="btn lg block"
-              disabled={!ready || busy || notDeployed}
-              onClick={submit}
+              disabled={busy}
+              onClick={() =>
+                clickOrExplain(
+                  ready
+                    ? null
+                    : notDeployed
+                    ? "Distributor contract is not configured."
+                    : !tokenAddress
+                      ? "Select a token"
+                      : !liveTree || !deposit
+                        ? "Paste a valid recipients CSV."
+                        : overBalance
+                          ? "Deposit exceeds your balance."
+                          : badWindow
+                            ? "Claim window must be at least 1 hour."
+                            : badVest
+                              ? "Cliff cannot exceed vest duration."
+                              : null,
+                  () => void submit(),
+                )
+              }
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {step === "approving"

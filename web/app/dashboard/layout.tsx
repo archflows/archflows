@@ -1,12 +1,13 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type CSSProperties, type ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
-import { ARC_TESTNET } from "@/lib/chain";
+import { DashboardBootSkeleton } from "@/components/page-skeleton";
+import { arcChain } from "@/lib/chain";
+import { pingBackend } from "@/lib/backend";
 import { useMounted } from "@/hooks/useMounted";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -17,13 +18,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { isConnected, chainId, isConnecting, isReconnecting } = useAccount();
   const { switchChain } = useSwitchChain();
+  const [shellReady, setShellReady] = useState(false);
 
-  const wrongChain = mounted && isConnected && chainId !== ARC_TESTNET.id;
+  const wrongChain = mounted && isConnected && chainId !== arcChain.id;
 
   // Only block the first wallet settle. Do not tear down the shell on brief
   // isReconnecting flickers — that made every in-dashboard nav feel like a reload.
   const bootstrapping =
     !mounted || ((!isConnected) && (isConnecting || isReconnecting));
+
+  useEffect(() => {
+    if (mounted && isConnected) setShellReady(true);
+  }, [mounted, isConnected]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -32,13 +38,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [mounted, isConnecting, isReconnecting, isConnected, pathname, router]);
 
-  if (bootstrapping || !isConnected) {
-    return (
-      <div className="flex min-h-svh items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        Checking session…
-      </div>
-    );
+  useEffect(() => {
+    if (!mounted || !isConnected) return;
+    void pingBackend();
+  }, [mounted, isConnected]);
+
+  if (!shellReady && (bootstrapping || !isConnected)) {
+    return <DashboardBootSkeleton />;
   }
 
   if (wrongChain) {
@@ -46,9 +52,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="text-lg font-semibold">Wrong network</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Switch to Arc Testnet to use the admin dashboard.
+          Switch to the Arc network to use the dashboard.
         </p>
-        <Button onClick={() => switchChain({ chainId: ARC_TESTNET.id })}>Switch to Arc</Button>
+        <Button onClick={() => switchChain({ chainId: arcChain.id })}>Switch network</Button>
       </div>
     );
   }

@@ -1,14 +1,16 @@
 "use client";
 
-import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
-import { ARC_TESTNET } from "@/lib/chain";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount, useSwitchChain } from "wagmi";
+import { NETWORK_NAME, arcChain } from "@/lib/chain";
 import { useMounted } from "@/hooks/useMounted";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
+import { toast } from "sonner";
 
 export function ConnectButton() {
   const mounted = useMounted();
+  const { open } = useAppKit();
   const { address, isConnected, chainId } = useAccount();
-  const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
 
   if (!mounted) {
@@ -23,10 +25,10 @@ export function ConnectButton() {
     return <WalletConnectButton size="sm" label="Connect" compact />;
   }
 
-  if (chainId !== ARC_TESTNET.id) {
+  if (chainId !== arcChain.id) {
     return (
-      <button type="button" className="btn sm" onClick={() => switchChain({ chainId: ARC_TESTNET.id })}>
-        Switch to Arc
+      <button type="button" className="btn sm" onClick={() => switchChain({ chainId: arcChain.id })}>
+        Switch to {NETWORK_NAME}
       </button>
     );
   }
@@ -35,8 +37,17 @@ export function ConnectButton() {
     <button
       type="button"
       className="btn ghost sm mono"
-      title="Disconnect"
-      onClick={() => disconnect()}
+      title="Wallet"
+      onClick={() => {
+        void (async () => {
+          try {
+            await open({ view: "Account" });
+          } catch (error) {
+            console.warn("[wallet]", error);
+            toast.error("Could not open the wallet modal.");
+          }
+        })();
+      }}
     >
       {address?.slice(0, 6)}…{address?.slice(-4)}
     </button>

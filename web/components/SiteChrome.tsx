@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { HashNavLink } from "@/components/hash-nav-link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SpaceBackdrop } from "@/components/SpaceBackdrop";
+import { ARC_CHAIN_ID, EXPLORER_URL, FAUCET_URL, NETWORK_NAME, isTestnet } from "@/lib/chain";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -41,16 +43,19 @@ export function SiteChrome({ children }: { children: ReactNode }) {
               <div className="footer-col-title">Product</div>
               <Link href="/dashboard/locks">Locks</Link>
               <Link href="/dashboard/vesting">Vesting</Link>
+              <Link href="/dashboard/streams">Streams</Link>
               <Link href="/dashboard">Dashboard</Link>
               <Link href="/auth">Sign in</Link>
             </div>
 
             <div className="footer-col">
               <div className="footer-col-title">Network</div>
-              <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">
-                USDC faucet
-              </a>
-              <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">
+              {isTestnet ? (
+                <a href={FAUCET_URL} target="_blank" rel="noreferrer">
+                  USDC faucet
+                </a>
+              ) : null}
+              <a href={EXPLORER_URL} target="_blank" rel="noreferrer">
                 Arcscan
               </a>
               <a href="https://docs.arc.io" target="_blank" rel="noreferrer">
@@ -60,15 +65,17 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
             <div className="footer-col">
               <div className="footer-col-title">Company</div>
-              <a href="/#product">Product</a>
-              <a href="/#how">How it works</a>
-              <a href="/#faq">FAQ</a>
+              <HashNavLink href="/#product">Product</HashNavLink>
+              <HashNavLink href="/#how">How it works</HashNavLink>
+              <HashNavLink href="/#faq">FAQ</HashNavLink>
             </div>
           </div>
 
           <div className="footer-bottom">
             <span>© {new Date().getFullYear()} ArcFlow — Lock. Vest. Stream. On Arc.</span>
-            <span>Arc Testnet · chain 5042002 · gas in USDC</span>
+            <span>
+              {NETWORK_NAME} · chain {ARC_CHAIN_ID} · gas in USDC
+            </span>
           </div>
         </div>
       </footer>

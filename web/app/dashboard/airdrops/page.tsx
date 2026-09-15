@@ -1,10 +1,12 @@
-import { ComingSoon } from "@/components/ComingSoon";
+"use client";
+
+import { ComingSoon } from "@/components/coming-soon";
 
 export default function DashboardAirdropsPage() {
   return (
     <ComingSoon
       title="Airdrops"
-      description="Campaign creation, claims, and management are on the way. Check back soon."
+      body="Merkle campaigns are not live in the app yet. Locks and vesting are available now."
     />
   );
 }

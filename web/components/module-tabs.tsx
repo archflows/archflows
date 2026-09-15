@@ -21,6 +21,7 @@ export function ModuleTabs({
           <Link
             key={item.href}
             href={item.href}
+            prefetch={false}
             className={cn("seg-btn", active && "on")}
             style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
           >

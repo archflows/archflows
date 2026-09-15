@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -7,8 +8,13 @@ import { Loader2 } from "lucide-react";
 import { erc20Abi, stakingAbi } from "@/lib/abi";
 import { ARCFLOW_STAKING_ADDRESS } from "@/lib/chain";
 import { ZERO, formatDuration, shorten } from "@/lib/form-time";
-import { arcGas, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, txMessage } from "@/lib/tx";
+import { upsertStake } from "@/lib/backend";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
+import { TxExplorerLink } from "@/components/TxExplorerLink";
+import { useTxHashMap } from "@/hooks/useTxHashMap";
+import { proofPath } from "@/lib/proof";
+import { clickOrExplain } from "@/lib/guard-click";
 
 export function StakePoolPanel() {
   const publicClient = usePublicClient();
@@ -19,6 +25,8 @@ export function StakePoolPanel() {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const { data: poolTxMap } = useTxHashMap("pools", address);
 
   const id = poolId.trim() && /^\d+$/.test(poolId.trim()) ? BigInt(poolId.trim()) : undefined;
   const notDeployed = ARCFLOW_STAKING_ADDRESS === ZERO;
@@ -108,7 +116,8 @@ export function StakePoolPanel() {
           args: [ARCFLOW_STAKING_ADDRESS, value],
           ...arcGas,
         });
-        await publicClient.waitForTransactionReceipt({ hash: a });
+        await confirmTx(publicClient, a);
+        setTxHash(a);
       }
       const hash = await writeContractAsync({
         address: ARCFLOW_STAKING_ADDRESS,
@@ -117,7 +126,18 @@ export function StakePoolPanel() {
         args: [id, value],
         ...arcGas,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await confirmTx(publicClient, hash);
+      setTxHash(hash);
+      if (address && id !== undefined) {
+        const next = (stake?.[0] ?? 0n) + value;
+        const unlock = Math.floor(Date.now() / 1000) + Number(minLock ?? 0n);
+        await upsertStake(id.toString(), {
+          account: address,
+          amount: next.toString(),
+          unlockAt: unlock,
+          txHash: hash,
+        });
+      }
       setAmount("");
       await refresh();
     } catch (e) {
@@ -140,7 +160,18 @@ export function StakePoolPanel() {
         args: [id, value],
         ...arcGas,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await confirmTx(publicClient, hash);
+      setTxHash(hash);
+      if (address && id !== undefined) {
+        const current = stake?.[0] ?? 0n;
+        const next = current > value ? current - value : 0n;
+        await upsertStake(id.toString(), {
+          account: address,
+          amount: next.toString(),
+          unlockAt: Number(stake?.[3] ?? 0n),
+          txHash: hash,
+        });
+      }
       setAmount("");
       await refresh();
     } catch (e) {
@@ -162,7 +193,8 @@ export function StakePoolPanel() {
         args: [id],
         ...arcGas,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await confirmTx(publicClient, hash);
+      setTxHash(hash);
       await refresh();
     } catch (e) {
       setError(txMessage(e));
@@ -251,19 +283,61 @@ export function StakePoolPanel() {
           />
         </div>
         {error ? <div className="alert alert-error">{error}</div> : null}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-          <button type="button" className="btn sm" disabled={busy || id === undefined || !amount} onClick={doStake}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", alignItems: "center" }}>
+          <TxExplorerLink hash={txHash ?? (id !== undefined ? poolTxMap?.get(id.toString()) : undefined)} />
+          {id !== undefined ? (
+            <Link
+              className="btn sm ghost"
+              href={proofPath(
+                "staking",
+                txHash ?? poolTxMap?.get(id.toString()),
+                id,
+              )}
+            >
+              Proof
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            className="btn sm"
+            disabled={busy}
+            onClick={() =>
+              clickOrExplain(
+                id === undefined ? "Enter a pool id." : !amount ? "Enter an amount." : null,
+                () => void doStake(),
+              )
+            }
+          >
             {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
             Stake
           </button>
-          <button type="button" className="btn sm" disabled={busy || id === undefined || !amount} onClick={doUnstake}>
+          <button
+            type="button"
+            className="btn sm"
+            disabled={busy}
+            onClick={() =>
+              clickOrExplain(
+                id === undefined ? "Enter a pool id." : !amount ? "Enter an amount." : null,
+                () => void doUnstake(),
+              )
+            }
+          >
             Unstake
           </button>
           <button
             type="button"
             className="btn sm"
-            disabled={busy || id === undefined || !earned || earned === 0n}
-            onClick={doClaim}
+            disabled={busy}
+            onClick={() =>
+              clickOrExplain(
+                id === undefined
+                  ? "Enter a pool id."
+                  : !earned || earned === 0n
+                    ? "No rewards to claim."
+                    : null,
+                () => void doClaim(),
+              )
+            }
           >
             Claim rewards
           </button>

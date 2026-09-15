@@ -11,6 +11,8 @@ import {
   Waves,
 } from "lucide-react";
 import { LandingHeroMock } from "@/components/LandingHeroMock";
+import { LandingLiveCounts, LandingLiveProof } from "@/components/LandingLiveProof";
+import { NETWORK_NAME, isTestnet } from "@/lib/chain";
 
 const RAIL = ["Built on Arc", "Gas in USDC", "Sub-second finality", "Public proof URL"];
 
@@ -20,12 +22,14 @@ const FEATURED = [
     title: "Token lock",
     body: "Seal an ERC-20 amount until a fixed date. No cancel, no shorten, no early exit — not even for the creator.",
     meta: "Immutable · $10 USDC fee",
+    href: "/auth?next=/dashboard/locks",
   },
   {
     icon: Clock3,
     title: "Linear vesting",
     body: "Cliff, then per-second release to a beneficiary. Teams and investors claim only what has accrued.",
     meta: "start ≤ cliff ≤ end",
+    href: "/auth?next=/dashboard/vesting",
   },
 ];
 
@@ -34,21 +38,25 @@ const MODULES = [
     icon: Waves,
     title: "Streams",
     body: "Payroll and continuous unlocks with CSV batch create, top-up, and transfer.",
+    href: "/auth?next=/dashboard/streams",
   },
   {
     icon: Gift,
     title: "Airdrops",
     body: "Merkle campaigns with instant claim or vest-to-stream. Clawback leftover after the window.",
+    soon: true,
   },
   {
     icon: Handshake,
     title: "Escrow",
     body: "Fund a deal, release on delivery, or refund — both sides stay on-chain.",
+    soon: true,
   },
   {
     icon: Coins,
     title: "Staking",
     body: "Permissionless reward pools. Restake does not relock lots that already unlocked.",
+    soon: true,
   },
 ];
 
@@ -56,7 +64,7 @@ const STEPS = [
   {
     n: "01",
     title: "Connect a wallet",
-    body: "Use any EVM wallet on Arc Testnet. The same USDC balance pays gas — top up at the Circle faucet if needed.",
+    body: `Use any EVM wallet on ${NETWORK_NAME}. The same USDC balance pays gas${isTestnet ? " — top up at the Circle faucet if needed" : ""}.`,
   },
   {
     n: "02",
@@ -66,7 +74,7 @@ const STEPS = [
   {
     n: "03",
     title: "Share the proof",
-    body: "Publish /lock/{id}. Holders verify amount, countdown, and beneficiary on-chain — no dashboard login.",
+    body: "Share a public proof page. Holders verify amount, countdown, and beneficiary — no dashboard login.",
   },
 ];
 
@@ -93,7 +101,9 @@ const FAQ = [
   },
   {
     q: "Is this ready for mainnet?",
-    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only — not production funds.",
+    a: isTestnet
+      ? "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only — not production funds."
+      : "You are on Arc mainnet. Contracts may not be externally audited — only use funds you can afford to risk.",
   },
 ];
 
@@ -105,7 +115,9 @@ export default function LandingPage() {
           <div className="hero-copy">
             <p className="lp-kicker">
               <span className="pulse-dot" />
-              Live on Arc Testnet
+              Live on {NETWORK_NAME}
+              {" · "}
+              <LandingLiveCounts />
             </p>
             <h1>Lock and vest tokens on Arc</h1>
             <p className="hero-lead">
@@ -117,9 +129,9 @@ export default function LandingPage() {
                 Launch app
                 <ArrowRight className="size-4" />
               </Link>
-              <Link className="btn ghost lg" href="/#product">
+              <a className="btn ghost lg" href="#product">
                 View products
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -152,7 +164,7 @@ export default function LandingPage() {
 
         <div className="lp-bento">
           {FEATURED.map((item) => (
-            <Link className="lp-card lp-bento-lg" href="/auth" key={item.title}>
+            <Link className="lp-card lp-bento-lg" href={item.href} key={item.title}>
               <span className="lp-icon">
                 <item.icon className="size-4" />
               </span>
@@ -164,18 +176,31 @@ export default function LandingPage() {
               <span className="lp-meta">{item.meta}</span>
             </Link>
           ))}
-          {MODULES.map((item) => (
-            <Link className="lp-card lp-bento-sm" href="/auth" key={item.title}>
-              <span className="lp-icon">
-                <item.icon className="size-4" />
-              </span>
-              <div className="lp-product-top">
-                <h3>{item.title}</h3>
-                <ArrowUpRight className="lp-card-arrow size-4" />
+          {MODULES.map((item) =>
+            item.soon || !item.href ? (
+              <div className="lp-card lp-bento-sm lp-card-soon" key={item.title}>
+                <span className="lp-icon">
+                  <item.icon className="size-4" />
+                </span>
+                <div className="lp-product-top">
+                  <h3>{item.title}</h3>
+                  <span className="lp-soon">Coming soon</span>
+                </div>
+                <p>{item.body}</p>
               </div>
-              <p>{item.body}</p>
-            </Link>
-          ))}
+            ) : (
+              <Link className="lp-card lp-bento-sm" href={item.href} key={item.title}>
+                <span className="lp-icon">
+                  <item.icon className="size-4" />
+                </span>
+                <div className="lp-product-top">
+                  <h3>{item.title}</h3>
+                  <ArrowUpRight className="lp-card-arrow size-4" />
+                </div>
+                <p>{item.body}</p>
+              </Link>
+            ),
+          )}
         </div>
       </section>
 
@@ -208,57 +233,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="lp-proof-panel">
-            <div className="lp-proof-chrome">
-              <span className="lp-proof-dots" aria-hidden>
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="mono dim">arcflow.app/lock/42</span>
-            </div>
-            <div className="lp-proof-body">
-              <div className="lp-proof-title">
-                <div>
-                  <p className="lp-eyebrow" style={{ marginBottom: 6 }}>
-                    Vault position
-                  </p>
-                  <h3>Lock #0042</h3>
-                </div>
-                <span className="live live-accent">
-                  <span className="pulse-dot" />
-                  Sealed
-                </span>
-              </div>
-              <div className="lp-proof-stats">
-                <div>
-                  <span>Locked amount</span>
-                  <strong>1,250,000 TOKEN</strong>
-                </div>
-                <div>
-                  <span>Fully unlocks</span>
-                  <strong>12 Jun 2027</strong>
-                </div>
-                <div>
-                  <span>Release</span>
-                  <strong>Hard lock</strong>
-                </div>
-                <div>
-                  <span>Claimable now</span>
-                  <strong>0</strong>
-                </div>
-              </div>
-              <div className="lp-proof-meter">
-                <div className="lp-proof-meter-row">
-                  <span>Time elapsed</span>
-                  <span>68%</span>
-                </div>
-                <div className="meter">
-                  <div className="meter-fill" style={{ width: "68%" }} />
-                </div>
-              </div>
-            </div>
-          </div>
+          <LandingLiveProof />
         </div>
       </section>
 
@@ -305,7 +280,7 @@ export default function LandingPage() {
             <p className="lp-eyebrow">
               Get started
             </p>
-            <h2>Open the app on Arc Testnet</h2>
+            <h2>Open the app on {NETWORK_NAME}</h2>
             <p className="lead" style={{ marginBottom: 0 }}>
               Two minutes to create a lock and a proof URL. Not for production funds.
             </p>

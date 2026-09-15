@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ConnectButton } from "@/components/ConnectButton";
 import { BrandLogo } from "@/components/BrandLogo";
+import { HashNavLink } from "@/components/hash-nav-link";
+import { NETWORK_BADGE } from "@/lib/chain";
 import { cn } from "@/lib/utils";
 
 const MARKETING = [
@@ -32,16 +34,16 @@ export function SiteHeader() {
 
         <nav className="nav-mid">
           {MARKETING.map((link) => (
-            <Link key={link.href} href={link.href} className="nav-link">
+            <HashNavLink key={link.href} href={link.href} className="nav-link">
               {link.label}
-            </Link>
+            </HashNavLink>
           ))}
         </nav>
 
         <div className="nav-end">
           <span className="live live-accent hide-mobile">
             <span className="pulse-dot" />
-            Testnet
+            {NETWORK_BADGE}
           </span>
           <ConnectButton />
           <Link href="/auth" className="btn sm hide-mobile">
@@ -63,9 +65,9 @@ export function SiteHeader() {
       <div className={cn("mobile-drawer", open && "open")}>
         <div className="shell mobile-drawer-inner">
           {MARKETING.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <HashNavLink key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}
-            </Link>
+            </HashNavLink>
           ))}
           <Link href="/auth" className="btn" style={{ marginTop: "0.75rem" }}>
             Launch app

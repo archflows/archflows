@@ -2,22 +2,29 @@
 
 import dynamic from "next/dynamic";
 import { SectionCards } from "@/components/section-cards";
-import data from "./data.json";
 
 const ChartAreaInteractive = dynamic(
-  () =>
-    import("@/components/chart-area-interactive").then((m) => m.ChartAreaInteractive),
+  () => import("@/components/chart-area-interactive").then((m) => m.ChartAreaInteractive),
   {
     ssr: false,
-    loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/40" />,
+    loading: () => <div className="skeleton h-[220px] rounded-xl" />,
   },
 );
 
-const DataTable = dynamic(
-  () => import("@/components/data-table").then((m) => m.DataTable),
+const ActivityTable = dynamic(
+  () => import("@/components/activity-table").then((m) => m.ActivityTable),
   {
     ssr: false,
-    loading: () => <div className="h-[320px] animate-pulse rounded-xl bg-muted/30" />,
+    loading: () => (
+      <div className="mx-4 rounded-xl border border-white/8 bg-black/20 p-4 lg:mx-6">
+        <div className="skeleton mb-4 h-4 w-32" />
+        <div className="grid gap-3">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="skeleton h-8 w-full rounded-md" />
+          ))}
+        </div>
+      </div>
+    ),
   },
 );
 
@@ -29,7 +36,7 @@ export default function DashboardPage() {
         <div className="px-4 lg:px-6">
           <ChartAreaInteractive />
         </div>
-        <DataTable data={data} />
+        <ActivityTable />
       </div>
     </div>
   );

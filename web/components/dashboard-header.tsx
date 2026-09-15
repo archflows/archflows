@@ -4,11 +4,14 @@ import { usePathname } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { NETWORK_BADGE } from "@/lib/chain";
 
 function titleFromPath(pathname: string) {
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
   if (pathname.startsWith("/dashboard/locks")) return "Locks";
   if (pathname.startsWith("/dashboard/vesting")) return "Vesting";
+  if (pathname.startsWith("/dashboard/streams")) return "Streams";
+  if (pathname.startsWith("/dashboard/escrow")) return "Escrow";
   if (pathname.startsWith("/dashboard/airdrops")) return "Airdrops";
   if (pathname.startsWith("/dashboard/staking")) return "Staking";
   return "Home";
@@ -27,8 +30,8 @@ export function DashboardHeader() {
           className="mx-2 h-4 data-vertical:self-auto"
         />
         <h1 className="text-base font-medium">{title}</h1>
-        <Badge variant="outline" className="ml-auto font-mono text-[10px]">
-          Arc Testnet
+        <Badge variant="outline" className="ml-auto text-[10px]">
+          {NETWORK_BADGE}
         </Badge>
       </div>
     </header>

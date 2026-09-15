@@ -6,3 +6,4 @@ broadcast
 .env
 .env.local
 lcov.info
+.package-lock.json

@@ -7,9 +7,11 @@ import { Loader2 } from "lucide-react";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
 import { ARCFLOW_DISTRIBUTOR_ADDRESS } from "@/lib/chain";
 import { ZERO, dateFmt, shorten } from "@/lib/form-time";
-import { arcGas, txMessage } from "@/lib/tx";
+import { arcGas, confirmTx, eventArgs, txMessage } from "@/lib/tx";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { FormShell, PreviewPanel } from "@/components/forms/form-shell";
+import { upsertClaim } from "@/lib/backend";
+import { clickOrExplain } from "@/lib/guard-click";
 
 type ProofFile = {
   campaignId?: string | null;
@@ -119,7 +121,23 @@ export function ClaimAirdropForm() {
             args: [id, leaf.index, address, leaf.amount, leaf.proof],
             ...arcGas,
           });
-      await publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await confirmTx(publicClient, hash);
+      const claimedEv = eventArgs<{
+        index: bigint;
+        account: `0x${string}`;
+        receiver: `0x${string}`;
+        amount: bigint;
+        streamId: bigint;
+      }>(receipt, distributorAbi, "Claimed");
+      const ev = claimedEv[0];
+      await upsertClaim(id.toString(), {
+        index: (ev?.index ?? leaf.index).toString(),
+        account: address,
+        receiver: ev?.receiver ?? redirect ?? address,
+        amount: (ev?.amount ?? leaf.amount).toString(),
+        streamId: ev && ev.streamId !== 0n ? ev.streamId.toString() : undefined,
+        txHash: hash,
+      });
       setOk(
         redirect
           ? `Claimed to ${shorten(redirect)}`
@@ -224,8 +242,21 @@ export function ClaimAirdropForm() {
         <button
           type="button"
           className="btn lg block"
-          disabled={busy || notDeployed || !leaf || id === undefined || Boolean(claimed)}
-          onClick={submit}
+          disabled={busy}
+          onClick={() =>
+            clickOrExplain(
+              notDeployed
+                ? "Distributor contract is not configured."
+                : id === undefined
+                  ? "Enter a campaign id."
+                  : !leaf
+                    ? "Proof file does not match this wallet."
+                    : claimed
+                      ? "Already claimed."
+                      : null,
+              () => void submit(),
+            )
+          }
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           {claimed ? "Already claimed" : redirect ? "Claim to other wallet" : "Claim"}

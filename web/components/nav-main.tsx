@@ -6,8 +6,10 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 export function NavMain({
@@ -17,9 +19,11 @@ export function NavMain({
     title: string;
     url: string;
     icon?: React.ReactNode;
+    soon?: boolean;
   }[];
 }) {
   const pathname = usePathname();
+  const { state } = useSidebar();
 
   return (
     <SidebarGroup>
@@ -33,14 +37,25 @@ export function NavMain({
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  tooltip={item.title}
+                  tooltip={
+                    state === "collapsed"
+                      ? item.soon
+                        ? `${item.title} · Coming soon`
+                        : item.title
+                      : undefined
+                  }
                   isActive={active}
                   className="rounded-lg"
-                  render={<Link href={item.url} />}
+                  render={<Link href={item.url} prefetch={false} />}
                 >
                   {item.icon}
                   <span>{item.title}</span>
                 </SidebarMenuButton>
+                {item.soon ? (
+                  <SidebarMenuBadge className="text-[10px] font-medium tracking-wide text-muted-foreground">
+                    Soon
+                  </SidebarMenuBadge>
+                ) : null}
               </SidebarMenuItem>
             );
           })}
