@@ -5,6 +5,9 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function titleFromPath(pathname: string) {
+  if (pathname === "/dashboard/contacts/add") return "Add contact";
+  if (pathname === "/dashboard/contacts/list") return "Contact list";
+  if (pathname === "/dashboard/contacts/categories") return "Category settings";
   if (pathname.startsWith("/dashboard/contacts")) return "Contacts";
   if (pathname.startsWith("/dashboard/create")) return "Create lock";
   if (pathname === "/dashboard/locks/positions") return "My locks";

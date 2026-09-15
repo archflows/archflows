@@ -137,7 +137,7 @@ export function ContactAddressInput({
             {contacts.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-white/60">
                 <p>No contacts saved yet.</p>
-                <Link href="/dashboard/contacts" className="mt-2 inline-block text-primary hover:underline">
+                <Link href="/dashboard/contacts/add" className="mt-2 inline-block text-primary hover:underline">
                   Add contacts →
                 </Link>
               </div>
