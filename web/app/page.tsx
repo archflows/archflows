@@ -17,7 +17,7 @@ import { FlowMock } from "@/components/FlowMock";
 import { HeroShot } from "@/components/HeroShot";
 import { LandingLiveProof } from "@/components/LandingLiveProof";
 import { LandingRevealReady } from "@/components/LandingRevealReady";
-import { ARC_CHAIN_ID, EXPLORER_URL, NETWORK_NAME } from "@/lib/chain";
+import { EXPLORER_URL } from "@/lib/chain";
 
 const MARQUEE = [
   { name: "Arc", src: "/marquee/arc.svg" },
@@ -35,53 +35,52 @@ const MARQUEE_SET = [...MARQUEE, ...MARQUEE, ...MARQUEE];
 
 const TESTIMONIALS = [
   {
-    quote:
-      "Finally a lock page our holders can open themselves. Amount, unlock time, beneficiary, all from the contract.",
+    quote: "Holders open the lock page themselves. Amount, time, beneficiary — live from the vault.",
     name: "Rina K.",
     handle: "@rinabuilds",
-    avatar: "RK",
+    avatar: "/testimonials/pfp-rina.png",
   },
   {
-    quote: "Gas in USDC on Arc is such a clean flow. No second token just to pay fees.",
+    quote: "Gas in USDC. No second token just to sign.",
     name: "Devon Miles",
     handle: "@devononchain",
-    avatar: "DM",
+    avatar: "/testimonials/pfp-devon.png",
   },
   {
-    quote: "We shipped team vesting in one afternoon. Cliff, linear release, public proof URL. Done.",
+    quote: "Team vesting in one afternoon. Cliff, linear, proof URL.",
     name: "Maya Chen",
     handle: "@mayavc",
-    avatar: "MC",
+    avatar: "/testimonials/pfp-maya.png",
   },
   {
-    quote: "The share card is what sold us. Investors stop asking for screenshots.",
+    quote: "The share card sold us. Investors stopped asking for screenshots.",
     name: "Omar S.",
     handle: "@omardeploys",
-    avatar: "OS",
+    avatar: "/testimonials/pfp-omar.png",
   },
   {
-    quote: "Immutable locks without an admin cancel path. That is what we needed for community trust.",
+    quote: "Immutable. No admin cancel. That is the trust.",
     name: "Jules Park",
     handle: "@julespark",
-    avatar: "JP",
+    avatar: "/testimonials/pfp-jules.png",
   },
   {
-    quote: "Clean dashboard, fast finality, and the proof page actually reads live state.",
+    quote: "Clean dashboard. Proof page reads live state.",
     name: "Theo N.",
     handle: "@theonodes",
-    avatar: "TN",
+    avatar: "/testimonials/pfp-theo.png",
   },
   {
-    quote: "Cliff then linear release is exactly how we set team unlocks. No spreadsheet drama.",
+    quote: "Cliff then linear. No spreadsheet drama.",
     name: "Ava R.",
     handle: "@avareleases",
-    avatar: "AR",
+    avatar: "/testimonials/pfp-ava.png",
   },
   {
-    quote: "Public proof URL beats Discord screenshots every time. Holders can verify themselves.",
+    quote: "Proof URL beats Discord screenshots every time.",
     name: "Ken I.",
     handle: "@kenindexes",
-    avatar: "KI",
+    avatar: "/testimonials/pfp-ken.png",
   },
 ];
 
@@ -416,7 +415,7 @@ export default function LandingPage() {
           </div>
           <a
             className="lp-testimonials-follow"
-            href="https://x.com"
+            href="https://x.com/arcflows_app"
             target="_blank"
             rel="noreferrer"
           >
@@ -452,7 +451,7 @@ export default function LandingPage() {
                         <div className="lp-quote-meta">
                           <div className="lp-quote-user">
                             <span className="lp-quote-avatar" aria-hidden>
-                              {item.avatar}
+                              <img src={item.avatar} alt="" width={40} height={40} />
                             </span>
                             <span>
                               <strong>{item.name}</strong>
@@ -515,12 +514,6 @@ export default function LandingPage() {
               Arc explorer
             </a>
           </div>
-          <ul className="lp-cta-meta">
-            <li>{NETWORK_NAME}</li>
-            <li>Chain {ARC_CHAIN_ID}</li>
-            <li>$10 USDC fee</li>
-            <li>Gas in USDC</li>
-          </ul>
         </div>
       </section>
       <LandingRevealReady />

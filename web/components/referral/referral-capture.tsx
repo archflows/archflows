@@ -20,7 +20,9 @@ export function ReferralCapture() {
   // boundary onto statically rendered pages.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const code = normalizeCode(new URLSearchParams(window.location.search).get(REFERRAL_PARAM));
+    const fromQuery = normalizeCode(new URLSearchParams(window.location.search).get(REFERRAL_PARAM));
+    const fromPath = normalizeCode(pathname.match(/^\/r\/([^/]+)/i)?.[1]);
+    const code = fromQuery ?? fromPath;
     if (code) rememberCode(code);
   }, [pathname]);
 

@@ -9,32 +9,38 @@ import { findChrome } from "../posts/chrome.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const mode = process.argv.includes("mainnet")
-  ? "mainnet"
-  : process.argv.includes("congrats")
-    ? "congrats"
-    : process.argv.includes("landscape") || process.argv.includes("--landscape")
-      ? "landscape"
-      : "portrait";
-const WIDTH = mode === "portrait" ? 1080 : 1920;
-const HEIGHT = mode === "portrait" ? 1920 : 1080;
+const mode = process.argv.includes("mainnet-portrait")
+  ? "mainnet-portrait"
+  : process.argv.includes("mainnet")
+    ? "mainnet"
+    : process.argv.includes("congrats")
+      ? "congrats"
+      : process.argv.includes("landscape") || process.argv.includes("--landscape")
+        ? "landscape"
+        : "portrait";
+const WIDTH = mode === "portrait" || mode === "mainnet-portrait" ? 1080 : 1920;
+const HEIGHT = mode === "portrait" || mode === "mainnet-portrait" ? 1920 : 1080;
 const PAGE =
-  mode === "mainnet"
-    ? "mainnet.html"
-    : mode === "congrats"
-      ? "congrats.html"
-      : mode === "landscape"
-        ? "landscape.html"
-        : "index.html";
+  mode === "mainnet-portrait"
+    ? "mainnet-portrait.html"
+    : mode === "mainnet"
+      ? "mainnet.html"
+      : mode === "congrats"
+        ? "congrats.html"
+        : mode === "landscape"
+          ? "landscape.html"
+          : "index.html";
 const OUT = path.join(
   __dirname,
-  mode === "mainnet"
-    ? "arcflows-live-mainnet.mp4"
-    : mode === "congrats"
-      ? "arcflows-congrats-arc.mp4"
-      : mode === "landscape"
-        ? "arcflows-intro-landscape.mp4"
-        : "arcflows-intro.mp4"
+  mode === "mainnet-portrait"
+    ? "arcflows-live-mainnet-portrait.mp4"
+    : mode === "mainnet"
+      ? "arcflows-live-mainnet.mp4"
+      : mode === "congrats"
+        ? "arcflows-congrats-arc.mp4"
+        : mode === "landscape"
+          ? "arcflows-intro-landscape.mp4"
+          : "arcflows-intro.mp4"
 );
 const FPS = 30;
 const CHROME = findChrome();
@@ -137,6 +143,11 @@ try {
     String(FPS),
     "-i",
     path.join(framesDir, "%05d.jpg"),
+    "-f",
+    "lavfi",
+    "-i",
+    "anullsrc=channel_layout=stereo:sample_rate=44100",
+    "-shortest",
     "-c:v",
     "libx264",
     "-pix_fmt",
@@ -145,6 +156,10 @@ try {
     "16",
     "-preset",
     "medium",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
     "-movflags",
     "+faststart",
     OUT,

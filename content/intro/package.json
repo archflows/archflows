@@ -6,7 +6,8 @@
     "render": "node render.mjs",
     "render:landscape": "node render.mjs landscape",
     "render:congrats": "node render.mjs congrats",
-    "render:mainnet": "node render.mjs mainnet"
+    "render:mainnet": "node render.mjs mainnet",
+    "render:mainnet:portrait": "node render.mjs mainnet-portrait"
   },
   "dependencies": {
     "puppeteer-core": "^25.11.0"

@@ -43,8 +43,8 @@ export function forgetCode() {
 
 export function referralLink(code: string, origin?: string) {
   const base =
-    origin ?? (typeof window === "undefined" ? "https://archflows.finance" : window.location.origin);
-  return `${base}/?${REFERRAL_PARAM}=${code}`;
+    origin ?? (typeof window === "undefined" ? "https://arcflows.finance" : window.location.origin);
+  return `${base.replace(/\/$/, "")}/r/${code}`;
 }
 
 const USDC_UNIT = 1_000_000n;
