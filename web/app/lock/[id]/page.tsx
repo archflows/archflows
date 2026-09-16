@@ -338,8 +338,9 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
               </div>
 
               <p className="proof-sub">
-                Lock #{displayId} · {isHardLock ? "Hard lock" : "Linear vest"}
-                {end !== undefined ? ` · ${timeLeft}` : ""}
+                <span>Lock #{displayId}</span>
+                <span>{isHardLock ? "Hard lock" : "Linear vest"}</span>
+                {end !== undefined ? <span>{timeLeft}</span> : null}
               </p>
 
               <div className="proof-progress">
