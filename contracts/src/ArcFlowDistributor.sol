@@ -9,8 +9,8 @@ import {ArcFlowStream} from "./ArcFlowStream.sol";
 import {MerkleProof} from "./lib/MerkleProof.sol";
 import {TokenLib} from "./lib/TokenLib.sol";
 
-/// @title ArcFlowDistributor
-/// @notice Merkle airdrops with optional vesting into ArcFlowStream.
+/// @title arcflows airdrop
+/// @notice Merkle airdrops with optional vesting into the stream module.
 /// @dev A live claim window is immutable for recipients: no pause, no mid-window clawback.
 ///      The protocol owner can still upgrade this UUPS proxy — keep that key on a multisig.
 contract ArcFlowDistributor is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {

@@ -6,7 +6,7 @@ Status: living spec · last updated 16 September 2026
 Audience: founders, builders, auditors, pad partners, anyone shipping the brand  
 Stack: Foundry contracts in `contracts/src/` · Next.js app in `web/` · Express + Postgres index in `backend/`
 
-Public name is **ArcFlows**. Protocol and Solidity files stay **ArcFlow**. Do not mix them on a proof page or a tweet.
+Public wordmark is **arcflows** (all lowercase, as on the logo). Solidity identifiers stay `ArcFlow*` so deploys and ABIs do not move. Do not print `ArcFlow` on a proof page, tweet, or explorer label.
 
 ---
 
@@ -229,8 +229,9 @@ Wallet (Arc, USDC gas)
 
 | | |
 |---|---|
-| Public name | **ArcFlows** |
-| Protocol / Solidity | ArcFlow |
+| Public name | **arcflows** (lowercase, matches the wordmark) |
+| Protocol / Solidity | `ArcFlow*` identifiers in code only |
+| Contract labels | locker, stream, airdrop, escrow, staking — always prefixed `arcflows` |
 | Tagline | Lock. Vest. Stream. On Arc. |
 | Domain | [archflows.finance](https://archflows.finance) |
 | X | @arcflow |
@@ -241,10 +242,15 @@ Wallet (Arc, USDC gas)
 
 **Name in copy**
 
-- User-facing: ArcFlows
-- Tweets, OG, proof cards: ArcFlows
-- Code, env, contract names: ArcFlow is fine
+- User-facing / tweets / OG / proof cards: **arcflows**
+- Lock vault: **arcflows locker**
+- Stream: **arcflows stream**
+- Airdrop: **arcflows airdrop**
+- Escrow: **arcflows escrow**
+- Staking: **arcflows staking**
+- Code, env, file names: `ArcFlow` is fine
 - Never “Arc Flow” as two title-case words on a card
+- Never “ArcFlow” as the public product name — that is the Solidity identifier, not the brand
 
 **Voice**
 

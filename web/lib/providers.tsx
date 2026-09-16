@@ -6,6 +6,7 @@ import { createAppKit } from "@reown/appkit/react";
 import { type ReactNode, useState } from "react";
 import { cookieToInitialState, WagmiProvider, type Config } from "wagmi";
 import { NETWORK_NAME } from "./chain";
+import { BRAND } from "./brand";
 import { customRpcUrls, networks, projectId, wagmiAdapter } from "./wagmi";
 import { af } from "./public-env";
 
@@ -17,7 +18,7 @@ const appKit = createAppKit({
   networks,
   defaultNetwork: networks[0],
   metadata: {
-    name: "ArcFlow",
+    name: BRAND,
     description: `Token locks and vesting on ${NETWORK_NAME}. Gas paid in USDC.`,
     url: siteUrl,
     icons: [`${siteUrl}/logo-mark.png`],

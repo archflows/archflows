@@ -7,6 +7,7 @@ import { useAccount, usePublicClient, useReadContract, useWriteContract } from "
 import { Loader2 } from "lucide-react";
 import { ContactAddressInput } from "@/components/ContactAddressInput";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import {
   ARCFLOW_ADDRESS,
   LOCK_FEE_UNITS,
@@ -282,7 +283,7 @@ export function CreateVestForm() {
 
       <FormShell
         title="Linear vesting"
-        badge="Per-second release"
+        badge={CONTRACT_LABEL.locker}
         aside={
           <PreviewPanel
               title="Vest schedule"

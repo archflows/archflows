@@ -255,3 +255,26 @@ export function removeContact(owner: string, contacts: Contact[], id: string) {
   saveContacts(owner, next);
   return next;
 }
+
+function categoriesDifferFromDefaults(categories: ContactCategoryDef[]) {
+  if (categories.length !== DEFAULT_CONTACT_CATEGORIES.length) return true;
+  return categories.some(
+    (category, index) =>
+      category.id !== DEFAULT_CONTACT_CATEGORIES[index]?.id ||
+      category.label !== DEFAULT_CONTACT_CATEGORIES[index]?.label,
+  );
+}
+
+export function shouldMigrateLocalContacts(owner: string) {
+  if (!owner || typeof window === "undefined") return false;
+  const localContacts = loadContacts(owner);
+  const localCategories = loadCategories(owner);
+  return localContacts.length > 0 || categoriesDifferFromDefaults(localCategories);
+}
+
+export function exportLocalContactBook(owner: string) {
+  return {
+    contacts: loadContacts(owner),
+    categories: loadCategories(owner),
+  };
+}

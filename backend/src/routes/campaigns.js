@@ -4,6 +4,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { buildUpdate, getById, getByIdOrHash, listRows } from "../lib/query.js";
 import { badRequest } from "../errors.js";
+import { notifyCampaignUpserted } from "../lib/notifications-store.js";
 import {
   asAddress,
   asAmount,
@@ -94,6 +95,9 @@ campaignsRouter.post(
         asJson(body.meta, "meta") ?? null,
       ],
     );
+    void notifyCampaignUpserted(rows[0]).catch((error) => {
+      console.warn("[notifications] campaign upsert", error);
+    });
     created(res, rows[0]);
   }),
 );

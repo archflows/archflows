@@ -25,10 +25,10 @@ export function AddContactForm() {
     }
   }, [categories, category]);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const result = addContact({ name, category, wallet });
+    const result = await addContact({ name, category, wallet });
     setSaving(false);
     if (result) {
       setError(result);

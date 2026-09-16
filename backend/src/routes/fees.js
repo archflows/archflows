@@ -5,6 +5,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { commission, feePolicy } from "../lib/referral.js";
+import { notifyReferralEarning } from "../lib/notifications-store.js";
 import { payoutAddress, sendUsdcPayout, verifyLockFee } from "../lib/chain.js";
 import {
   asAddress,
@@ -180,7 +181,13 @@ feesRouter.post(
       return rows[0];
     });
 
-    created(res, await hydrate(await payRebate(settlement)));
+    const hydrated = await hydrate(await payRebate(settlement));
+    if (referrer && split && hydrated.earning) {
+      void notifyReferralEarning(referrer, wallet, hydrated.earning.net_usdc).catch((error) => {
+        console.warn("[notifications] referral earning", error);
+      });
+    }
+    created(res, hydrated);
   }),
 );
 

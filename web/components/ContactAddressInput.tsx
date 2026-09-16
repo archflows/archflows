@@ -121,7 +121,7 @@ export function ContactAddressInput({
           <DialogDescription>Search by name, category, or wallet address.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex flex-col gap-2.5 px-3.5 py-2.5">
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-white/40" />
             <Input
@@ -129,20 +129,20 @@ export function ContactAddressInput({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search contacts"
-              className="h-9 border-white/12 bg-black/30 pl-8 text-white placeholder:text-white/40"
+              className="dash-control h-8 pl-8 text-xs text-white placeholder:text-white/40"
             />
           </div>
 
-          <div className="max-h-[22rem] overflow-y-auto rounded-xl border border-white/8 bg-black/25">
+          <div className="dash-well max-h-[22rem] overflow-y-auto">
             {contacts.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-white/60">
+              <div className="px-4 py-6 text-center text-xs text-white/60">
                 <p>No contacts saved yet.</p>
                 <Link href="/dashboard/contacts/add" className="mt-2 inline-block text-primary hover:underline">
                   Add contacts →
                 </Link>
               </div>
             ) : filtered.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-white/60">No contacts match that search.</p>
+              <p className="px-4 py-6 text-center text-xs text-white/60">No contacts match that search.</p>
             ) : (
               <ul className="p-1.5">
                 {filtered.map((contact) => {

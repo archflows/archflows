@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  BarChart3Icon,
   CheckCircle2Icon,
+  CoinsIcon,
   CopyIcon,
   HourglassIcon,
   ShareIcon,
@@ -10,6 +12,8 @@ import {
   WalletIcon,
   XCircleIcon,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { DashStatCardIcon } from "@/components/dash-stat-card-icon";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -37,7 +41,7 @@ import { bpsToPercent, formatUsdc, referralLink } from "@/lib/referral";
 import { shorten } from "@/lib/form-time";
 
 const CARD = "@container/card dash-stat-card relative overflow-hidden text-base shadow-none ring-0";
-const BADGE = "h-6 border-white/15 bg-black/30 px-2.5 text-[0.7rem] text-white";
+const BADGE = "h-6 border-[var(--dash-border)] bg-sidebar px-2.5 text-[0.7rem] text-white";
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -95,11 +99,18 @@ export function ReferralPanel() {
   /** What the referrer keeps on one standard $10 lock, in USDC units. */
   const perStandardLock = (10_000_000n * BigInt(rates.effectiveBps)) / 10_000n;
 
-  const stats = [
+  const stats: {
+    label: string;
+    value: string;
+    hint: string;
+    icon: LucideIcon;
+    badge: ReactNode;
+  }[] = [
     {
       label: "Available",
       value: `$${formatUsdc(totals.availableUsdc)}`,
       hint: `Min $${formatUsdc(rates.minWithdrawUsdc)}`,
+      icon: WalletIcon,
       badge: (
         <>
           <WalletIcon className="size-3" />
@@ -111,12 +122,14 @@ export function ReferralPanel() {
       label: "Lifetime earned",
       value: `$${formatUsdc(totals.netUsdc)}`,
       hint: `$${formatUsdc(totals.paidUsdc)} paid · $${formatUsdc(totals.platformUsdc)} cut`,
+      icon: CoinsIcon,
       badge: `${bpsToPercent(rates.effectiveBps)} net`,
     },
     {
       label: "Referrals",
       value: String(totals.signups),
       hint: `${totals.activated} locked`,
+      icon: UsersIcon,
       badge: (
         <>
           <UsersIcon className="size-3" />
@@ -128,6 +141,7 @@ export function ReferralPanel() {
       label: "Fee volume",
       value: `$${formatUsdc(totals.feeVolumeUsdc)}`,
       hint: earnings.length ? "From referred locks" : "No locks yet",
+      icon: BarChart3Icon,
       badge: earnings.length ? "Live" : "—",
     },
   ];
@@ -137,6 +151,7 @@ export function ReferralPanel() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label} className={CARD}>
+            <DashStatCardIcon icon={stat.icon} />
             <CardHeader className="gap-1 pb-3">
               <CardDescription className="text-[0.72rem] font-medium tracking-wide text-white/80">
                 {stat.label}
@@ -172,7 +187,7 @@ export function ReferralPanel() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-6">
             <div className="flex flex-wrap items-center gap-2">
-              <code className="mono rounded-md border border-white/10 bg-black/30 px-3 py-2 text-lg font-semibold tracking-[0.2em]">
+              <code className="mono dash-well rounded-md px-3 py-2 text-lg font-semibold tracking-[0.2em]">
                 {account.code}
               </code>
               <button
@@ -191,7 +206,7 @@ export function ReferralPanel() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="mono min-w-0 flex-1 truncate rounded-md border border-white/10 bg-black/30 px-3 py-2 text-[0.82rem] text-white/80">
+              <span className="mono dash-well min-w-0 flex-1 truncate px-3 py-2 text-[0.82rem] text-white/80">
                 {link}
               </span>
               <button
@@ -311,7 +326,7 @@ export function ReferralPanel() {
           <CardHeader className="border-b">
             <CardTitle>Commission history</CardTitle>
             <CardDescription>
-              One entry per create. Commission is paid on the fee ArcFlow keeps, after any
+              One entry per create. Commission is paid on the fee arcflows keeps, after any
               split refund.
             </CardDescription>
           </CardHeader>
@@ -359,7 +374,7 @@ export function ReferralPanel() {
           <CardHeader className="border-b">
             <CardTitle>Withdrawals</CardTitle>
             <CardDescription>
-              Auto-approved and paid straight from the ArcFlow fee wallet.
+              Auto-approved and paid straight from the arcflows fee wallet.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pt-0">

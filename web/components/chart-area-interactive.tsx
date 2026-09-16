@@ -140,7 +140,7 @@ function buildSeries(
 function ChartWatermark() {
   return (
     <div className="dash-chart-watermark" aria-hidden>
-      <span className="dash-chart-watermark-text">ArcFlows</span>
+      <span className="dash-chart-watermark-text">arcflows</span>
     </div>
   );
 }
@@ -223,7 +223,7 @@ export function ChartAreaInteractive({
         {pending ? (
           <div className="h-[250px] animate-pulse rounded-xl bg-muted/40" />
         ) : !hasActivity ? (
-          <div className="relative flex h-[250px] items-center justify-center overflow-hidden rounded-xl bg-black/20 text-sm text-white/80">
+          <div className="dash-well relative flex h-[250px] items-center justify-center overflow-hidden text-sm text-white/80">
             <ChartWatermark />
             <span className="relative z-10">No lock activity in this window yet.</span>
           </div>

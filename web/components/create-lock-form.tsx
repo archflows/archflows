@@ -6,6 +6,7 @@ import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import {
   ARCFLOW_ADDRESS,
   LOCK_FEE_UNITS,
@@ -474,7 +475,7 @@ export function CreateLockForm() {
 
       <FormShell
         title="Hard lock"
-        badge="All-or-nothing"
+        badge={CONTRACT_LABEL.locker}
         aside={
           <>
             <PreviewPanel

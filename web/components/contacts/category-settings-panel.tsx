@@ -65,8 +65,8 @@ export function CategorySettingsPanel() {
     setFormError(null);
   }
 
-  function save() {
-    const error = editingId ? updateCategory({ id: editingId, label }) : addCategory(label);
+  async function save() {
+    const error = editingId ? await updateCategory({ id: editingId, label }) : await addCategory(label);
     if (error) {
       setFormError(error);
       return;
@@ -86,7 +86,7 @@ export function CategorySettingsPanel() {
       destructive: true,
     });
     if (!ok) return;
-    const error = deleteCategory(id);
+    const error = await deleteCategory(id);
     if (error) {
       notify.error(error);
       return;
@@ -102,7 +102,7 @@ export function CategorySettingsPanel() {
       destructive: true,
     });
     if (!ok) return;
-    resetCategories();
+    await resetCategories();
     notify.success("Categories reset to defaults");
   }
 

@@ -349,6 +349,156 @@ export function listFeeSettlements(wallet: string) {
   }>(`/v1/fees/settlements${qs({ wallet })}`);
 }
 
+export type ContactBook = {
+  contacts: {
+    id: string;
+    name: string;
+    category: string;
+    wallet: string;
+    createdAt: number;
+    updatedAt: number;
+  }[];
+  categories: { id: string; label: string }[];
+};
+
+export function getContactBook(wallet: string) {
+  return request<ContactBook>(`/v1/contacts/book${qs({ wallet })}`);
+}
+
+export function syncContactBook(body: {
+  wallet: string;
+  contacts: ContactBook["contacts"];
+  categories: ContactBook["categories"];
+}) {
+  return request<ContactBook>("/v1/contacts/sync", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function createContact(body: {
+  wallet: string;
+  name: string;
+  category: string;
+  walletAddress: string;
+  id?: string;
+}) {
+  return request<ContactBook["contacts"][number]>("/v1/contacts", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateContact(body: {
+  wallet: string;
+  id: string;
+  name: string;
+  category: string;
+  walletAddress: string;
+}) {
+  return request<ContactBook["contacts"][number]>(`/v1/contacts/${encodeURIComponent(body.id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteContact(wallet: string, id: string) {
+  return request<{ deleted: boolean }>(`/v1/contacts/${encodeURIComponent(id)}${qs({ wallet })}`, {
+    method: "DELETE",
+  });
+}
+
+export function createContactCategory(wallet: string, label: string) {
+  return request<ContactBook["categories"][number]>("/v1/contacts/categories", {
+    method: "POST",
+    body: JSON.stringify({ wallet, label }),
+  });
+}
+
+export function updateContactCategory(wallet: string, id: string, label: string) {
+  return request<ContactBook["categories"][number]>(`/v1/contacts/categories/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ wallet, label }),
+  });
+}
+
+export function deleteContactCategory(wallet: string, id: string) {
+  return request<ContactBook>(`/v1/contacts/categories/${encodeURIComponent(id)}${qs({ wallet })}`, {
+    method: "DELETE",
+  });
+}
+
+export function resetContactCategories(wallet: string) {
+  return request<ContactBook>("/v1/contacts/categories/reset", {
+    method: "POST",
+    body: JSON.stringify({ wallet }),
+  });
+}
+
+export type StoredNotification = {
+  id: string;
+  module: string;
+  kind: "action" | "activity";
+  type: string;
+  title: string;
+  description: string;
+  timestamp: number;
+  href: string;
+  ctaLabel: string;
+  details: { label: string; value: string; href?: string }[];
+  read: boolean;
+  readAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export function listNotifications(filters: {
+  wallet: string;
+  kind?: "action" | "activity";
+  unread?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
+  return request<{
+    items: StoredNotification[];
+    page: { total: number; limit: number; offset: number };
+    unread: number;
+  }>(
+    `/v1/notifications${qs({
+      wallet: filters.wallet,
+      kind: filters.kind,
+      unread: filters.unread ? "true" : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+      offset: filters.offset ? String(filters.offset) : undefined,
+    })}`,
+  );
+}
+
+export function syncNotifications(body: {
+  wallet: string;
+  items: Record<string, unknown>[];
+  readIds?: string[];
+}) {
+  return request<{ items: StoredNotification[]; unread: number }>("/v1/notifications/sync", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function markNotificationRead(wallet: string, id: string) {
+  return request<StoredNotification>(`/v1/notifications/${encodeURIComponent(id)}/read`, {
+    method: "PATCH",
+    body: JSON.stringify({ wallet }),
+  });
+}
+
+export function markAllNotificationsRead(wallet: string) {
+  return request<{ updated: number }>("/v1/notifications/read-all", {
+    method: "POST",
+    body: JSON.stringify({ wallet }),
+  });
+}
+
 export function requestReferralWithdrawal(body: {
   wallet: string;
   amount: string;

@@ -13,6 +13,7 @@ import {
 } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { erc20Abi, escrowAbi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { ARCFLOW_ESCROW_ADDRESS } from "@/lib/chain";
 import {
   DAY,
@@ -181,7 +182,7 @@ export function CreateEscrowForm() {
   return (
     <FormShell
       title="Fund escrow deal"
-      badge="Milestone"
+      badge={CONTRACT_LABEL.escrow}
       aside={
         <PreviewPanel
           title="Deal preview"

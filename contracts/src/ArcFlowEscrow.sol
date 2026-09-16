@@ -7,7 +7,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {TokenLib} from "./lib/TokenLib.sol";
 
-/// @title ArcFlowEscrow
+/// @title arcflows escrow
 /// @notice Peer-to-peer funded escrow with buyer release and timeout refund (Streamflow Escrow).
 contract ArcFlowEscrow is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     enum Status {

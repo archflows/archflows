@@ -4,6 +4,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { buildUpdate, getById, getByIdOrHash, listRows } from "../lib/query.js";
 import { badRequest } from "../errors.js";
+import { notifyEscrowUpserted } from "../lib/notifications-store.js";
 import {
   asAddress,
   asAmount,
@@ -82,6 +83,9 @@ escrowRouter.post(
         asJson(body.meta, "meta") ?? null,
       ],
     );
+    void notifyEscrowUpserted(rows[0]).catch((error) => {
+      console.warn("[notifications] escrow upsert", error);
+    });
     created(res, rows[0]);
   }),
 );

@@ -105,7 +105,7 @@ export async function verifyLockFee({ txHash, lockId, referee }) {
 /** Signed by the referrer's own wallet so a withdrawal cannot be triggered by anyone else. */
 export function withdrawalMessage({ wallet, amount, nonce }) {
   return [
-    "ArcFlow referral withdrawal",
+    "arcflows referral withdrawal",
     `Wallet: ${wallet}`,
     `Amount: ${amount} USDC units`,
     `Nonce: ${nonce}`,

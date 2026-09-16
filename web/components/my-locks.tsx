@@ -106,7 +106,7 @@ function LockRow(props: {
 }) {
   if (!props.position) {
     return (
-      <div className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3">
+      <div className="dash-well flex items-center gap-4 px-4 py-3">
         <div className="skeleton size-9 shrink-0 rounded-lg" />
         <div className="grid flex-1 gap-2">
           <div className="skeleton h-3.5 w-36" />
@@ -243,7 +243,7 @@ function LockRowReady({
   const blocked = claimReason();
 
   return (
-    <div className="rounded-xl bg-black/20 px-4 py-3">
+    <div className="dash-well px-4 py-3">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {kind === "vest" ? <HourglassIcon className="size-4" /> : <LockIcon className="size-4" />}
@@ -259,9 +259,9 @@ function LockRowReady({
                 {kind === "vest" ? "Fully vested" : "Unlocked"}
               </Badge>
             ) : kind === "vest" ? (
-              <Badge className="border-white/25 bg-black/40 font-normal text-white">Vesting</Badge>
+              <Badge className="border-[var(--dash-border)] bg-sidebar font-normal text-white">Vesting</Badge>
             ) : (
-              <Badge className="border-white/25 bg-black/40 font-normal text-white">Locked</Badge>
+              <Badge className="border-[var(--dash-border)] bg-sidebar font-normal text-white">Locked</Badge>
             )}
             {fullyClaimed ? <Badge className="font-normal">Claimed</Badge> : null}
             {liveClaimable > 0n && isBeneficiary ? <Badge className="font-normal">Ready</Badge> : null}
@@ -521,7 +521,7 @@ function Locks({
           {pending ? (
             <ListRowSkeleton count={4} />
           ) : total === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-xl bg-black/20 px-4 py-6">
+            <div className="dash-well flex flex-col items-start gap-3 px-4 py-6">
               <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 {vest ? <HourglassIcon className="size-4" /> : <SatelliteIcon className="size-4" />}
               </span>
@@ -535,7 +535,7 @@ function Locks({
               </Link>
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-xl bg-black/20 px-4 py-6 text-sm text-white">
+            <div className="dash-well px-4 py-6 text-sm text-white">
               {tab === "locked"
                 ? vest
                   ? "Nothing still vesting."

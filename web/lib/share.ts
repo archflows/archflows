@@ -1,4 +1,5 @@
 import { dateFmt } from "@/lib/form-time";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { proofPath, type ProofModule } from "@/lib/proof";
 import { af } from "@/lib/public-env";
 
@@ -32,7 +33,7 @@ export function lockShareText(opts: {
   const split =
     opts.walletCount && opts.walletCount > 1 ? ` across ${opts.walletCount} wallets` : "";
   return [
-    "Token locked successfully on ArcFlow.",
+    `Token locked successfully on ${CONTRACT_LABEL.locker}.`,
     "",
     `${opts.amount} ${opts.symbol}${split} — unlocks ${when} UTC.`,
     "",

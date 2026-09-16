@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Lock, LockOpen } from "lucide-react";
 import { formatCompactNumber } from "@/lib/format-amount";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { isLockOpen, type LockProofStatus } from "@/lib/lock-status";
 
 type Props = {
@@ -111,7 +112,7 @@ export function LockOgPreview({
             </div>
           </div>
           <div className="lock-og-foot">
-            <span>ArcFlow</span>
+            <span>{CONTRACT_LABEL.locker}</span>
             <span>Public proof</span>
           </div>
         </div>

@@ -79,7 +79,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
           </div>
 
           <div className="footer-bottom">
-<span>© {new Date().getFullYear()} ArcFlow — Lock. Vest. Stream. On Arc.</span>
+<span>© {new Date().getFullYear()} arcflows — Lock. Vest. Stream. On Arc.</span>
             <span>
               {NETWORK_NAME} · chain {ARC_CHAIN_ID} · gas in USDC
             </span>

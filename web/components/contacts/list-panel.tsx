@@ -80,9 +80,9 @@ export function ContactsListPanel() {
     setFormError(null);
   }
 
-  function save() {
+  async function save() {
     if (!editing) return;
-    const error = updateContact({ id: editing.id, ...form });
+    const error = await updateContact({ id: editing.id, ...form });
     if (error) {
       setFormError(error);
       return;
@@ -98,7 +98,7 @@ export function ContactsListPanel() {
       destructive: true,
     });
     if (!ok) return;
-    deleteContact(contact.id);
+    await deleteContact(contact.id);
     notify.success("Contact removed", contact.name);
   }
 
@@ -124,7 +124,7 @@ export function ContactsListPanel() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name, category, or wallet"
-                className="h-9 border-white/12 bg-black/30 pl-8 text-white placeholder:text-white/40"
+                className="dash-control h-9 pl-8 text-white placeholder:text-white/40"
               />
             </div>
 
