@@ -29,57 +29,64 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       <footer className="footer">
         <div className="shell">
           <div className="footer-grid">
-            <div>
-              <Link href="/" className="brand brand-logo-link" style={{ marginBottom: "0.75rem" }} aria-label="ArcFlows home">
+            <div className="footer-brand">
+              <Link href="/" className="brand brand-logo-link" aria-label="ArcFlows home">
                 <BrandLogo height={28} />
               </Link>
-              <p className="dim" style={{ maxWidth: "24rem", margin: "0.75rem 0 0" }}>
-                Token operations on Arc. Immutable locks, linear vesting, streams, airdrops,
-                escrow, and staking, with a public proof page for every position.
+              <p>
+                Token operations on Arc Chain. Locks, vesting, streams, and public proof
+                for every position.
               </p>
             </div>
 
-            <div className="footer-col">
-              <div className="footer-col-title">Product</div>
-              <Link href="/explorer">Explorer</Link>
-              <Link href="/docs">Docs</Link>
-              <Link href="/litepaper">Litepaper</Link>
-              <Link href="/dashboard/locks">Locks</Link>
-<Link href="/dashboard/vesting">Vesting</Link>
-              <Link href="/dashboard/streams">Streams</Link>
-              <Link href="/dashboard">Dashboard</Link>
-              <Link href="/auth">Sign in</Link>
-            </div>
+            <nav className="footer-nav" aria-label="Footer">
+              <div className="footer-col">
+                <div className="footer-col-title">Product</div>
+                <div className="footer-col-links">
+                  <div>
+                    <Link href="/explorer">Explorer</Link>
+                    <Link href="/dashboard/locks">Locks</Link>
+                    <Link href="/dashboard/vesting">Vesting</Link>
+                  </div>
+                  <div>
+                    <Link href="/dashboard/streams">Streams</Link>
+                    <Link href="/docs">Docs</Link>
+                    <Link href="/litepaper">Litepaper</Link>
+                  </div>
+                </div>
+              </div>
 
-            <div className="footer-col">
-              <div className="footer-col-title">Network</div>
-              {isTestnet ? (
-                <a href={FAUCET_URL} target="_blank" rel="noreferrer">
-                  USDC faucet
-                </a>
-              ) : null}
-              <a href={EXPLORER_URL} target="_blank" rel="noreferrer">
-                Arcscan
-              </a>
-              <a href="https://docs.arc.io" target="_blank" rel="noreferrer">
-                Arc docs
-              </a>
-            </div>
-
-            <div className="footer-col">
-              <div className="footer-col-title">Company</div>
-              <HashNavLink href="/#product">Product</HashNavLink>
-              <HashNavLink href="/#how">How it works</HashNavLink>
-              <HashNavLink href="/#faq">FAQ</HashNavLink>
-              <Link href="/docs">Docs</Link>
-              <Link href="/litepaper">Litepaper</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms &amp; Conditions</Link>
-            </div>
+              <div className="footer-col">
+                <div className="footer-col-title">Company</div>
+                <div className="footer-col-links">
+                  <div>
+                    <HashNavLink href="/#how">How it works</HashNavLink>
+                    <HashNavLink href="/#faq">FAQ</HashNavLink>
+                    <a href={EXPLORER_URL} target="_blank" rel="noreferrer">
+                      Arcscan
+                    </a>
+                    <a href="https://docs.arc.io" target="_blank" rel="noreferrer">
+                      Arc docs
+                    </a>
+                  </div>
+                  <div>
+                    {isTestnet ? (
+                      <a href={FAUCET_URL} target="_blank" rel="noreferrer">
+                        USDC faucet
+                      </a>
+                    ) : null}
+                    <Link href="/privacy">Privacy</Link>
+                    <Link href="/terms">Terms</Link>
+                  </div>
+                </div>
+              </div>
+            </nav>
           </div>
 
           <div className="footer-bottom">
-<span>© {new Date().getFullYear()} arcflows — Lock. Vest. Stream. On Arc.</span>
+            <span suppressHydrationWarning>
+              © {new Date().getFullYear()} ArcFlows — Lock. Vest. Stream. On Arc.
+            </span>
             <span>
               {NETWORK_NAME} · chain {ARC_CHAIN_ID} · gas in USDC
             </span>

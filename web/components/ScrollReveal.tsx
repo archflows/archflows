@@ -20,6 +20,7 @@ const SELECTOR = [
 ].join(",");
 
 const GROUP_SEL = ".lp-hero, .lp-marquee, .lp-section, .lp-testimonials";
+const HYDRATED = "data-lp-hydrated";
 
 function clearReveal(root: ParentNode) {
   root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
@@ -27,16 +28,43 @@ function clearReveal(root: ParentNode) {
     el.removeAttribute("data-reveal-in");
     el.style.removeProperty("--ri");
   });
-  // Legacy cleanup from older class-based reveals
   root.querySelectorAll(".reveal").forEach((el) => {
     el.classList.remove("reveal", "is-in");
     (el as HTMLElement).style.removeProperty("--ri");
   });
 }
 
+/** Wait until the landing segment has hydrated, so we never stamp data-reveal mid-SSR. */
+function afterLandingHydrated(cb: () => void) {
+  if (!document.querySelector("main.lp") || document.documentElement.hasAttribute(HYDRATED)) {
+    cb();
+    return () => {};
+  }
+
+  let fallback = 0;
+  const mo = new MutationObserver(() => {
+    if (document.documentElement.hasAttribute(HYDRATED)) {
+      mo.disconnect();
+      window.clearTimeout(fallback);
+      cb();
+    }
+  });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: [HYDRATED] });
+
+  fallback = window.setTimeout(() => {
+    mo.disconnect();
+    cb();
+  }, 2500);
+
+  return () => {
+    mo.disconnect();
+    window.clearTimeout(fallback);
+  };
+}
+
 /**
  * Staggered section reveals for marketing pages.
- * Uses data-* attrs (not className) and starts after hydration to avoid SSR mismatches.
+ * Mutates data-* attrs only after the landing page client tree has hydrated.
  */
 export function ScrollReveal() {
   const pathname = usePathname();
@@ -67,9 +95,6 @@ export function ScrollReveal() {
 
     let observer: IntersectionObserver | null = null;
     let cancelled = false;
-    let timer = 0;
-    let raf1 = 0;
-    let raf2 = 0;
 
     const boot = () => {
       if (cancelled) return;
@@ -107,18 +132,11 @@ export function ScrollReveal() {
       root.classList.add("reveal-on");
     };
 
-    // Defer past React hydration / streaming so DOM attrs aren't compared mid-hydrate.
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        timer = window.setTimeout(boot, 0);
-      });
-    });
+    const stopWait = afterLandingHydrated(boot);
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      window.clearTimeout(timer);
+      stopWait();
       observer?.disconnect();
       clearReveal(document);
       root.classList.remove("reveal-on", "reveal-mobile");

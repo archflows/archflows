@@ -16,6 +16,7 @@ import {
 import { FlowMock } from "@/components/FlowMock";
 import { HeroShot } from "@/components/HeroShot";
 import { LandingLiveProof } from "@/components/LandingLiveProof";
+import { LandingRevealReady } from "@/components/LandingRevealReady";
 
 const MARQUEE = [
   { name: "Arc", src: "/marquee/arc.svg" },
@@ -522,6 +523,7 @@ export default function LandingPage() {
           </ul>
         </div>
       </section>
+      <LandingRevealReady />
     </main>
   );
 }
