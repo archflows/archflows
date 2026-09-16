@@ -141,7 +141,7 @@ export default function TermsPage() {
 
       <section id="risks">
         <h2>Risks and disclaimers</h2>
-        <DocCallout title="Important">
+        <DocCallout label="Important">
           Digital assets and smart contracts involve substantial risk. You may lose all funds
           deposited into a position. Past on-chain activity does not predict future results.
         </DocCallout>
