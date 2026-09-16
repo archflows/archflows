@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {arcflows as ArcFlow} from "../../src/ArcFlow.sol";
 import {ArcFlowDistributor} from "../../src/ArcFlowDistributor.sol";
 import {ArcFlowEscrow} from "../../src/ArcFlowEscrow.sol";
 import {ArcFlowStaking} from "../../src/ArcFlowStaking.sol";
@@ -10,6 +11,12 @@ import {ArcFlowStream} from "../../src/ArcFlowStream.sol";
 /// @notice Deploys the proxied contracts exactly the way script/Deploy.s.sol does, so tests run
 ///         against the same shape as production instead of bare implementations.
 library Deployers {
+    function lock(address owner, address usdc, address treasury) internal returns (ArcFlow) {
+        address impl = address(new ArcFlow());
+        bytes memory data = abi.encodeCall(ArcFlow.initialize, (owner, usdc, treasury));
+        return ArcFlow(address(new ERC1967Proxy(impl, data)));
+    }
+
     function stream(address owner) internal returns (ArcFlowStream) {
         address impl = address(new ArcFlowStream());
         bytes memory data = abi.encodeCall(ArcFlowStream.initialize, (owner));

@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useExplorerData";
 import { dateFmt, shorten } from "@/lib/form-time";
 import { isTxHash, proofPath } from "@/lib/proof";
+import { NETWORK_NAME } from "@/lib/chain";
 
 const PAGE_SIZE = 8;
 
@@ -202,7 +203,7 @@ export function ExplorerPage() {
           <div className="ex-stage-inner">
             <p className="ex-kicker">
               <span className="pulse-dot" />
-              Arc Testnet · live vault
+              {NETWORK_NAME} · live vault
             </p>
             <h1>
               Watch the <em>flow</em>

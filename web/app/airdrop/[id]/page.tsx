@@ -4,7 +4,7 @@ import { use } from "react";
 import { formatUnits } from "viem";
 import { useReadContract } from "wagmi";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
-import { ARCFLOW_DISTRIBUTOR_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { ARCFLOW_DISTRIBUTOR_ADDRESS, EXPLORER_URL, NETWORK_BADGE } from "@/lib/chain";
 import { ProofFrame, ProofKv } from "@/components/proof-frame";
 import { useCanonicalProofPath, useProofRecord } from "@/hooks/useProofRecord";
 import { isTxHash } from "@/lib/proof";
@@ -62,7 +62,7 @@ export default function AirdropProofPage({ params }: { params: Promise<{ id: str
 
   return (
     <ProofFrame
-      tag="// PROOF OF AIRDROP · ARC TESTNET"
+      tag={`// PROOF OF AIRDROP · ARC ${NETWORK_BADGE.toUpperCase()}`}
       title={`${symbol ? `${symbol} ` : ""}Campaign #${recordId ?? "…"}`}
       status={campaign?.[9] ? "Canceled" : "Live"}
       loading={isTxHash(key) && isLoading}

@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatCardsSkeleton } from "@/components/skeletons";
-import { ARCFLOW_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { ARCFLOW_ADDRESS, EXPLORER_URL, NETWORK_NAME } from "@/lib/chain";
 import { arcFlowAbi } from "@/lib/abi";
 import { shorten } from "@/lib/form-time";
 import { useAccount, useReadContract } from "wagmi";
@@ -160,7 +160,7 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className={FOOTER}>
           <div className="text-[0.95rem] font-medium">
-            {notDeployed ? "Deploy ArcFlows first" : "Arc Testnet"}
+            {notDeployed ? "Deploy ArcFlows first" : NETWORK_NAME}
           </div>
           {notDeployed ? (
             <div className="text-[0.8rem] leading-snug text-muted-foreground">

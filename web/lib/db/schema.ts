@@ -12,8 +12,8 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-/** Arc Testnet chain id — keep explicit so multi-chain stays possible later. */
-export const ARC_CHAIN_ID = 5042002;
+/** Arc mainnet chain id — keep explicit so multi-chain stays possible later. */
+export const ARC_CHAIN_ID = 5042;
 
 /** ERC-20 metadata cache (symbol/decimals/logo). Source of truth for logos is off-chain. */
 export const tokens = pgTable(

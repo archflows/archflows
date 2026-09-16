@@ -7,11 +7,11 @@ function normalizeSiteUrl(raw: string) {
 }
 
 export const af = {
-  mode: process.env.AF_MODE || "testnet",
-  chainId: process.env.AF_CHAIN || "5042002",
-  rpc: process.env.AF_RPC || "https://rpc.testnet.arc.network",
+  mode: process.env.AF_MODE || "mainnet",
+  chainId: process.env.AF_CHAIN || "5042",
+  rpc: process.env.AF_RPC || "https://rpc.mainnet.arc.io",
   rpcTestnet: process.env.AF_RPC_TN || "https://rpc.testnet.arc.network",
-  rpcMainnet: process.env.AF_RPC_MN || "https://rpc.arc.network",
+  rpcMainnet: process.env.AF_RPC_MN || "https://rpc.mainnet.arc.io",
   reown: process.env.AF_REOWN || "",
   lock: process.env.AF_LOCK || "",
   stream: process.env.AF_STREAM || "",

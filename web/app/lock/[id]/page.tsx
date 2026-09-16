@@ -11,7 +11,7 @@ import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
 import { LockProofSkeleton } from "@/components/skeletons";
 import { TxExplorerLink } from "@/components/TxExplorerLink";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
-import { ARCFLOW_ADDRESS, EXPLORER_URL, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
+import { ARCFLOW_ADDRESS, EXPLORER_URL, MIN_MAX_FEE_PER_GAS, NETWORK_NAME } from "@/lib/chain";
 import { confirmTx } from "@/lib/tx";
 import { persistLockClaim } from "@/lib/backend";
 import { useProofRecord } from "@/hooks/useProofRecord";
@@ -324,7 +324,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
             <div className="proof-hero-copy">
               <p className="proof-kicker">
                 <span className="pulse-dot" />
-                Public proof · Arc Testnet
+                Public proof · {NETWORK_NAME}
               </p>
 
               <div className="proof-title-row">

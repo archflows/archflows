@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { BrandLogo } from "@/components/BrandLogo";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
-import { ARC_TESTNET } from "@/lib/chain";
+import { ARC_CHAIN_ID, NETWORK_NAME } from "@/lib/chain";
 import { useMounted } from "@/hooks/useMounted";
 
 export default function AuthClient() {
@@ -18,7 +18,7 @@ export default function AuthClient() {
   const { address, isConnected, chainId } = useAccount();
   const { switchChain, isPending: switching } = useSwitchChain();
 
-  const wrongChain = mounted && isConnected && chainId !== ARC_TESTNET.id;
+  const wrongChain = mounted && isConnected && chainId !== ARC_CHAIN_ID;
   const ready = mounted && isConnected && !wrongChain;
 
   useEffect(() => {
@@ -60,10 +60,10 @@ export default function AuthClient() {
                 type="button"
                 className="btn lg block"
                 disabled={switching}
-                onClick={() => switchChain({ chainId: ARC_TESTNET.id })}
+                onClick={() => switchChain({ chainId: ARC_CHAIN_ID })}
               >
                 {switching ? <Loader2 className="size-4 animate-spin" /> : null}
-                Switch to Arc Testnet
+                Switch to {NETWORK_NAME}
               </button>
             ) : (
               <button type="button" className="btn lg block" disabled>

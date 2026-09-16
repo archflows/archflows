@@ -9,4 +9,5 @@ via_ir = true
 
 [rpc_endpoints]
 arc_testnet = "https://rpc.testnet.arc.network"
-arc = "https://rpc.arc-scan.org"
+arc_mainnet = "https://rpc.mainnet.arc.io"
+arc = "https://rpc.mainnet.arc.io"

@@ -184,7 +184,7 @@ export function CreateVestForm() {
       return;
     }
     if (shortFee) {
-      setError("Not enough USDC. Fund the wallet from faucet.circle.com.");
+      setError("Not enough USDC for gas and the lock fee.");
       return;
     }
     if (notDeployed) {

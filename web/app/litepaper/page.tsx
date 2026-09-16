@@ -334,10 +334,10 @@ export default function LitepaperPage() {
           while already largely claimable.
         </p>
         <p>
-          Treasury is set at construction and is not rotatable through an owner. There is no owner
-          on the lock vault that can retarget principal. Users should still treat unaudited
-          bytecode with caution and should verify the canonical deployment they are asked to
-          approve.
+          Treasury is set at initialize and is not rotatable in this implementation.
+          New deploys put the locker behind a UUPS proxy, so the owner key can replace
+          the logic. Users should still treat unaudited bytecode with caution and should
+          verify the canonical deployment they are asked to approve.
         </p>
       </section>
 

@@ -1,6 +1,8 @@
 # ArcFlow — Deployed Contract Addresses
 
-**Network:** Arc Testnet · chain ID `5042002`
+**Mainnet is live** (16 Sep 2026) — chain ID `5042`, deployer/owner/treasury `0x41DF1A903afddED647246e1FC6Af07D2338AB352`. See [Mainnet](#mainnet).
+
+**Network (testnet notes below):** Arc Testnet · chain ID `5042002`
 **RPC:** `https://rpc.testnet.arc.network`
 **Explorer:** https://testnet.arcscan.app
 **Deployer / owner:** `0x63B2614f9AE9eAe20483aD24718B419891A2657D`
@@ -15,13 +17,13 @@ These are the addresses the frontend reads. Proxy addresses stay stable across u
 
 | Contract | Label | Type | Address | Frontend env var |
 |---|---|---|---|---|
-| `ArcFlow` | arcflows locker | Immutable, no owner, no upgrade path | `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
+| `ArcFlow` / `arcflows` | arcflows locker | Testnet: immutable. New deploys: ERC1967 / UUPS proxy | `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
 | `ArcFlowStream` | arcflows stream | ERC1967 / UUPS proxy | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` | `NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS` |
 | `ArcFlowDistributor` | arcflows airdrop | ERC1967 / UUPS proxy | `0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8` | `NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS` |
 | `ArcFlowEscrow` | arcflows escrow | ERC1967 / UUPS proxy | `0x528b3E0e78CbD1a4f9aFA011aE374ba12996B2C2` | `NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS` |
 | `ArcFlowStaking` | arcflows staking | ERC1967 / UUPS proxy | `0x2627e3f07574F47b2B5bc3EfD774576357658063` | `NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS` |
 
-`ArcFlow` is deployed raw on purpose: a lock an owner could upgrade would not prove anything to holders.
+Live testnet locker is still the raw deploy. New deploys (mainnet) use a UUPS proxy so the owner can replace the implementation without moving the address.
 
 **Current lock vault (15 Sep 2026)** — fee $10 USDC, anti-backdate, manual duration. Treasury = `0x257666FaAd2A70180A5608711fBbe2A5B5BFE6C5`.
 
@@ -112,4 +114,45 @@ Full receipts: `contracts/broadcast/Deploy.s.sol/5042002/run-latest.json`.
 
 ## Mainnet
 
-Not deployed yet. `foundry.toml` already carries the `arc` RPC alias for when it is.
+**Network:** Arc · chain ID `5042`
+**RPC:** `https://rpc.mainnet.arc.io`
+**Explorer:** https://explorer.arc.io
+**Deployer / owner / treasury:** `0x41DF1A903afddED647246e1FC6Af07D2338AB352`
+**Identifier:** `arcflows`
+**Deploy script:** `contracts/script/Deploy.s.sol`
+**Deployed at block:** `21127763` – `21127764`
+
+All five modules are ERC1967 / UUPS proxies. Point the frontend at the proxy addresses. Owner can upgrade implementations later without moving these addresses.
+
+**Verified** on Sourcify (chain `5042`, `exact_match`) — implementations + proxies. Locker implementation name is `arcflows`. Official explorer `explorer.arc.io` is still Cloudflare-gated, so the Contract tab there may lag until that explorer is public.
+
+| Contract | Label | Type | Address | Frontend env var |
+|---|---|---|---|---|
+| `arcflows` | arcflows locker | ERC1967 / UUPS proxy | `0xCD1bEeE5856Cd0c57931258d9621FeB2052B5481` | `ARCFLOW_ADDRESS` |
+| `ArcFlowStream` | arcflows stream | ERC1967 / UUPS proxy | `0x4c6AaE1aDE8ec4f7b2E7f76135b203Fc0A500516` | `ARCFLOW_STREAM_ADDRESS` |
+| `ArcFlowDistributor` | arcflows airdrop | ERC1967 / UUPS proxy | `0x01CA506129dd74E5e2302eaD2A9ae75Ef80E0047` | `ARCFLOW_DISTRIBUTOR_ADDRESS` |
+| `ArcFlowEscrow` | arcflows escrow | ERC1967 / UUPS proxy | `0x814ea63b4B01e6d36617FDdDc9B5B05ca17c544F` | `ARCFLOW_ESCROW_ADDRESS` |
+| `ArcFlowStaking` | arcflows staking | ERC1967 / UUPS proxy | `0x290D0ED8823E5E18B19113C0Af5b8F84580D58F5` | `ARCFLOW_STAKING_ADDRESS` |
+
+| Proxy | Implementation |
+|---|---|
+| locker | `0x77CFCa1c13BdB2e0c2d6e7d35aACC81735aA58d9` |
+| stream | `0xbba0dCAAF15488f3d3f912e4e54a792f93F4082a` |
+| airdrop | `0x3479604612233beD56c7713cF4275F119032aC6B` |
+| escrow | `0x92d2575B18cC7Bc54F45F15e56F652732f1cC6D3` |
+| staking | `0x333FCd911b76285E349D3806C5bFCE2877D2d4aF` |
+
+| # | Nonce | Contract | Tx hash | Block |
+|---|---|---|---|---|
+| 1 | 0 | `arcflows` impl | `0x3ee1ac4a6a1d191c1d7cdeef0a687114eb0d42ba5f0398a405ccfec626f4f574` | 21127763 |
+| 2 | 1 | locker proxy | `0x852f2f7da60fbb4b9a7d1787e0cd69bdb5a25f68013d811460966f0696a27883` | 21127763 |
+| 3 | 2 | `ArcFlowStream` impl | `0x6034847913e06b96c100e79876b7c71b2acb4d95fb2e417a1c055fbbf33ffc9c` | 21127763 |
+| 4 | 3 | stream proxy | `0x0b2a0f923e170e30ae06e770df255646ebe7e01e3812e25f04576f86d989376b` | 21127763 |
+| 5 | 4 | `ArcFlowDistributor` impl | `0x12b83c0df3850e0bd834df9d25d5a155deb0b63ae604c1946e64a11d95392376` | 21127764 |
+| 6 | 5 | airdrop proxy | `0x87e1fd5fb4a183d5ce9fdca0b1712c29b5cf29d298f598467846b25b929d910e` | 21127764 |
+| 7 | 6 | `ArcFlowEscrow` impl | `0xb645cf165329dcce83c82697dbed6764bba3d1374f12c5ca123164fe7e126d9a` | 21127764 |
+| 8 | 7 | escrow proxy | `0xd7d64ad666cd0174ce59dd8f7b012c2e4bf41425d9c7d96cd683f6c65925107e` | 21127764 |
+| 9 | 8 | `ArcFlowStaking` impl | `0x6ba9038e19c6c7876e2dc6c3f4c594ca7f9b012bf75625d17c74578e2e2b2de4` | 21127764 |
+| 10 | 9 | staking proxy | `0x0b8d1d9a061d6ca169316c855582a983943638cbda116e8ef1b606c0cdc6b2b5` | 21127764 |
+
+Full receipts: `contracts/broadcast/Deploy.s.sol/5042/run-latest.json`.

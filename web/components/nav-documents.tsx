@@ -9,6 +9,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { BookOpenIcon, DropletsIcon, ExternalLinkIcon } from "lucide-react";
+import { EXPLORER_URL, FAUCET_URL, isTestnet } from "@/lib/chain";
 
 const links = [
   {
@@ -16,14 +17,18 @@ const links = [
     url: "https://docs.arc.io",
     icon: <BookOpenIcon />,
   },
-  {
-    name: "USDC faucet",
-    url: "https://faucet.circle.com",
-    icon: <DropletsIcon />,
-  },
+  ...(isTestnet
+    ? [
+        {
+          name: "USDC faucet",
+          url: FAUCET_URL,
+          icon: <DropletsIcon />,
+        },
+      ]
+    : []),
   {
     name: "Arcscan",
-    url: "https://testnet.arcscan.app",
+    url: EXPLORER_URL,
     icon: <ExternalLinkIcon />,
   },
 ];

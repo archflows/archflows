@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAccount, useDisconnect } from "wagmi";
 import { CopyIcon, LogOutIcon, UserCircleIcon } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
-import { explorerAddressUrl } from "@/lib/chain";
+import { explorerAddressUrl, NETWORK_NAME } from "@/lib/chain";
 
 export function AccountPanel() {
   const { address, isConnected } = useAccount();
@@ -63,7 +63,7 @@ export function AccountPanel() {
             <div className="mgmt-item">
               <div className="mgmt-item-main">
                 <p className="mgmt-item-title">Network</p>
-                <p className="mgmt-item-meta">Arc Testnet</p>
+                <p className="mgmt-item-meta">{NETWORK_NAME}</p>
               </div>
             </div>
             <div className="mgmt-item">

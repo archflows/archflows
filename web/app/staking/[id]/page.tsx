@@ -4,7 +4,7 @@ import { use } from "react";
 import { formatUnits } from "viem";
 import { useReadContract } from "wagmi";
 import { erc20Abi, stakingAbi } from "@/lib/abi";
-import { ARCFLOW_STAKING_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { ARCFLOW_STAKING_ADDRESS, EXPLORER_URL, NETWORK_BADGE } from "@/lib/chain";
 import { ProofFrame, ProofKv } from "@/components/proof-frame";
 import { useCanonicalProofPath, useProofRecord } from "@/hooks/useProofRecord";
 import { isTxHash } from "@/lib/proof";
@@ -61,7 +61,7 @@ export default function StakingProofPage({ params }: { params: Promise<{ id: str
 
   return (
     <ProofFrame
-      tag="// PROOF OF STAKING · ARC TESTNET"
+      tag={`// PROOF OF STAKING · ARC ${NETWORK_BADGE.toUpperCase()}`}
       title={`${stakeSymbol ? `${stakeSymbol} ` : ""}Pool #${recordId ?? "…"}`}
       status={pool?.[13] ? "Paused" : "Live"}
       loading={isTxHash(key) && isLoading}
