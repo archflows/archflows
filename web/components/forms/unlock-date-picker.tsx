@@ -44,7 +44,7 @@ function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function clampToMin(d: Date, min?: Date) {
+function clampToMin(d: Date, min?: Date | null) {
   if (!min) return d;
   return d.getTime() < min.getTime() ? new Date(min) : d;
 }
