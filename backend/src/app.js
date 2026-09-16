@@ -13,6 +13,8 @@ import { streamsRouter } from "./routes/streams.js";
 import { campaignsRouter } from "./routes/campaigns.js";
 import { escrowRouter } from "./routes/escrow.js";
 import { poolsRouter } from "./routes/pools.js";
+import { referralsRouter } from "./routes/referrals.js";
+import { feesRouter } from "./routes/fees.js";
 import { keysRouter } from "./routes/keys.js";
 import { docsUsersRouter } from "./routes/docs-users.js";
 import { statsRouter } from "./routes/stats.js";
@@ -107,6 +109,8 @@ export function createApp() {
   v1.use("/campaigns", campaignsRouter);
   v1.use("/escrow", escrowRouter);
   v1.use("/pools", poolsRouter);
+  v1.use("/referrals", referralsRouter);
+  v1.use("/fees", feesRouter);
   v1.use("/keys", keysRouter);
   v1.use("/docs-users", docsUsersRouter);
   app.use("/v1", v1);

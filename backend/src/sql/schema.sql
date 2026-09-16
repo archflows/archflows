@@ -177,6 +177,99 @@ CREATE TABLE IF NOT EXISTS stakes (
 
 CREATE INDEX IF NOT EXISTS stakes_account_idx ON stakes (account);
 
+-- Referral program. A referrer owns a share code; a referee is bound to exactly one
+-- referrer for life. Commission is credited per lock, from the USDC fee that lock
+-- actually charged on-chain. Payouts leave the archFee treasury wallet.
+
+CREATE TABLE IF NOT EXISTS referral_accounts (
+  wallet TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  tier TEXT NOT NULL DEFAULT 'standard' CHECK (tier IN ('standard', 'partner')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS referral_signups (
+  referee TEXT PRIMARY KEY,
+  referrer TEXT NOT NULL REFERENCES referral_accounts (wallet) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  -- Set the first time this referee pays a lock fee. Until then the signup is a lead, not a customer.
+  activated_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT referral_signups_no_self CHECK (referee <> referrer)
+);
+
+CREATE INDEX IF NOT EXISTS referral_signups_referrer_idx ON referral_signups (referrer);
+
+-- One row per "create" the user performed, which may be several on-chain locks. The contract
+-- charges its flat fee per lock() call, so a split into N wallets pays N x lock fee on-chain.
+-- Policy is a flat fee per create, so anything paid above it is refunded from archFee.
+-- Commission is then owed on `policy_usdc` — the part the platform actually keeps.
+CREATE TABLE IF NOT EXISTS fee_settlements (
+  id TEXT PRIMARY KEY,
+  wallet TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'lock' CHECK (kind IN ('lock', 'vest')),
+  lock_count INTEGER NOT NULL,
+  paid_usdc TEXT NOT NULL,
+  policy_usdc TEXT NOT NULL,
+  rebate_usdc TEXT NOT NULL DEFAULT '0',
+  rebate_status TEXT NOT NULL DEFAULT 'none'
+    CHECK (rebate_status IN ('none', 'pending', 'paid', 'failed')),
+  rebate_tx_hash TEXT,
+  rebate_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS fee_settlements_wallet_idx ON fee_settlements (wallet, created_at DESC);
+CREATE INDEX IF NOT EXISTS fee_settlements_rebate_status_idx ON fee_settlements (rebate_status)
+  WHERE rebate_status IN ('pending', 'failed');
+
+-- A lock belongs to exactly one settlement. Without this, the same lock could be replayed
+-- inside a second batch to claim a second rebate.
+CREATE TABLE IF NOT EXISTS fee_settlement_locks (
+  lock_id TEXT PRIMARY KEY,
+  settlement_id TEXT NOT NULL REFERENCES fee_settlements (id) ON DELETE CASCADE,
+  fee_usdc TEXT NOT NULL,
+  tx_hash TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS fee_settlement_locks_settlement_idx ON fee_settlement_locks (settlement_id);
+
+CREATE TABLE IF NOT EXISTS referral_earnings (
+  id BIGSERIAL PRIMARY KEY,
+  referrer TEXT NOT NULL,
+  referee TEXT NOT NULL,
+  -- One credit per settlement, ever. This is the idempotency key for replayed reports.
+  settlement_id TEXT NOT NULL UNIQUE REFERENCES fee_settlements (id) ON DELETE CASCADE,
+  source TEXT NOT NULL DEFAULT 'lock' CHECK (source IN ('lock', 'vest')),
+  -- The fee the platform kept after any rebate, not the raw on-chain total.
+  fee_usdc TEXT NOT NULL,
+  gross_usdc TEXT NOT NULL,
+  platform_usdc TEXT NOT NULL,
+  net_usdc TEXT NOT NULL,
+  rate_bps INTEGER NOT NULL,
+  platform_bps INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS referral_earnings_referrer_idx ON referral_earnings (referrer, created_at DESC);
+CREATE INDEX IF NOT EXISTS referral_earnings_referee_idx ON referral_earnings (referee);
+
+CREATE TABLE IF NOT EXISTS referral_withdrawals (
+  id BIGSERIAL PRIMARY KEY,
+  referrer TEXT NOT NULL,
+  amount_usdc TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
+  tx_hash TEXT,
+  failure_reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS referral_withdrawals_referrer_idx ON referral_withdrawals (referrer, created_at DESC);
+CREATE INDEX IF NOT EXISTS referral_withdrawals_status_idx ON referral_withdrawals (status);
+
 CREATE INDEX IF NOT EXISTS locks_tx_hash_idx ON locks (tx_hash);
 CREATE INDEX IF NOT EXISTS locks_unlock_tx_hash_idx ON locks (unlock_tx_hash);
 CREATE INDEX IF NOT EXISTS streams_tx_hash_idx ON streams (tx_hash);

@@ -52,6 +52,29 @@ export const config = {
     treasury: firstEnv(["ARCFLOW_TREASURY"]),
   },
   lockFeeUsdc: "10",
+  fees: {
+    // What the contract charges per lock() call, in USDC 6-decimal units.
+    lockUnits: firstEnv(["LOCK_FEE_USDC_UNITS"], "10000000"),
+    // What a single create costs the user, however many wallets they split across.
+    // A split pays lockUnits x N on-chain; the excess is refunded from archFee.
+    splitUnits: firstEnv(["SPLIT_LOCK_FEE_USDC_UNITS"], "15000000"),
+  },
+  // Arc USDC ERC-20 view: 6 decimals, same asset as gas. Never the native 18-dec view.
+  usdc: firstEnv(["USDC_ADDRESS"], "0x3600000000000000000000000000000000000000"),
+  // Arc mempool rejects anything under 20 gwei.
+  minMaxFeePerGasWei: firstEnv(["ARC_MIN_MAX_FEE_PER_GAS_WEI"], "20000000000"),
+  referral: {
+    // Referrer earns 15% of the fee the referee paid...
+    rateBps: Number.parseInt(firstEnv(["REFERRAL_RATE_BPS"], "1500"), 10) || 1500,
+    // ...and the platform keeps 20% of that commission, so the referrer nets 12% of the fee.
+    platformBps: Number.parseInt(firstEnv(["REFERRAL_PLATFORM_BPS"], "2000"), 10) || 2000,
+    // 5 USDC floor, in the 6-decimal view.
+    minWithdrawUsdc: firstEnv(["REFERRAL_MIN_WITHDRAW_USDC"], "5000000"),
+    // Hot wallet that holds archFee USDC and signs auto-approved payouts.
+    payoutKey: firstEnv(["ARCFLOW_FEE_WALLET_KEY", "REFERRAL_PAYOUT_PRIVATE_KEY"]),
+    // Withdrawal signatures go stale so a captured one cannot be replayed later.
+    signatureTtlMs: Number.parseInt(firstEnv(["REFERRAL_SIGNATURE_TTL_MS"], "600000"), 10) || 600_000,
+  },
   swagger: {
     user: firstEnv(["SWAGGER_USER", "SWAGGER_USERNAME"]),
     password: firstEnv(["SWAGGER_PASSWORD"]),

@@ -108,6 +108,17 @@ export function asTxHash(value, field) {
   return value.toLowerCase();
 }
 
+const TOKEN_RE = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** Client-generated correlation id (batch ids). Opaque, but must stay safe to log and index. */
+export function asToken(value, field) {
+  const text = String(value ?? "");
+  if (!TOKEN_RE.test(text)) {
+    throw badRequest(`${field} must be 8-64 characters of A-Z, a-z, 0-9, "-" or "_"`);
+  }
+  return text;
+}
+
 export function asEnum(value, field, allowed) {
   if (!allowed.includes(value)) {
     throw badRequest(`${field} must be one of: ${allowed.join(", ")}`);

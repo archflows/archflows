@@ -60,6 +60,20 @@ export async function withClient(fn) {
   }
 }
 
+export async function withTransaction(fn) {
+  return withClient(async (client) => {
+    try {
+      await client.query("BEGIN");
+      const result = await fn(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    }
+  });
+}
+
 export async function migrate() {
   const schemaPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "sql", "schema.sql");
   const sql = await readFile(schemaPath, "utf8");
