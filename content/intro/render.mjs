@@ -9,13 +9,32 @@ import { findChrome } from "../posts/chrome.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const landscape = process.argv.includes("landscape") || process.argv.includes("--landscape");
-const WIDTH = landscape ? 1920 : 1080;
-const HEIGHT = landscape ? 1080 : 1920;
-const PAGE = landscape ? "landscape.html" : "index.html";
+const mode = process.argv.includes("mainnet")
+  ? "mainnet"
+  : process.argv.includes("congrats")
+    ? "congrats"
+    : process.argv.includes("landscape") || process.argv.includes("--landscape")
+      ? "landscape"
+      : "portrait";
+const WIDTH = mode === "portrait" ? 1080 : 1920;
+const HEIGHT = mode === "portrait" ? 1920 : 1080;
+const PAGE =
+  mode === "mainnet"
+    ? "mainnet.html"
+    : mode === "congrats"
+      ? "congrats.html"
+      : mode === "landscape"
+        ? "landscape.html"
+        : "index.html";
 const OUT = path.join(
   __dirname,
-  landscape ? "arcflows-intro-landscape.mp4" : "arcflows-intro.mp4"
+  mode === "mainnet"
+    ? "arcflows-live-mainnet.mp4"
+    : mode === "congrats"
+      ? "arcflows-congrats-arc.mp4"
+      : mode === "landscape"
+        ? "arcflows-intro-landscape.mp4"
+        : "arcflows-intro.mp4"
 );
 const FPS = 30;
 const CHROME = findChrome();

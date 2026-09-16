@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "render": "node render.mjs",
-    "render:landscape": "node render.mjs landscape"
+    "render:landscape": "node render.mjs landscape",
+    "render:congrats": "node render.mjs congrats",
+    "render:mainnet": "node render.mjs mainnet"
   },
   "dependencies": {
     "puppeteer-core": "^25.11.0"
