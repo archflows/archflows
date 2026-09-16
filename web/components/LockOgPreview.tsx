@@ -1,10 +1,13 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import { Lock, LockOpen } from "lucide-react";
 import { formatCompactNumber } from "@/lib/format-amount";
 import { CONTRACT_LABEL } from "@/lib/brand";
 import { isLockOpen, type LockProofStatus } from "@/lib/lock-status";
+
+const OG_WIDTH = 480;
 
 type Props = {
   amount?: string;
@@ -59,9 +62,27 @@ export function LockOgPreview({
   const open = isLockOpen(status);
   const statusClass =
     status === "Claimed" ? " is-claimed" : status === "Unlocked" ? " is-unlocked" : "";
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const sync = () => {
+      const width = el.clientWidth || el.getBoundingClientRect().width;
+      if (!width) return;
+      const scale = String(Math.min(width / OG_WIDTH, 1));
+      el.style.setProperty("--og-scale", scale);
+      const card = el.querySelector<HTMLElement>(".lock-og");
+      card?.style.setProperty("--og-scale", scale);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <div className="lock-og-wrap">
+    <div className="lock-og-wrap" ref={wrapRef}>
       <div className="lock-og" role="img" aria-label="Lock proof share card preview">
         <header className="lock-og-top">
           <span className="lock-og-brand" aria-label="ArcFlows">

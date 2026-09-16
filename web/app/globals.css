@@ -3565,12 +3565,13 @@ a.lp-card:hover .lp-card-arrow {
 /* ── Lock OG / Twitter share preview ──────────────────────────── */
 /* Fixed PC ratio 480×252 — scale uniformly on narrow screens, never reflow. */
 .lock-og-wrap {
+  container-type: inline-size;
   margin: 0;
-  width: min(480px, 100%);
+  width: 100%;
+  max-width: 480px;
+  min-width: 0;
   aspect-ratio: 480 / 252;
   flex-shrink: 0;
-  container-type: inline-size;
-  container-name: lock-og;
   overflow: hidden;
   position: relative;
 }
@@ -3595,7 +3596,7 @@ a.lp-card:hover .lp-card-arrow {
   flex-direction: column;
   box-sizing: border-box;
   transform-origin: top left;
-  transform: scale(calc(100cqw / 480));
+  transform: scale(var(--og-scale, min(1, calc(100cqi / 480px))));
 }
 
 .lock-og-shade {
@@ -3786,6 +3787,9 @@ a.lp-card:hover .lp-card-arrow {
   color: var(--dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lock-og-meta strong {
@@ -6006,6 +6010,13 @@ html.reveal-on.reveal-mobile .lp-flow-row[data-reveal]:not([data-reveal-in]) {
   justify-self: end;
   width: min(480px, 100%);
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.proof-hero-card .lock-og-wrap {
+  width: 100%;
+  max-width: 100%;
 }
 
 .proof-back {
