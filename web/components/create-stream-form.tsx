@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -32,6 +33,7 @@ import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { resolveTs, upsertStream, upsertStreams } from "@/lib/backend";
 import { eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 
 const MAX_BATCH = 200;
@@ -40,6 +42,7 @@ type Mode = "single" | "payroll";
 
 /** Cancelable / top-upable streams for payroll & team vesting (ArcFlowStream). */
 export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
@@ -174,6 +177,8 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
     const startArg = startAt <= nowSec() + 5 ? 0n : BigInt(startAt);
     const cliffArg = cliffSec === 0 ? 0n : BigInt(cliffAt);
 
+    let actionTx: string | null = null;
+
     try {
       setStep("approving");
       if (needsApprove) {
@@ -214,6 +219,7 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
         const ids = created.map((ev) => ev.id.toString());
         setCreatedIds(ids);
         setCreatedTx(tx);
+        actionTx = tx;
         if (ids[0]) {
           await upsertStream({
             id: ids[0],
@@ -260,6 +266,7 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
         const ids = created.map((ev) => ev.id.toString());
         setCreatedIds(ids);
         setCreatedTx(tx);
+        actionTx = tx;
         await upsertStreams(
           created.map((ev, index) => ({
             id: ev.id.toString(),
@@ -279,6 +286,8 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
           })),
         );
       }
+
+      if (actionTx) goToExplorerTx(router, actionTx);
     } catch (err) {
       setError(txMessage(err));
     } finally {

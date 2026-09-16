@@ -36,7 +36,7 @@ import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
 import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { resolveTs, settleLockFees, upsertLock } from "@/lib/backend";
-import { proofPath } from "@/lib/proof";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
 
@@ -264,7 +264,7 @@ export function CreateVestForm() {
         kind: "vest",
         locks: [{ lockId: lockId.toString(), txHash: lockHash }],
       });
-      router.push(proofPath("lock", lockHash, lockId));
+      goToExplorerTx(router, lockHash);
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
     } finally {

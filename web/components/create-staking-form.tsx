@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -22,12 +23,14 @@ import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form
 import { upsertPool } from "@/lib/backend";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 
 const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 const MAX_MIN_LOCK = 730 * DAY;
 
 export function CreateStakingForm() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -172,6 +175,7 @@ export function CreateStakingForm() {
         txHash: createTx,
       });
 
+      let resultTx = createTx;
       if (autoFund && parsedFund !== undefined) {
         setStep("funding");
         const fundTx = await writeContractAsync({
@@ -182,7 +186,9 @@ export function CreateStakingForm() {
           ...gas,
         });
         await confirmTx(publicClient, fundTx);
+        resultTx = fundTx;
       }
+      goToExplorerTx(router, resultTx);
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
     } finally {

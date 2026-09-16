@@ -31,6 +31,7 @@ import { RowActions } from "@/components/row-actions";
 import { useTxHashMap } from "@/hooks/useTxHashMap";
 import { useTokenMeta } from "@/hooks/useTokenMeta";
 import { useNowSec } from "@/hooks/useNowSec";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 import { streamWithdrawable } from "@/lib/schedule";
 import { abiField, asAddress, asBigint, asBool } from "@/lib/abi-result";
@@ -220,6 +221,7 @@ function StreamRowReady({
     await patchStream(id.toString(), { ...patch, txHash: hash });
     await queryClient.invalidateQueries({ queryKey: ["arcflow-api"] });
     await onRefresh?.();
+    goToExplorerTx(router, hash);
   }
 
   async function run(fn: () => Promise<void>) {

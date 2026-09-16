@@ -25,6 +25,7 @@ import { RowActions } from "@/components/row-actions";
 import { useLockTxMap, type LockTxRecord } from "@/hooks/useTxHashMap";
 import { useTokenMeta } from "@/hooks/useTokenMeta";
 import { useNowSec } from "@/hooks/useNowSec";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 import { isHardLock } from "@/lib/position-kind";
 import { lockClaimable } from "@/lib/schedule";
@@ -231,6 +232,7 @@ function LockRowReady({
       await queryClient.invalidateQueries({ queryKey: ["arcflow-api", "tx-hashes"] });
       await queryClient.invalidateQueries({ queryKey: ["arcflow-api", "stats"] });
       await onRefresh?.();
+      goToExplorerTx(router, hash);
     } catch (err) {
       setClaimError(txMessage(err));
     } finally {

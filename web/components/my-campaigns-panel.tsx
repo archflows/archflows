@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -13,11 +14,13 @@ import { patchCampaign } from "@/lib/backend";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TxExplorerLink } from "@/components/TxExplorerLink";
 import { useTxHashMap } from "@/hooks/useTxHashMap";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 
 const MAX_ROWS = 30;
 
 function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) {
+  const router = useRouter();
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -82,13 +85,14 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
   const beforeStart = claimStart !== undefined && now < Number(claimStart);
   const afterEnd = claimEnd !== undefined && now >= Number(claimEnd);
 
-  async function act(fn: () => Promise<void>) {
+  async function act(fn: () => Promise<string | void>) {
     setBusy(true);
     setError("");
     try {
-      await fn();
+      const hash = await fn();
       await refetch();
       await refetchU();
+      if (typeof hash === "string") goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {
@@ -151,6 +155,7 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
                   await confirmTx(publicClient, hash);
                   setTxHash(hash);
                   await patchCampaign(id.toString(), { canceled: true, txHash: hash });
+                  return hash;
                 })
               }
             >
@@ -178,6 +183,7 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
                     deposited: (claimed ?? 0n).toString(),
                     txHash: hash,
                   });
+                  return hash;
                 })
               }
             >
@@ -225,6 +231,7 @@ function CampaignRow({ id, indexedHash }: { id: bigint; indexedHash?: string }) 
                       txHash: hash,
                     });
                     setTopUp("");
+                    return hash;
                   })
                 }
               >

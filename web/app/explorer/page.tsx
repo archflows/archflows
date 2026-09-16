@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ExplorerPage } from "@/components/explorer/ExplorerPage";
+import { ExplorerFeedSkeleton } from "@/components/skeletons";
 
 export const metadata: Metadata = {
   title: "Explorer · ArcFlows",
@@ -8,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ExplorerPage />;
+  return (
+    <Suspense fallback={<ExplorerFeedSkeleton rows={5} />}>
+      <ExplorerPage />
+    </Suspense>
+  );
 }

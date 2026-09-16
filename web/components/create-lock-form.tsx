@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -39,9 +40,9 @@ import {
 } from "@/components/UnlockTargetField";
 import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/form-shell";
 import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
-import { LockSuccessDialog, type LockSuccessResult } from "@/components/lock-success-dialog";
 import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
 import { settleLockFees, upsertLock } from "@/lib/backend";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
 
@@ -54,6 +55,7 @@ function shareAmount(total: bigint, percent: number, isLast: boolean, allocated:
 
 /** Hard lock only — nothing claimable until the unlock timestamp. */
 export function CreateLockForm() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
@@ -70,8 +72,6 @@ export function CreateLockForm() {
   const [unlockAt, setUnlockAt] = useState(() => nowSec() + 30 * DAY);
   const [error, setError] = useState("");
   const [step, setStep] = useState<"idle" | "approving" | "locking">("idle");
-  const [success, setSuccess] = useState<LockSuccessResult | null>(null);
-  const [successOpen, setSuccessOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const tokenAddress = isAddress(token) ? (token as `0x${string}`) : undefined;
@@ -276,8 +276,6 @@ export function CreateLockForm() {
 
   async function submit() {
     setError("");
-    setSuccess(null);
-    setSuccessOpen(false);
     if (!address || !publicClient || !tokenAddress || parsedAmount === undefined) {
       setError("Fill token, amount, and connect a wallet.");
       return;
@@ -350,14 +348,9 @@ export function CreateLockForm() {
 
       setStep("locking");
       let allocated = 0n;
-      const created: LockSuccessResult["locks"] = [];
+      let lastLockHash: string | null = null;
+      const created: { id: string; txHash: string }[] = [];
       const settled: { lockId: string; txHash: string }[] = [];
-      const tokenDecimals =
-        decimals ??
-        walletTokens.find((t) => t.address.toLowerCase() === tokenAddress.toLowerCase())?.decimals ??
-        18;
-      const tokenSymbol = symbol ?? "TOKEN";
-
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
         const piece = shareAmount(parsedAmount, target.percent, i === targets.length - 1, allocated);
@@ -372,6 +365,7 @@ export function CreateLockForm() {
           ...gas,
         });
         const receipt = await confirmTx(publicClient, lockHash);
+        lastLockHash = lockHash;
         const locked = eventArgs<{ id: bigint; beneficiary: `0x${string}`; amount: bigint }>(
           receipt,
           arcFlowAbi,
@@ -381,10 +375,6 @@ export function CreateLockForm() {
           created.push({
             id: ev.id.toString(),
             txHash: lockHash,
-            amount: Number(formatUnits(ev.amount, tokenDecimals)).toLocaleString("en-US", {
-              maximumFractionDigits: 6,
-            }),
-            beneficiary: ev.beneficiary,
           });
           await upsertLock({
             id: ev.id.toString(),
@@ -419,15 +409,7 @@ export function CreateLockForm() {
         return;
       }
 
-      setSuccess({
-        locks: created,
-        symbol: tokenSymbol,
-        unlockAt,
-        totalAmount: Number(formatUnits(parsedAmount, tokenDecimals)).toLocaleString("en-US", {
-          maximumFractionDigits: 6,
-        }),
-      });
-      setSuccessOpen(true);
+      goToExplorerTx(router, lastLockHash ?? created[0]?.txHash);
     } catch (err) {
       setError(err instanceof Error ? err.message.split("\n")[0] : "Transaction failed.");
     } finally {
@@ -447,12 +429,6 @@ export function CreateLockForm() {
           </div>
         </div>
       ) : null}
-
-      <LockSuccessDialog
-        open={successOpen}
-        onOpenChange={setSuccessOpen}
-        result={success}
-      />
 
       <ActionConfirmDialog
         open={confirmOpen}

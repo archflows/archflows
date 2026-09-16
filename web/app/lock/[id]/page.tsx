@@ -15,7 +15,7 @@ import { ARCFLOW_ADDRESS, EXPLORER_URL, MIN_MAX_FEE_PER_GAS } from "@/lib/chain"
 import { confirmTx } from "@/lib/tx";
 import { persistLockClaim } from "@/lib/backend";
 import { useProofRecord } from "@/hooks/useProofRecord";
-import { isTxHash } from "@/lib/proof";
+import { isTxHash, proofPath } from "@/lib/proof";
 import { copyToClipboard } from "@/lib/clipboard";
 import { clickOrExplain } from "@/lib/guard-click";
 import { isHardLock as hardLockSchedule } from "@/lib/position-kind";
@@ -75,7 +75,7 @@ export default function LockPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     if (isTxHash(key) || !isTxHash(proof?.txHash)) return;
-    router.replace(`/lock/${proof.txHash}`);
+    router.replace(proofPath("lock", proof.txHash));
   }, [key, proof?.txHash, router]);
 
   const { data: position, isPending: positionPending, refetch } = useReadContract({

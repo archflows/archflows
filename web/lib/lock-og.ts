@@ -3,6 +3,7 @@ import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { ARC_TESTNET, ARCFLOW_ADDRESS } from "@/lib/chain";
 import { formatCompactAmount } from "@/lib/format-amount";
 import { dateFmt, formatDuration, ZERO } from "@/lib/form-time";
+import { resolveLockProofKeyCached } from "@/lib/lock-proof-key";
 import { lockProofStatus, type LockProofStatus } from "@/lib/lock-status";
 
 export type LockOgData = {
@@ -49,9 +50,11 @@ export function emptyLockOg(id: string): LockOgData {
   };
 }
 
-export async function getLockOgData(id: string): Promise<LockOgData> {
-  const fallback = emptyLockOg(id);
-  if (!/^\d+$/.test(id)) return fallback;
+export async function getLockOgData(key: string): Promise<LockOgData> {
+  const resolved = await resolveLockProofKeyCached(key);
+  const fallback = emptyLockOg(resolved.canonicalKey);
+  const lockId = resolved.lockId;
+  if (!lockId || !/^\d+$/.test(lockId)) return fallback;
 
   try {
     const client = createPublicClient({
@@ -63,7 +66,7 @@ export async function getLockOgData(id: string): Promise<LockOgData> {
       address: ARCFLOW_ADDRESS,
       abi: arcFlowAbi,
       functionName: "positions",
-      args: [BigInt(id)],
+      args: [BigInt(lockId)],
     });
 
     const [token, beneficiary, , amount, claimed, start, , end] = position;
@@ -91,7 +94,7 @@ export async function getLockOgData(id: string): Promise<LockOgData> {
     const status = lockProofStatus({ amount, claimed, end });
 
     return {
-      id,
+      id: lockId,
       exists: true,
       symbol: symbol?.trim() || "TOKEN",
       amountLabel: formatCompactAmount(amount, decimals),

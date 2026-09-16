@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, isHex, size, type Hex } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -11,6 +12,7 @@ import { arcGas, confirmTx, eventArgs, txMessage } from "@/lib/tx";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { FormShell, PreviewPanel } from "@/components/forms/form-shell";
 import { upsertClaim } from "@/lib/backend";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { clickOrExplain } from "@/lib/guard-click";
 
 type ProofFile = {
@@ -24,6 +26,7 @@ type ProofFile = {
 };
 
 export function ClaimAirdropForm() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -147,6 +150,7 @@ export function ClaimAirdropForm() {
                 : leaf.amount.toString()
             }${symbol ? ` ${symbol}` : ""}`,
       );
+      goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {

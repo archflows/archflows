@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
+import { useAccount } from "wagmi";
 import { CircleCheckIcon, LoaderIcon, PlusIcon } from "lucide-react";
 import type { WalletPositionRow } from "@/hooks/useWalletPositions";
+import { useLockTxMap } from "@/hooks/useTxHashMap";
 import { shorten } from "@/lib/form-time";
+import { proofPath } from "@/lib/proof";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +45,8 @@ export function HomeLocksTable({
   pending?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("all");
+  const { address } = useAccount();
+  const { data: txMap } = useLockTxMap(address);
 
   const counts = useMemo(() => {
     const hard = rows.filter((r) => r.isHardLock).length;
@@ -154,7 +159,7 @@ export function HomeLocksTable({
                     <TableRow key={row.id.toString()}>
                       <TableCell>
                         <Link
-                          href={`/lock/${row.id.toString()}`}
+                          href={proofPath("lock", txMap?.get(row.id.toString())?.create, row.id)}
                           className="font-medium text-foreground hover:underline"
                         >
                           #{row.id.toString()}, {row.symbol}

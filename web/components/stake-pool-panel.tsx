@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -13,10 +14,12 @@ import { upsertStake } from "@/lib/backend";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TxExplorerLink } from "@/components/TxExplorerLink";
 import { useTxHashMap } from "@/hooks/useTxHashMap";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 import { clickOrExplain } from "@/lib/guard-click";
 
 export function StakePoolPanel() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -140,6 +143,7 @@ export function StakePoolPanel() {
       }
       setAmount("");
       await refresh();
+      goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {
@@ -174,6 +178,7 @@ export function StakePoolPanel() {
       }
       setAmount("");
       await refresh();
+      goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {
@@ -196,6 +201,7 @@ export function StakePoolPanel() {
       await confirmTx(publicClient, hash);
       setTxHash(hash);
       await refresh();
+      goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {

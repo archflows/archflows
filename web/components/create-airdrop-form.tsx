@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -26,11 +27,13 @@ import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
 import { resolveTs, upsertCampaign } from "@/lib/backend";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 
 const MIN_WINDOW = HOUR;
 
 export function CreateAirdropForm() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
@@ -188,6 +191,7 @@ export function CreateAirdropForm() {
       }
       setTree(liveTree);
       downloadProofJson(liveTree, idStr || undefined);
+      goToExplorerTx(router, tx);
     } catch (err) {
       setError(txMessage(err));
     } finally {

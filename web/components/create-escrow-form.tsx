@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, isAddress, keccak256, parseUnits, toBytes } from "viem";
 import {
@@ -35,6 +36,7 @@ import { useTxHashMap } from "@/hooks/useTxHashMap";
 import { useTokenMeta } from "@/hooks/useTokenMeta";
 import { cn } from "@/lib/utils";
 import { patchEscrow, upsertEscrow } from "@/lib/backend";
+import { goToExplorerTx } from "@/lib/explorer-nav";
 import { proofPath } from "@/lib/proof";
 
 const MAX_ROWS = 30;
@@ -52,6 +54,7 @@ type Deal = readonly [
 ];
 
 export function CreateEscrowForm() {
+  const router = useRouter();
   const publicClient = usePublicClient();
   const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -167,6 +170,7 @@ export function CreateEscrowForm() {
           txHash: tx,
         });
       }
+      goToExplorerTx(router, tx);
     } catch (e) {
       setError(txMessage(e));
     } finally {
@@ -304,6 +308,7 @@ function DealRow({
   d?: Deal;
   onRefresh?: () => Promise<unknown>;
 }) {
+  const router = useRouter();
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -356,6 +361,7 @@ function DealRow({
         txHash: hash,
       });
       await onRefresh?.();
+      goToExplorerTx(router, hash);
     } catch (e) {
       setError(txMessage(e));
     } finally {

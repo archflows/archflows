@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ArrowUpRight, Inbox, Search } from "lucide-react";
 import {
   ExplorerFeedSkeleton,
@@ -18,6 +19,7 @@ import {
   type ExplorerRow,
 } from "@/hooks/useExplorerData";
 import { dateFmt, shorten } from "@/lib/form-time";
+import { isTxHash, proofPath } from "@/lib/proof";
 
 const PAGE_SIZE = 8;
 
@@ -147,10 +149,20 @@ function EmptyData({
 }
 
 export function ExplorerPage() {
+  const searchParams = useSearchParams();
+  const txParam = searchParams.get("tx")?.trim() ?? "";
+  const txFilterActive = isTxHash(txParam);
   const { rows, loading, error, stats, week, explorerUrl } = useExplorerData();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [dayKey, setDayKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!txFilterActive) return;
+    setQuery(txParam.toLowerCase());
+    setPage(0);
+    setDayKey(null);
+  }, [txFilterActive, txParam]);
 
   const month = useMemo(() => {
     const n = new Date();
@@ -163,8 +175,8 @@ export function ExplorerPage() {
   }, [dayKey, month.cells]);
 
   const visibleRows = useMemo(
-    () => rows.filter((r) => r.kind === "lock"),
-    [rows],
+    () => (txFilterActive ? rows : rows.filter((r) => r.kind === "lock")),
+    [rows, txFilterActive],
   );
   const filtered = useMemo(() => {
     let list = visibleRows.filter((r) => matchesQuery(r, query));
@@ -311,7 +323,9 @@ export function ExplorerPage() {
                         <em>{row.symbol}</em>
                       </p>
                       <div className="ex-feed-meta">
-                        <Link href={`/lock/${row.id}`}>Lock #{row.id.toString()}</Link>
+                        <Link href={proofPath("lock", row.txHash, row.id)}>
+                          Lock #{row.id.toString()}
+                        </Link>
                         <span className="ex-mono">{shorten(row.wallet)}</span>
                         <a href={`${explorerUrl}/tx/${row.txHash}`} target="_blank" rel="noreferrer">
                           Arcscan
@@ -375,7 +389,7 @@ export function ExplorerPage() {
               {slice.map((row) => (
                 <article key={`${row.kind}-${row.txHash}-ledger-${row.id}`} className="ex-ledger-row">
                   <span className={`ex-kind ex-kind-${row.kind}`}>{kindLabel(row.kind)}</span>
-                  <Link className="ex-mono" href={`/lock/${row.id}`}>
+                  <Link className="ex-mono" href={proofPath("lock", row.txHash, row.id)}>
                     #{row.id.toString()}
                   </Link>
                   <span className="ex-mono hide-mobile">{shorten(row.wallet)}</span>
@@ -390,7 +404,7 @@ export function ExplorerPage() {
                       Tx
                       <ArrowUpRight className="size-3.5" />
                     </a>
-                    <Link href={`/lock/${row.id}`}>
+                    <Link href={proofPath("lock", row.txHash, row.id)}>
                       Proof
                       <ArrowRight className="size-3.5" />
                     </Link>
