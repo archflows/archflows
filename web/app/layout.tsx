@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sora, IBM_Plex_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { SiteChrome } from "@/components/SiteChrome";
+import { ReferralCapture } from "@/components/referral/referral-capture";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Providers } from "@/lib/providers";
 import { ConfirmProvider } from "@/components/confirm-provider";
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers cookies={cookies}>
           <TooltipProvider>
             <ConfirmProvider>
+              <ReferralCapture />
               <SiteChrome>{children}</SiteChrome>
               <Toaster />
             </ConfirmProvider>

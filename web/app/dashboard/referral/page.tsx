@@ -1,12 +1,11 @@
 "use client";
 
-import { ComingSoon } from "@/components/coming-soon";
+import { ReferralPanel } from "@/components/referral/referral-panel";
 
 export default function DashboardReferralPage() {
   return (
-    <ComingSoon
-      title="Referral"
-      body="Invite links and referral rewards are not live yet. Your contacts and locks are ready to use today."
-    />
+    <div className="flex flex-1 flex-col p-2 md:p-4 lg:px-4 min-w-0">
+      <ReferralPanel />
+    </div>
   );
 }

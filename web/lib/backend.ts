@@ -229,3 +229,134 @@ export function upsertStake(poolId: string, body: Json) {
 export function resolveTs(arg: bigint, fallback: number) {
   return arg === 0n ? fallback : Number(arg);
 }
+
+export type ReferralRates = {
+  rateBps: number;
+  platformBps: number;
+  effectiveBps: number;
+  minWithdrawUsdc: string;
+  payoutsEnabled: boolean;
+};
+
+export type ReferralEarning = {
+  id: string;
+  referee: string;
+  settlement_id: string;
+  source: string;
+  /** Fee the platform kept after any split rebate — the basis for the commission. */
+  fee_usdc: string;
+  gross_usdc: string;
+  platform_usdc: string;
+  net_usdc: string;
+  lock_count: number;
+  paid_usdc: string;
+  rebate_usdc: string;
+  created_at: string;
+};
+
+export type ReferralWithdrawal = {
+  id: string;
+  amount_usdc: string;
+  status: "pending" | "paid" | "failed";
+  tx_hash: string | null;
+  failure_reason: string | null;
+  created_at: string;
+};
+
+export type ReferralReferee = {
+  wallet: string;
+  created_at: string;
+  activated_at: string | null;
+  locks: number;
+  earned_usdc: string;
+};
+
+export type ReferralOverview = {
+  account: { wallet: string; code: string; tier: string };
+  rates: ReferralRates;
+  referredBy: { wallet: string; code: string; created_at: string } | null;
+  totals: {
+    signups: number;
+    activated: number;
+    feeVolumeUsdc: string;
+    grossUsdc: string;
+    platformUsdc: string;
+    netUsdc: string;
+    paidUsdc: string;
+    pendingUsdc: string;
+    availableUsdc: string;
+  };
+  referees: ReferralReferee[];
+  earnings: ReferralEarning[];
+  withdrawals: ReferralWithdrawal[];
+};
+
+export function getReferralOverview(wallet: string) {
+  return request<ReferralOverview>(`/v1/referrals/me${qs({ wallet })}`);
+}
+
+export function resolveReferralCode(code: string) {
+  return request<{ wallet: string; code: string; tier: string }>(
+    `/v1/referrals/resolve/${encodeURIComponent(code)}`,
+  );
+}
+
+export function bindReferral(wallet: string, code: string) {
+  return request<Json>("/v1/referrals/signup", {
+    method: "POST",
+    body: JSON.stringify({ wallet, code }),
+  });
+}
+
+export type FeeSettlement = {
+  id: string;
+  wallet: string;
+  kind: string;
+  lock_count: number;
+  /** Total USDC the contract charged on-chain: one flat fee per lock() call. */
+  paid_usdc: string;
+  /** What the create actually costs under ArcFlow's pricing. */
+  policy_usdc: string;
+  rebate_usdc: string;
+  rebate_status: "none" | "pending" | "paid" | "failed";
+  rebate_tx_hash: string | null;
+  created_at: string;
+};
+
+/**
+ * Reports every lock from one create so the backend can refund the difference between what
+ * the contract charged and what ArcFlow actually prices the create at, and credit referral
+ * commission on the remainder. The fee is re-read on-chain, so the body is not trusted.
+ */
+export function settleLockFees(body: {
+  batchId: string;
+  wallet: string;
+  kind?: "lock" | "vest";
+  locks: { lockId: string; txHash: string }[];
+}) {
+  return request<FeeSettlement & { locks: unknown[] }>("/v1/fees/settle", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function listFeeSettlements(wallet: string) {
+  return request<{
+    items: FeeSettlement[];
+    owedUsdc: string;
+    payoutsEnabled: boolean;
+    policy: { lockUnits: string; splitUnits: string };
+  }>(`/v1/fees/settlements${qs({ wallet })}`);
+}
+
+export function requestReferralWithdrawal(body: {
+  wallet: string;
+  amount: string;
+  nonce: string;
+  signature: string;
+}) {
+  return request<ReferralWithdrawal>("/v1/referrals/withdrawals", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}

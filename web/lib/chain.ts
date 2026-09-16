@@ -75,8 +75,21 @@ export const ARCFLOW_ESCROW_ADDRESS = publicAddress(af.escrow, ZERO);
 /** Arc USDC ERC-20 interface. 6 decimals. Same asset as native gas — never double-count. */
 export const USDC_ADDRESS = "0x3600000000000000000000000000000000000000" as `0x${string}`;
 export const USDC_DECIMALS = 6;
-/** $10 lock fee in the ERC-20 6-decimal view. */
+/** $10 lock fee in the ERC-20 6-decimal view. Charged by the contract per lock() call. */
 export const LOCK_FEE_UNITS = 10n * 10n ** 6n;
+/**
+ * $15 flat price for one create that splits across several unlock wallets. The contract has
+ * no batch entry point, so a split of N wallets pays LOCK_FEE_UNITS x N on-chain and the
+ * excess is refunded in USDC by the backend once the create settles.
+ */
+export const SPLIT_LOCK_FEE_UNITS = 15n * 10n ** 6n;
+
+/** What a create actually costs the user, after the split rebate. */
+export function netCreateFeeUnits(lockCount: number) {
+  const onChain = LOCK_FEE_UNITS * BigInt(Math.max(lockCount, 1));
+  if (lockCount <= 1) return LOCK_FEE_UNITS;
+  return onChain < SPLIT_LOCK_FEE_UNITS ? onChain : SPLIT_LOCK_FEE_UNITS;
+}
 
 /** Arc mempool rejects txs below 20 gwei. */
 export const MIN_MAX_FEE_PER_GAS = 20n * 10n ** 9n;

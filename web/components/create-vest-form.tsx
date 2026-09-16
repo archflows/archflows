@@ -35,7 +35,7 @@ import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
 import { DurationTriple, FormShell, PreviewPanel } from "@/components/forms/form-shell";
 import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
-import { resolveTs, upsertLock } from "@/lib/backend";
+import { resolveTs, settleLockFees, upsertLock } from "@/lib/backend";
 import { proofPath } from "@/lib/proof";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
@@ -255,6 +255,14 @@ export function CreateVestForm() {
         end: Number(endArg),
         feeUsdc: "10000000",
         txHash: lockHash,
+      });
+      // Fire-and-forget: this credits any referral commission, but a failure here must never
+      // surface as a failure on a vest the user already paid for.
+      void settleLockFees({
+        batchId: crypto.randomUUID(),
+        wallet: address,
+        kind: "vest",
+        locks: [{ lockId: lockId.toString(), txHash: lockHash }],
       });
       router.push(proofPath("lock", lockHash, lockId));
     } catch (err) {

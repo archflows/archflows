@@ -10,6 +10,7 @@ import {
   LOCK_FEE_UNITS,
   MIN_MAX_FEE_PER_GAS,
   USDC_ADDRESS,
+  netCreateFeeUnits,
 } from "@/lib/chain";
 import {
   DAY,
@@ -40,7 +41,7 @@ import { FormShell, PreviewPanel, UnlockAfterField } from "@/components/forms/fo
 import { LockTokenomicsPie } from "@/components/LockTokenomicsPie";
 import { LockSuccessDialog, type LockSuccessResult } from "@/components/lock-success-dialog";
 import { ActionConfirmDialog } from "@/components/ActionConfirmDialog";
-import { upsertLock } from "@/lib/backend";
+import { settleLockFees, upsertLock } from "@/lib/backend";
 import { confirmTx, eventArgs } from "@/lib/tx";
 import { clickOrExplain } from "@/lib/guard-click";
 
@@ -97,7 +98,11 @@ export function CreateLockForm() {
   }, [unlockMode, address, otherWallet, splits]);
 
   const lockCount = Math.max(1, unlockMode === "split" ? splits.length : 1);
+  // The wallet must approve what the contract charges (one fee per lock() call). The user is
+  // only ever priced at `netFeeTotal` — the difference comes back as a USDC rebate.
   const feeTotal = LOCK_FEE_UNITS * BigInt(unlockMode === "split" ? Math.max(splits.length, 1) : 1);
+  const netFeeTotal = netCreateFeeUnits(unlockMode === "split" ? lockCount : 1);
+  const rebateTotal = feeTotal - netFeeTotal;
 
   const { data: symbol } = useReadContract({
     address: tokenAddress,
@@ -346,6 +351,7 @@ export function CreateLockForm() {
       setStep("locking");
       let allocated = 0n;
       const created: LockSuccessResult["locks"] = [];
+      const settled: { lockId: string; txHash: string }[] = [];
       const tokenDecimals =
         decimals ??
         walletTokens.find((t) => t.address.toLowerCase() === tokenAddress.toLowerCase())?.decimals ??
@@ -393,7 +399,19 @@ export function CreateLockForm() {
             feeUsdc: "10000000",
             txHash: lockHash,
           });
+          settled.push({ lockId: ev.id.toString(), txHash: lockHash });
         }
+      }
+
+      if (settled.length > 0) {
+        // Fire-and-forget: this refunds the split overcharge and credits any referral, but a
+        // failure here must never surface as a failure on locks the user already paid for.
+        void settleLockFees({
+          batchId: crypto.randomUUID(),
+          wallet: address,
+          kind: "lock",
+          locks: settled,
+        });
       }
 
       if (created.length === 0) {
@@ -449,7 +467,14 @@ export function CreateLockForm() {
               ? "Agree & split lock"
               : "Agree & lock"
         }
-        feeUsd={10 * Math.max(lockTargets.length, 1)}
+        feeUsd={Number(netFeeTotal) / 1e6}
+        feeNote={
+          rebateTotal > 0n
+            ? `Charged as $${Number(feeTotal) / 1e6} on-chain (one fee per lock), then $${
+                Number(rebateTotal) / 1e6
+              } is refunded to your wallet in USDC.`
+            : undefined
+        }
         summary={[
           { label: "Type", value: "Hard lock" },
           {

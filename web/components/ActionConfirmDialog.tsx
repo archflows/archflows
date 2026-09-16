@@ -20,6 +20,8 @@ type Props = {
   confirmLabel: string;
   /** Platform fee in USD. Pass null to hide the fee row. */
   feeUsd?: number | null;
+  /** Replaces the default fee caption, for cases where the charge differs from the price. */
+  feeNote?: ReactNode;
   summary?: { label: string; value: ReactNode }[];
   onConfirm: () => void;
 };
@@ -31,6 +33,7 @@ export function ActionConfirmDialog({
   description = "Review the details below before your wallet asks you to sign.",
   confirmLabel,
   feeUsd = 10,
+  feeNote,
   summary,
   onConfirm,
 }: Props) {
@@ -64,10 +67,12 @@ export function ActionConfirmDialog({
             <div className="flex items-center justify-between rounded-xl border border-primary/25 bg-primary/10 px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-white">Platform fee</p>
-                <p className="text-xs text-white/60">Paid in USDC when the transaction confirms</p>
+                <p className="text-xs text-white/60">
+                  {feeNote ?? "Paid in USDC when the transaction confirms"}
+                </p>
               </div>
               <p className="text-base font-semibold tabular-nums text-white">
-                ${feeUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })} USDC
+                ${feeUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })} USDC
               </p>
             </div>
           ) : null}
