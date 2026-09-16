@@ -2,13 +2,19 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {ArcFlow} from "../src/ArcFlow.sol";
+import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
 import {ArcFlowStream} from "../src/ArcFlowStream.sol";
 import {Deployers} from "./helpers/Deployers.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 
 /// @dev A later version that adds behaviour and state without moving existing slots.
 contract ArcFlowStreamV2 is ArcFlowStream {
+    function version() external pure returns (string memory) {
+        return "v2";
+    }
+}
+
+contract ArcFlowLockV2 is ArcFlow {
     function version() external pure returns (string memory) {
         return "v2";
     }
@@ -72,14 +78,36 @@ contract UpgradeableTest is Test {
         stream.initialize(attacker);
     }
 
-    /// @dev The anti-dump lock is deployed raw, so it must not expose any upgrade hook.
-    function test_LockContractHasNoUpgradePath() public {
-        ArcFlow locks = new ArcFlow(address(1), address(2));
-        (bool ok,) = address(locks).call(abi.encodeWithSignature("upgradeToAndCall(address,bytes)", address(1), ""));
-        assertFalse(ok, "lock contract must not be upgradeable");
+    /// @dev Locker is UUPS now. Implementation cannot be initialized directly.
+    function test_LockImplementationCannotBeInitializedDirectly() public {
+        ArcFlow impl = new ArcFlow();
+        vm.expectRevert();
+        impl.initialize(attacker, address(1), address(2));
+    }
 
-        (bool ownerCall,) = address(locks).call(abi.encodeWithSignature("owner()"));
-        assertFalse(ownerCall, "lock contract must have no owner");
+    function test_LockProxyCannotBeReinitialized() public {
+        ArcFlow locks = Deployers.lock(owner, address(1), address(2));
+        vm.expectRevert();
+        locks.initialize(attacker, address(1), address(2));
+    }
+
+    function test_LockOwnerUpgradesAndStateSurvives() public {
+        ArcFlow locks = Deployers.lock(owner, address(1), address(2));
+        address v2 = address(new ArcFlowLockV2());
+        vm.prank(owner);
+        locks.upgradeToAndCall(v2, "");
+        assertEq(ArcFlowLockV2(address(locks)).version(), "v2");
+        assertEq(locks.usdc(), address(1));
+        assertEq(locks.treasury(), address(2));
+        assertEq(locks.owner(), owner);
+    }
+
+    function test_LockNonOwnerCannotUpgrade() public {
+        ArcFlow locks = Deployers.lock(owner, address(1), address(2));
+        address v2 = address(new ArcFlowLockV2());
+        vm.prank(attacker);
+        vm.expectRevert();
+        locks.upgradeToAndCall(v2, "");
     }
 
     function _open() internal returns (uint256) {

@@ -4,7 +4,7 @@ import { use } from "react";
 import { formatUnits } from "viem";
 import { useReadContract } from "wagmi";
 import { erc20Abi, streamAbi } from "@/lib/abi";
-import { ARCFLOW_STREAM_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { ARCFLOW_STREAM_ADDRESS, EXPLORER_URL, NETWORK_BADGE } from "@/lib/chain";
 import { ProofFrame, ProofKv } from "@/components/proof-frame";
 import { useCanonicalProofPath, useProofRecord } from "@/hooks/useProofRecord";
 import { isTxHash } from "@/lib/proof";
@@ -62,7 +62,7 @@ export default function StreamProofPage({ params }: { params: Promise<{ id: stri
 
   return (
     <ProofFrame
-      tag="// PROOF OF STREAM · ARC TESTNET"
+      tag={`// PROOF OF STREAM · ARC ${NETWORK_BADGE.toUpperCase()}`}
       title={`${symbol ? `${symbol} ` : ""}Stream #${recordId ?? "…"}`}
       status={stream?.[13] ? "Canceled" : "Streaming"}
       loading={isTxHash(key) && isLoading}

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
@@ -8,10 +13,11 @@ interface IERC20 {
 }
 
 /// @title arcflows locker
-/// @notice Immutable token locks and linear vesting for Arc.
+/// @notice Token locks and linear vesting for Arc.
 ///         After a launchpad create, a dev locks their allocation so it cannot be sold until it unlocks.
-/// @dev A position can never be cancelled, shortened, or reassigned. That is the product guarantee.
-contract ArcFlow {
+/// @dev Deployed behind a UUPS proxy so the owner can replace this implementation.
+///      This version still cannot cancel, shorten, or reassign a position.
+contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     struct Position {
         address token;
         address beneficiary;
@@ -30,9 +36,9 @@ contract ArcFlow {
     uint128 public constant LOCK_FEE = 10 * 1e6;
 
     /// @dev Arc USDC ERC-20 interface. Same asset as gas; do not send `msg.value` for the fee.
-    address public immutable usdc;
-    /// @dev Immutable fee sink. There is no owner, so this cannot be rotated later.
-    address public immutable treasury;
+    address public usdc;
+    /// @dev Fee sink. Set at initialize; this implementation does not rotate it.
+    address public treasury;
 
     uint256 public nextId;
     mapping(uint256 => Position) public positions;
@@ -50,7 +56,6 @@ contract ArcFlow {
     error TransferFailed();
     error NotBeneficiary();
     error NothingToClaim();
-    error Reentrancy();
 
     event Locked(
         uint256 indexed id,
@@ -65,17 +70,16 @@ contract ArcFlow {
     event FeePaid(uint256 indexed id, address indexed from, uint128 amount);
     event Claimed(uint256 indexed id, address indexed beneficiary, uint128 amount);
 
-    uint256 private _entered;
-
-    modifier nonReentrant() {
-        if (_entered == 1) revert Reentrancy();
-        _entered = 1;
-        _;
-        _entered = 0;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    constructor(address usdc_, address treasury_) {
+    function initialize(address owner_, address usdc_, address treasury_) external initializer {
         if (usdc_ == address(0) || treasury_ == address(0) || treasury_ == address(this)) revert ZeroAddress();
+        __Ownable_init(owner_);
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
         usdc = usdc_;
         treasury = treasury_;
     }
@@ -199,4 +203,9 @@ contract ArcFlow {
         if (!ok) revert TransferFailed();
         if (data.length != 0 && (data.length < 32 || !abi.decode(data, (bool)))) revert TransferFailed();
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
+    /// @dev Reserved so later versions can add state without shifting existing slots.
+    uint256[45] private __gap;
 }

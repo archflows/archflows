@@ -20,7 +20,7 @@ function splitList(value) {
     .filter(Boolean);
 }
 
-const mode = firstEnv(["ARCFLOW_MODE", "NEXT_PUBLIC_ARCFLOW_MODE"], "testnet").toLowerCase();
+const mode = firstEnv(["ARCFLOW_MODE", "NEXT_PUBLIC_ARCFLOW_MODE"], "mainnet").toLowerCase();
 const isMainnet = mode === "mainnet";
 
 export const config = {
@@ -40,8 +40,10 @@ export const config = {
   mode: isMainnet ? "mainnet" : "testnet",
   chainId: Number.parseInt(firstEnv(["CHAIN_ID", "NEXT_PUBLIC_CHAIN_ID"], isMainnet ? "5042" : "5042002"), 10),
   rpc: firstEnv(
-    ["ARC_RPC", "NEXT_PUBLIC_ARC_RPC", "ARC_TESTNET_RPC", "ARC_TESTNET_RPC_URL", "ARC_MAINNET_RPC"],
-    isMainnet ? "https://rpc.arc.network" : "https://rpc.testnet.arc.network",
+    isMainnet
+      ? ["ARC_RPC", "ARC_MAINNET_RPC", "ARC_MAINNET_RPC_URL", "NEXT_PUBLIC_ARC_RPC"]
+      : ["ARC_RPC", "ARC_TESTNET_RPC", "ARC_TESTNET_RPC_URL", "NEXT_PUBLIC_ARC_RPC"],
+    isMainnet ? "https://rpc.mainnet.arc.io" : "https://rpc.testnet.arc.network",
   ),
   contracts: {
     lock: firstEnv(["ARCFLOW_ADDRESS", "NEXT_PUBLIC_ARCFLOW_ADDRESS"]),

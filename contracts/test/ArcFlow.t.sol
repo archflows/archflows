@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {ArcFlow} from "../src/ArcFlow.sol";
+import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
+import {Deployers} from "./helpers/Deployers.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 
 contract ArcFlowTest is Test {
@@ -10,6 +11,7 @@ contract ArcFlowTest is Test {
     MockERC20 token;
     MockERC20 usdc;
 
+    address owner = makeAddr("owner");
     address dev = makeAddr("dev");
     address stranger = makeAddr("stranger");
     address treasury = makeAddr("treasury");
@@ -19,7 +21,7 @@ contract ArcFlowTest is Test {
     function setUp() public {
         vm.warp(1_700_000_000);
         usdc = new MockERC20(0);
-        flow = new ArcFlow(address(usdc), treasury);
+        flow = Deployers.lock(owner, address(usdc), treasury);
         token = new MockERC20(0);
         token.mint(dev, AMOUNT * 10);
         vm.prank(dev);

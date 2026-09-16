@@ -17,6 +17,7 @@ import { FlowMock } from "@/components/FlowMock";
 import { HeroShot } from "@/components/HeroShot";
 import { LandingLiveProof } from "@/components/LandingLiveProof";
 import { LandingRevealReady } from "@/components/LandingRevealReady";
+import { ARC_CHAIN_ID, EXPLORER_URL, NETWORK_NAME } from "@/lib/chain";
 
 const MARQUEE = [
   { name: "Arc", src: "/marquee/arc.svg" },
@@ -214,8 +215,8 @@ const FAQ = [
     a: "The contract holds tokens until claim; no human key can redirect them. You keep your wallet. We keep no admin lever over locked balances.",
   },
   {
-    q: "Is this ready for mainnet?",
-    a: "Arc public mainnet is not live yet, and contracts are not externally audited. Use testnet USDC only, not production funds.",
+    q: "Is this audited?",
+    a: "ArcFlows is live on Arc mainnet. Contracts are not externally audited. Review the vault and the public proof page before you lock production tokens.",
   },
 ];
 
@@ -479,7 +480,6 @@ export default function LandingPage() {
             <h2>Before you lock</h2>
             <p className="lead" style={{ marginBottom: 0 }}>
               Immutable vaults, USDC gas, public proof. Contracts are not externally audited.
-              Testnet only.
             </p>
           </div>
           <div className="faq-list lp-faq-list">
@@ -498,8 +498,8 @@ export default function LandingPage() {
           <p className="lp-eyebrow">Get started</p>
           <h2>Create your first lock on Arc</h2>
           <p className="lead">
-            Connect a wallet on Arc Testnet, set the schedule, and share the public URL. The
-            same USDC pays gas and the $10 fee. Not for production funds.
+            Connect a wallet on Arc, set the schedule, and share the public URL. The
+            same USDC pays gas and the $10 fee.
           </p>
           <div className="lp-cta-actions">
             <Link className="btn lg" href="/auth">
@@ -508,16 +508,16 @@ export default function LandingPage() {
             </Link>
             <a
               className="btn ghost lg"
-              href="https://faucet.circle.com"
+              href={EXPLORER_URL}
               target="_blank"
               rel="noreferrer"
             >
-              Get testnet USDC
+              Arc explorer
             </a>
           </div>
           <ul className="lp-cta-meta">
-            <li>Arc Testnet</li>
-            <li>Chain 5042002</li>
+            <li>{NETWORK_NAME}</li>
+            <li>Chain {ARC_CHAIN_ID}</li>
             <li>$10 USDC fee</li>
             <li>Gas in USDC</li>
           </ul>

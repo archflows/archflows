@@ -23,11 +23,11 @@ const DEFAULT_CHAIN_ID = isMainnet ? 5042 : 5042002;
 export const ARC_CHAIN_ID = parseChainId(af.chainId, DEFAULT_CHAIN_ID);
 
 export const ARC_TESTNET_RPC = af.rpcTestnet || "https://rpc.testnet.arc.network";
-export const ARC_MAINNET_RPC = af.rpcMainnet || "https://rpc.arc.network";
+export const ARC_MAINNET_RPC = af.rpcMainnet || "https://rpc.mainnet.arc.io";
 export const ARC_RPC_URL = af.rpc || (isMainnet ? ARC_MAINNET_RPC : ARC_TESTNET_RPC);
 export const ARC_WS_URL = wsFromHttp(ARC_RPC_URL);
 
-export const EXPLORER_URL = isMainnet ? "https://arcscan.app" : "https://testnet.arcscan.app";
+export const EXPLORER_URL = isMainnet ? "https://explorer.arc.io" : "https://testnet.arcscan.app";
 export const FAUCET_URL = "https://faucet.circle.com";
 
 export function explorerTxUrl(hash: string) {

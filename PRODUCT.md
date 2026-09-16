@@ -66,15 +66,15 @@ Pays USDC salary or vendor invoices on a schedule. Cares that gas is already dol
 
 ## 6. What is shipped
 
-Arc public mainnet launched 16 September 2026 ([Arc](https://www.arc.io/blog/arc-mainnet-goes-live-on-september-16-2026)). ArcFlows is live on **Arc Testnet** (chain `5042002`). Mainnet deploy of the vault is the next freeze — see `contract-addres.md`. Do not tweet “ArcFlows is live on mainnet” until that address is in that file.
+Arc public mainnet launched 16 September 2026 ([Arc](https://www.arc.io/blog/arc-mainnet-goes-live-on-september-16-2026)). ArcFlows is live on **Arc mainnet** (chain `5042`). Addresses: `contract-addres.md` § Mainnet.
 
 ### Live for users
 
 | Surface | Status |
 |---|---|
-| Immutable token lock (hard lock, $10 USDC fee) | Live on testnet |
-| Linear vesting with cliff | Live on testnet |
-| Streams (single + payroll CSV, cancelable / top-up) | Live on testnet |
+| Immutable token lock (hard lock, $10 USDC fee) | Live on mainnet |
+| Linear vesting with cliff | Live on mainnet |
+| Streams (single + payroll CSV, cancelable / top-up) | Live on mainnet |
 | Public proof pages (`/lock/[id]`, `/stream/[id]`, …) | Live |
 | Share / OG / Twitter cards on lock pages | Live |
 | Dashboard (create + my positions) | Live |
@@ -85,7 +85,7 @@ Arc public mainnet launched 16 September 2026 ([Arc](https://www.arc.io/blog/arc
 
 ### Built on-chain, UI not opened yet
 
-Contracts are deployed on testnet. Dashboard entries are marked coming soon so we do not send unaudited flows at real users.
+Contracts are deployed on Arc mainnet. Dashboard entries for airdrop, escrow, and staking stay coming soon until those flows are opened.
 
 | Module | Contract | UI |
 |---|---|---|
@@ -143,8 +143,8 @@ Proof page rule: **if it is not on this page, it is not locked.**
 
 ## 8. Contract rules
 
-Lock vault: `contracts/src/ArcFlow.sol`  
-Deployed immutable (no owner, no proxy) at `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` on Arc Testnet.
+Lock vault: `contracts/src/ArcFlow.sol` (`contract arcflows`)  
+Testnet vault at `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` is the old immutable deploy. New deploys (including mainnet) put the locker behind a UUPS proxy like the other modules.
 
 | Rule | Why |
 |---|---|
@@ -153,11 +153,11 @@ Deployed immutable (no owner, no proxy) at `0xbfbc6d4889b21ABFAeDc145aef3760529E
 | Hard lock = `cliff == end` | Nothing until T |
 | Tokens pulled in on lock | Cannot stay in the dev wallet |
 | Only `beneficiary` can `claim` | Proof of who receives |
-| No admin rug on vault principal | A lock an owner could upgrade would not prove anything |
+| No admin rug on vault principal *in this implementation* | Positions cannot be cancelled, shortened, or reassigned. The UUPS owner can still replace the implementation. |
 | Flat $10 USDC fee at creation | Revenue never sits inside locked principal |
 | Anti-backdate + minimum duration | No “already unlocked” lock |
 
-Streams, distributor, escrow, staking sit behind UUPS proxies. The **lock vault does not.** Old vaults stay live so existing positions keep their address.
+Every module sits behind a UUPS proxy. Old testnet lock vaults stay live so existing positions keep their address.
 
 Addresses, previous vaults, and upgrade txs: `contract-addres.md`.
 
@@ -207,8 +207,8 @@ Wallet (Arc, USDC gas)
 ```
 
 - Frontend: Next.js, wagmi, viem, Sora + IBM Plex Mono
-- Testnet RPC `https://rpc.testnet.arc.network` · explorer `https://testnet.arcscan.app`
-- Mainnet RPC `https://rpc.arc.network` · explorer `https://arcscan.app` · chain `5042` when `ARCFLOW_MODE=mainnet`
+- Mainnet RPC `https://rpc.mainnet.arc.io` · explorer `https://explorer.arc.io` · chain `5042` (`ARCFLOW_MODE=mainnet`)
+- Testnet RPC `https://rpc.testnet.arc.network` · explorer `https://testnet.arcscan.app` · chain `5042002` when `ARCFLOW_MODE=testnet`
 - Native USDC (gas) is 18 decimals. ERC-20 USDC is 6 decimals at `0x3600000000000000000000000000000000000000`. Same asset, two views — never double-count
 - Mempool `maxFeePerGas` floor is 20 Gwei. Sub-second finality — no multi-block waits
 - Backend: Express + Postgres, API key from the app via `/api/af`. Index only. It does not replace wallet txs
@@ -217,11 +217,10 @@ Wallet (Arc, USDC gas)
 
 ## 12. Security
 
-- Lock vault is immutable. Proxied modules stay UUPS until a mainnet freeze
-- **Audit before mainnet money.** The product is testnet until the report is public
-- Warn users: unaudited. Landing and docs already say this
+- Lock vault on mainnet is UUPS (same as stream / airdrop / escrow / staking). The old testnet vault at `0xbfbc6d…` is still the immutable bytecode
+- Contracts are not externally audited. Warn users on landing and proof pages
 - Never ask for a signature that is not approve / lock / vest / stream / claim
-- Immutable locks cannot be a backdoor for the team
+- UUPS owner can replace locker logic; keep that key on a multisig, not a hot wallet
 
 ---
 
@@ -406,7 +405,7 @@ Do not start the next phase until the previous exit is hit.
 
 Ship: lock, vest, stream, proof, dashboard, docs, litepaper, brand kit.
 
-**Exit:** 50+ real locks **or** 3 pads/CT accounts regularly linking ArcFlows proofs. Then freeze a mainnet vault (immutable, same as testnet).
+**Exit:** 50+ real locks **or** 3 pads/CT accounts regularly linking ArcFlows proofs. Then deploy the UUPS locker to Arc mainnet (`5042`).
 
 ### Next — Open the remaining modules
 
@@ -484,7 +483,7 @@ Ship: lock, vest, stream, proof, dashboard, docs, litepaper, brand kit.
 ## 22. Open questions
 
 1. First pad partner: Tolly vs Warp vs Archemist?
-2. Mainnet vault: freeze the same immutable bytecode, no proxy?
+2. Mainnet vault: UUPS locker (`contract arcflows`), same as the other modules.
 3. Open airdrop / escrow / stake UI before or after audit?
 4. Do we show a “not locked” badge if someone pastes a CA with zero ArcFlows positions? (easy viral, easy to get hated)
 
@@ -493,15 +492,16 @@ Ship: lock, vest, stream, proof, dashboard, docs, litepaper, brand kit.
 ## 23. Checklist
 
 - [x] Spec this document
-- [x] `ArcFlow.sol` lock + vest + claim, immutable vault
-- [x] `ArcFlowStream`, distributor, escrow, staking (testnet)
+- [x] `ArcFlow.sol` lock + vest + claim (`contract arcflows`, UUPS for new deploys)
+- [x] `ArcFlowStream`, distributor, escrow, staking (mainnet)
 - [x] Web: marketing, dashboard, proof, docs, litepaper
 - [x] Backend index + `/api/af`
 - [x] Deploy Arc Testnet (`contract-addres.md`)
+- [x] Deploy Arc mainnet (`contract-addres.md` § Mainnet)
 - [x] `$10 USDC` lock fee + treasury
 - [x] Brand: Sora, royal blue palette, wordmark, X kit
 - [x] Motion/intro clips + one-week X cards
 - [ ] External audit
-- [ ] Mainnet vault address frozen
+- [x] Mainnet vault address frozen
 - [ ] First real CA + tweeted proof on mainnet
 - [ ] Open airdrop / escrow / stake UI

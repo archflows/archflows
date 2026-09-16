@@ -19,7 +19,7 @@ function siteUrl() {
 }
 
 const arcflowMode =
-  env("ARCFLOW_MODE", "NEXT_PUBLIC_ARCFLOW_MODE").toLowerCase() === "mainnet" ? "mainnet" : "testnet";
+  env("ARCFLOW_MODE", "NEXT_PUBLIC_ARCFLOW_MODE").toLowerCase() === "testnet" ? "testnet" : "mainnet";
 
 const defaultChainId = arcflowMode === "mainnet" ? "5042" : "5042002";
 const chainId = env("CHAIN_ID", "NEXT_PUBLIC_CHAIN_ID") || defaultChainId;
@@ -38,7 +38,7 @@ const mainnetRpc =
     "ARC_MAINNET_RPC_URL",
     "NEXT_PUBLIC_ARC_MAINNET_RPC",
     "NEXT_PUBLIC_ARC_MAINNET_RPC_URL",
-  ) || "https://rpc.arc.network";
+  ) || "https://rpc.mainnet.arc.io";
 
 const rpc = arcflowMode === "mainnet" ? mainnetRpc : testnetRpc;
 

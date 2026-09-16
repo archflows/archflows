@@ -9,9 +9,9 @@ import {TokenLib} from "./lib/TokenLib.sol";
 
 /// @title arcflows stream
 /// @notice Streamflow-style vesting: linear/cliff/period unlock, cancel, transfer, top-up, batch.
-/// @dev Immutable anti-dump locks stay in ArcFlow.sol. This contract is for allocations and payroll.
+/// @dev Anti-dump locks stay in ArcFlow.sol. This contract is for allocations and payroll.
 ///      Deployed behind a UUPS proxy: the owner can change the logic, so treat the owner key as
-///      able to reach every balance held here. ArcFlow.sol deliberately has no such switch.
+///      able to reach every balance held here. The locker is the same shape.
 contract ArcFlowStream is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     struct Stream {
         address token;

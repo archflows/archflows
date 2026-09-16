@@ -272,7 +272,7 @@ export function docsLoginPage({ error = false } = {}) {
         <h1>Open the index that tracks every orbit</h1>
         <p class="lede">Locks, streams, airdrops, escrow, and staking on Arc. Gas is USDC. Sign in to browse and try the live endpoints.</p>
         <div class="meta">
-          <span class="chip">Arc Testnet</span>
+          <span class="chip">Arc Mainnet</span>
           <span class="chip">OpenAPI 3</span>
           <span class="chip">USDC gas</span>
         </div>

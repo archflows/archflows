@@ -13,6 +13,7 @@ import {
   MIN_MAX_FEE_PER_GAS,
   USDC_ADDRESS,
   netCreateFeeUnits,
+  isTestnet,
 } from "@/lib/chain";
 import {
   DAY,
@@ -304,7 +305,7 @@ export function CreateLockForm() {
       setError(
         unlockMode === "split"
           ? "Not enough USDC for this split."
-          : "Not enough USDC. Fund the wallet from faucet.circle.com.",
+          : "Not enough USDC for gas and the lock fee.",
       );
       return;
     }
@@ -611,9 +612,15 @@ export function CreateLockForm() {
                     ? {
                         tone: "warn" as const,
                         title: "Need more USDC",
-                        body: "This wallet needs more USDC for gas. Get testnet USDC from the faucet.",
-                        href: "https://faucet.circle.com",
-                        hrefLabel: "Get testnet USDC",
+                        body: isTestnet
+                          ? "This wallet needs more USDC for gas. Get testnet USDC from the faucet."
+                          : "This wallet needs more USDC for gas and the $10 lock fee.",
+                        ...(isTestnet
+                          ? {
+                              href: "https://faucet.circle.com",
+                              hrefLabel: "Get testnet USDC",
+                            }
+                          : {}),
                       }
                     : null;
 

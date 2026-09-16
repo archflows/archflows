@@ -4,7 +4,7 @@ import { use } from "react";
 import { formatUnits } from "viem";
 import { useReadContract } from "wagmi";
 import { erc20Abi, escrowAbi } from "@/lib/abi";
-import { ARCFLOW_ESCROW_ADDRESS, EXPLORER_URL } from "@/lib/chain";
+import { ARCFLOW_ESCROW_ADDRESS, EXPLORER_URL, NETWORK_BADGE } from "@/lib/chain";
 import { ProofFrame, ProofKv } from "@/components/proof-frame";
 import { useCanonicalProofPath, useProofRecord } from "@/hooks/useProofRecord";
 import { isTxHash } from "@/lib/proof";
@@ -64,7 +64,7 @@ export default function EscrowProofPage({ params }: { params: Promise<{ id: stri
 
   return (
     <ProofFrame
-      tag="// PROOF OF ESCROW · ARC TESTNET"
+      tag={`// PROOF OF ESCROW · ARC ${NETWORK_BADGE.toUpperCase()}`}
       title={`${symbol ? `${symbol} ` : ""}Deal #${recordId ?? "…"}`}
       status={STATUS[deal?.[6] ?? 0] ?? "Open"}
       loading={isTxHash(key) && isLoading}
