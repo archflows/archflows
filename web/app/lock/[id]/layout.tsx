@@ -12,7 +12,11 @@ type Props = {
 };
 
 function siteOrigin() {
-  return af.site.replace(/\/$/, "");
+  const raw = af.site.replace(/\/$/, "");
+  if (/^https?:\/\/localhost(?::\d+)?$/i.test(raw) && process.env.NODE_ENV === "production") {
+    return "https://arcflows.finance";
+  }
+  return raw;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

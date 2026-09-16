@@ -9,6 +9,15 @@ function env(...keys: string[]) {
   return "";
 }
 
+function siteUrl() {
+  const raw =
+    env("SITE_URL", "NEXT_PUBLIC_SITE_URL", "RAILWAY_PUBLIC_DOMAIN") ||
+    (process.env.NODE_ENV === "production" ? "https://arcflows.finance" : "http://localhost:3000");
+  const value = raw.replace(/\/$/, "");
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
+}
+
 const arcflowMode =
   env("ARCFLOW_MODE", "NEXT_PUBLIC_ARCFLOW_MODE").toLowerCase() === "mainnet" ? "mainnet" : "testnet";
 
@@ -92,7 +101,7 @@ const nextConfig: NextConfig = {
     AF_DIST: env("ARCFLOW_DISTRIBUTOR_ADDRESS", "NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS"),
     AF_ESCROW: env("ARCFLOW_ESCROW_ADDRESS", "NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS"),
     AF_STAKE: env("ARCFLOW_STAKING_ADDRESS", "NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS"),
-    AF_SITE: env("SITE_URL", "NEXT_PUBLIC_SITE_URL") || "http://localhost:3000",
+    AF_SITE: siteUrl(),
   },
   serverExternalPackages: ["pino", "pino-pretty", "lokijs", "encoding"],
   webpack: (config) => {

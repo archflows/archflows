@@ -23,7 +23,11 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://archflows.finance"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.SITE_URL ||
+      (process.env.NODE_ENV === "production" ? "https://arcflows.finance" : "http://localhost:3000"),
+  ),
   title: "ArcFlows. Token locks and vesting on Arc",
   description:
     "Immutable token locks, linear vesting, streams, airdrops, escrow, and staking on Arc. Public proof pages. Gas paid in USDC.",
