@@ -165,7 +165,7 @@ export function TableRowsSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?
 
 export function StatCardsSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:px-6">
       {times(count).map((i) => (
         <div key={i} className="sk-stat-card">
           <Skeleton className="sk-line sk-w-24" />

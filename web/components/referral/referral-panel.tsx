@@ -88,97 +88,73 @@ export function ReferralPanel() {
   }
 
   if (!data) {
-    return (
-      <div className="flex flex-col gap-4">
-        <StatCardsSkeleton count={4} />
-      </div>
-    );
+    return <StatCardsSkeleton count={4} />;
   }
 
   const { account, rates, totals, referees, earnings, withdrawals, referredBy } = data;
   /** What the referrer keeps on one standard $10 lock, in USDC units. */
   const perStandardLock = (10_000_000n * BigInt(rates.effectiveBps)) / 10_000n;
 
+  const stats = [
+    {
+      label: "Available",
+      value: `$${formatUsdc(totals.availableUsdc)}`,
+      hint: `Min $${formatUsdc(rates.minWithdrawUsdc)}`,
+      badge: (
+        <>
+          <WalletIcon className="size-3" />
+          USDC
+        </>
+      ),
+    },
+    {
+      label: "Lifetime earned",
+      value: `$${formatUsdc(totals.netUsdc)}`,
+      hint: `$${formatUsdc(totals.paidUsdc)} paid · $${formatUsdc(totals.platformUsdc)} cut`,
+      badge: `${bpsToPercent(rates.effectiveBps)} net`,
+    },
+    {
+      label: "Referrals",
+      value: String(totals.signups),
+      hint: `${totals.activated} locked`,
+      badge: (
+        <>
+          <UsersIcon className="size-3" />
+          Joined
+        </>
+      ),
+    },
+    {
+      label: "Fee volume",
+      value: `$${formatUsdc(totals.feeVolumeUsdc)}`,
+      hint: earnings.length ? "From referred locks" : "No locks yet",
+      badge: earnings.length ? "Live" : "—",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        <Card className={CARD}>
-          <CardHeader>
-            <CardDescription className="text-[0.8rem] font-medium tracking-wide text-white">
-              Available to withdraw
-            </CardDescription>
-            <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-              ${formatUsdc(totals.availableUsdc)}
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className={BADGE}>
-                <WalletIcon className="size-3" />
-                USDC
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="pt-0 text-[0.8rem] text-white/70">
-            Minimum withdrawal ${formatUsdc(rates.minWithdrawUsdc)}.
-          </CardContent>
-        </Card>
-
-        <Card className={CARD}>
-          <CardHeader>
-            <CardDescription className="text-[0.8rem] font-medium tracking-wide text-white">
-              Lifetime earned
-            </CardDescription>
-            <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-              ${formatUsdc(totals.netUsdc)}
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className={BADGE}>
-                {bpsToPercent(rates.effectiveBps)} net
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="pt-0 text-[0.8rem] text-white/70">
-            ${formatUsdc(totals.paidUsdc)} paid out · ${formatUsdc(totals.platformUsdc)} platform cut
-          </CardContent>
-        </Card>
-
-        <Card className={CARD}>
-          <CardHeader>
-            <CardDescription className="text-[0.8rem] font-medium tracking-wide text-white">
-              Referrals
-            </CardDescription>
-            <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-              {totals.signups}
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className={BADGE}>
-                <UsersIcon className="size-3" />
-                {totals.activated} locked
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="pt-0 text-[0.8rem] text-white/70">
-            A referral starts earning on their first lock.
-          </CardContent>
-        </Card>
-
-        <Card className={CARD}>
-          <CardHeader>
-            <CardDescription className="text-[0.8rem] font-medium tracking-wide text-white">
-              Fee volume referred
-            </CardDescription>
-            <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-              ${formatUsdc(totals.feeVolumeUsdc)}
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className={BADGE}>
-                {earnings.length ? "Live" : "No locks yet"}
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="pt-0 text-[0.8rem] text-white/70">
-            USDC fees your referrals paid on ArcFlow.
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} className={CARD}>
+            <CardHeader className="gap-1 pb-3">
+              <CardDescription className="text-[0.72rem] font-medium tracking-wide text-white/80">
+                {stat.label}
+              </CardDescription>
+              <CardTitle className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+                {stat.value}
+              </CardTitle>
+              <CardAction>
+                <Badge variant="outline" className={BADGE}>
+                  {stat.badge}
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardContent className="pt-0 text-[0.72rem] leading-snug text-white/60">
+              {stat.hint}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
