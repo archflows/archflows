@@ -5,6 +5,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { asCode, generateCode } from "../lib/referral.js";
+import { notifyReferralSignup } from "../lib/notifications-store.js";
 import { assertWithdrawalSignature, payoutAddress, sendUsdcPayout } from "../lib/chain.js";
 import {
   asAddress,
@@ -125,6 +126,9 @@ referralsRouter.post(
       ok(res, { ...raced.rows[0], alreadyBound: true });
       return;
     }
+    void notifyReferralSignup(referrer, referee).catch((error) => {
+      console.warn("[notifications] referral signup", error);
+    });
     created(res, rows[0]);
   }),
 );

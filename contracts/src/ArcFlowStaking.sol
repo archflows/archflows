@@ -7,7 +7,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {TokenLib} from "./lib/TokenLib.sol";
 
-/// @title ArcFlowStaking
+/// @title arcflows staking
 /// @notice Permissionless staking pools: stake, lock, earn, claim (Synthetix-style).
 /// @dev Storage is append-only so the existing UUPS proxy can keep upgrading. The protocol
 ///      owner can replace this implementation — keep that key on a multisig, not a hot wallet.

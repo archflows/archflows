@@ -65,6 +65,16 @@ export default function DocsPage() {
           creation. They sit in the vault until claim.
         </p>
         <DocTable
+          headers={["Module", "Name"]}
+          rows={[
+            ["Lock / vest vault", "arcflows locker"],
+            ["Streams / payroll", "arcflows stream"],
+            ["Merkle campaigns", "arcflows airdrop"],
+            ["P2P escrow", "arcflows escrow"],
+            ["Staking pools", "arcflows staking"],
+          ]}
+        />
+        <DocTable
           headers={["Type", "Release", "Typical use"]}
           rows={[
             [

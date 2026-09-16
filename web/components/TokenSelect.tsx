@@ -183,7 +183,7 @@ export function TokenSelect({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-col gap-3 px-4 py-3">
+              <div className="flex flex-col gap-2.5 px-3.5 py-2.5">
                 <div className="relative">
                   <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-white/40" />
                   <Input
@@ -191,15 +191,15 @@ export function TokenSelect({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search symbol or address"
-                    className="h-9 border-white/12 bg-black/30 pl-8 text-white placeholder:text-white/40"
+                    className="dash-control h-8 pl-8 text-xs text-white placeholder:text-white/40"
                   />
                 </div>
 
-                <div className="max-h-[22rem] overflow-y-auto rounded-xl border border-white/8 bg-black/25">
+                <div className="dash-well max-h-[20rem] overflow-y-auto">
                   {isLoading ? (
                     <TokenListSkeleton />
                   ) : filtered.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-white/60">
+                    <p className="px-4 py-6 text-center text-xs text-white/60">
                       {sorted.length === 0
                         ? `No ERC-20 balances in ${walletLabel}.`
                         : "No tokens match that search."}
@@ -213,7 +213,7 @@ export function TokenSelect({
                             <button
                               type="button"
                               className={cn(
-                                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs transition-colors",
                                 active ? "bg-primary/20" : "hover:bg-white/8",
                               )}
                               onClick={() => pick(token)}
@@ -231,7 +231,7 @@ export function TokenSelect({
                                 </span>
                               </span>
                               <span className="shrink-0 text-right">
-                                <span className="block tabular-nums text-sm text-white">
+                                <span className="block tabular-nums text-xs text-white">
                                   {fmtBalance(token)}
                                 </span>
                               </span>

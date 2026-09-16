@@ -89,12 +89,11 @@ export default function PrivacyPage() {
       </section>
 
       <section id="storage">
-        <h2>Local storage</h2>
+        <h2>Stored data</h2>
         <p>
-          Certain convenience features store data only in your browser, keyed to your connected
-          wallet address. This includes contact names, categories, and similar labels you enter in
-          the dashboard. Clearing site data in your browser removes this information from your
-          device. We cannot recover locally stored data if you clear it or switch browsers.
+          Contacts and categories you save in the dashboard are stored in our database, keyed to
+          your connected wallet address, so they follow you across browsers and devices. Some
+          interface preferences may still be kept locally in your browser.
         </p>
       </section>
 

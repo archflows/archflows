@@ -108,7 +108,7 @@ export function HomeLocksTable({
       </div>
 
       <div className="px-4 lg:px-6">
-        <div className="dash-table-wrap overflow-hidden rounded-2xl bg-black/20">
+        <div className="dash-table-wrap dash-well overflow-hidden rounded-2xl">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

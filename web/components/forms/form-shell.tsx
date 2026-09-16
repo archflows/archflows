@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { UnlockDatePicker } from "@/components/forms/unlock-date-picker";
 
 export function FormShell({
   title,
@@ -144,16 +145,10 @@ export function UnlockAfterField({
             />
           </label>
         ))}
-        <label className="unlock-part unlock-part-date">
+        <div className="unlock-part unlock-part-date">
           <span>Or pick date</span>
-          <input
-            className="af-input"
-            type="datetime-local"
-            min={datetimeMin}
-            value={datetimeValue}
-            onChange={(e) => onDatetimeChange(e.target.value)}
-          />
-        </label>
+          <UnlockDatePicker min={datetimeMin} value={datetimeValue} onApply={onDatetimeChange} />
+        </div>
       </div>
       <p className="field-hint">
         The entire amount unlocks on this date — nothing is claimable before it.

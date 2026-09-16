@@ -11,7 +11,7 @@ import {
 /** Must match `withdrawalMessage()` in backend/src/lib/chain.js byte for byte. */
 function withdrawalMessage(wallet: string, amount: string, nonce: string) {
   return [
-    "ArcFlow referral withdrawal",
+    "arcflows referral withdrawal",
     `Wallet: ${wallet}`,
     `Amount: ${amount} USDC units`,
     `Nonce: ${nonce}`,

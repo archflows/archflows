@@ -53,7 +53,7 @@ export function ActionConfirmDialog({
 
         <div className="flex flex-col gap-4 px-5 py-4">
           {summary?.length ? (
-            <dl className="rounded-xl border border-white/8 bg-black/25">
+            <dl className="dash-well">
               {summary.map((row) => (
                 <div className="kv" key={row.label} style={{ padding: "0.65rem 0.9rem" }}>
                   <dt>{row.label}</dt>
@@ -77,7 +77,7 @@ export function ActionConfirmDialog({
             </div>
           ) : null}
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-black/20 px-3.5 py-3">
+          <label className="dash-well flex cursor-pointer items-start gap-3 px-3.5 py-3">
             <input
               type="checkbox"
               className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"

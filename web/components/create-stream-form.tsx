@@ -8,6 +8,7 @@ import { useAccount, usePublicClient, useReadContract, useWriteContract } from "
 import { Loader2 } from "lucide-react";
 import { ContactAddressInput } from "@/components/ContactAddressInput";
 import { erc20Abi, streamAbi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { ARCFLOW_STREAM_ADDRESS } from "@/lib/chain";
 import { parseAddressAmountCsv } from "@/lib/csv";
 import {
@@ -305,7 +306,7 @@ export function CreateStreamForm({ mode = "single" }: { mode?: Mode }) {
 
       <FormShell
         title={mode === "payroll" ? "Batch payroll" : "Create stream"}
-        badge={mode === "payroll" ? "createBatch" : "ArcFlowStream"}
+        badge={mode === "payroll" ? "createBatch" : CONTRACT_LABEL.stream}
         aside={
           <PreviewPanel
             title="Stream preview"

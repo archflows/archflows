@@ -276,3 +276,84 @@ CREATE INDEX IF NOT EXISTS streams_tx_hash_idx ON streams (tx_hash);
 CREATE INDEX IF NOT EXISTS campaigns_tx_hash_idx ON campaigns (tx_hash);
 CREATE INDEX IF NOT EXISTS escrow_tx_hash_idx ON escrow_deals (tx_hash);
 CREATE INDEX IF NOT EXISTS staking_pools_tx_hash_idx ON staking_pools (tx_hash);
+
+CREATE TABLE IF NOT EXISTS contact_categories (
+  owner TEXT NOT NULL,
+  id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (owner, id)
+);
+
+CREATE INDEX IF NOT EXISTS contact_categories_owner_idx ON contact_categories (owner, sort_order);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  owner TEXT NOT NULL,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  category_id TEXT NOT NULL,
+  wallet TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (owner, id),
+  CONSTRAINT contacts_owner_wallet_unique UNIQUE (owner, wallet)
+);
+
+CREATE INDEX IF NOT EXISTS contacts_owner_idx ON contacts (owner, name);
+CREATE INDEX IF NOT EXISTS contacts_owner_category_idx ON contacts (owner, category_id);
+
+-- Per-wallet inbox. `id` is the stable notification key (e.g. lock:claim-ready:12).
+CREATE TABLE IF NOT EXISTS notifications (
+  wallet TEXT NOT NULL,
+  id TEXT NOT NULL,
+  module TEXT NOT NULL
+    CHECK (module IN ('lock', 'vest', 'stream', 'airdrop', 'escrow', 'staking', 'referral')),
+  kind TEXT NOT NULL CHECK (kind IN ('action', 'activity')),
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  event_at BIGINT NOT NULL,
+  href TEXT NOT NULL,
+  cta_label TEXT NOT NULL,
+  details JSONB NOT NULL DEFAULT '[]'::jsonb,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (wallet, id)
+);
+
+CREATE INDEX IF NOT EXISTS notifications_wallet_event_idx
+  ON notifications (wallet, event_at DESC);
+
+CREATE INDEX IF NOT EXISTS notifications_wallet_unread_idx
+  ON notifications (wallet)
+  WHERE read_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS contact_categories (
+  owner TEXT NOT NULL,
+  id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (owner, id)
+);
+
+CREATE INDEX IF NOT EXISTS contact_categories_owner_idx ON contact_categories (owner, sort_order);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  owner TEXT NOT NULL,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  category_id TEXT NOT NULL,
+  wallet TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (owner, id),
+  CONSTRAINT contacts_owner_wallet_unique UNIQUE (owner, wallet)
+);
+
+CREATE INDEX IF NOT EXISTS contacts_owner_idx ON contacts (owner, name);
+CREATE INDEX IF NOT EXISTS contacts_owner_category_idx ON contacts (owner, category_id);

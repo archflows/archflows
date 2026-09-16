@@ -7,7 +7,7 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-/// @title ArcFlow
+/// @title arcflows locker
 /// @notice Immutable token locks and linear vesting for Arc.
 ///         After a launchpad create, a dev locks their allocation so it cannot be sold until it unlocks.
 /// @dev A position can never be cancelled, shortened, or reassigned. That is the product guarantee.

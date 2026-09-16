@@ -111,7 +111,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="h-10 justify-center data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/dashboard" prefetch aria-label="ArcFlow dashboard" />}
+              render={<Link href="/dashboard" prefetch aria-label="arcflows dashboard" />}
             >
               <BrandLogo height={28} className="mx-auto" />
             </SidebarMenuButton>

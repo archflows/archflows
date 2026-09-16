@@ -106,7 +106,7 @@ function StreamRow(props: {
 }) {
   if (!props.s) {
     return (
-      <div className="flex items-center gap-4 rounded-xl bg-black/25 px-4 py-3">
+      <div className="dash-well flex items-center gap-4 px-4 py-3">
         <div className="skeleton size-9 shrink-0 rounded-lg" />
         <div className="grid flex-1 gap-2">
           <div className="skeleton h-3.5 w-36" />
@@ -406,7 +406,7 @@ function StreamRowReady({
   const statusLabel = s.canceled ? "Canceled" : isDone ? "Ended" : "Streaming";
 
   return (
-    <div className="rounded-xl bg-black/20 px-4 py-3">
+    <div className="dash-well px-4 py-3">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <WavesIcon className="size-4" />
@@ -419,7 +419,7 @@ function StreamRowReady({
             <Badge
               className={cn(
                 "font-normal",
-                s.canceled ? "border-white/25 bg-black/40 text-white" : "border-white/25 bg-white/20 text-white",
+                s.canceled ? "border-[var(--dash-border)] bg-sidebar text-white" : "border-white/25 bg-white/20 text-white",
               )}
             >
               {statusLabel}

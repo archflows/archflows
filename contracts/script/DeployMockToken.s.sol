@@ -7,7 +7,7 @@ import {MockToken} from "../src/mocks/MockToken.sol";
 /// @notice Deploys ArcFlow Mock Token on Arc Testnet and seeds the deployer.
 contract DeployMockToken is Script {
     function run() external returns (address token) {
-        string memory name_ = vm.envOr("MOCK_TOKEN_NAME", string("ArcFlow Mock"));
+        string memory name_ = vm.envOr("MOCK_TOKEN_NAME", string("arcflows mock"));
         string memory symbol_ = vm.envOr("MOCK_TOKEN_SYMBOL", string("AFMOCK"));
         uint8 decimals_ = uint8(vm.envOr("MOCK_TOKEN_DECIMALS", uint256(18)));
         uint256 seed = vm.envOr("MOCK_TOKEN_SEED", uint256(1_000_000 ether));

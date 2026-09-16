@@ -7,6 +7,7 @@ import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { erc20Abi, stakingAbi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { ARCFLOW_STAKING_ADDRESS, MIN_MAX_FEE_PER_GAS } from "@/lib/chain";
 import {
   DAY,
@@ -206,7 +207,7 @@ export function CreateStakingForm() {
 
       <FormShell
         title="Create staking pool"
-        badge="Stake, earn"
+        badge={CONTRACT_LABEL.staking}
         aside={
           <PreviewPanel
             title="Pool preview"

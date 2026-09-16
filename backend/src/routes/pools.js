@@ -4,6 +4,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { buildUpdate, getById, getByIdOrHash, listRows } from "../lib/query.js";
 import { badRequest } from "../errors.js";
+import { notifyPoolUpserted } from "../lib/notifications-store.js";
 import {
   asAddress,
   asAmount,
@@ -87,6 +88,9 @@ poolsRouter.post(
         asJson(body.meta, "meta") ?? null,
       ],
     );
+    void notifyPoolUpserted(rows[0]).catch((error) => {
+      console.warn("[notifications] pool upsert", error);
+    });
     created(res, rows[0]);
   }),
 );

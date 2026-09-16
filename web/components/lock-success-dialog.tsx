@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { copyToClipboard } from "@/lib/clipboard";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { dateFmt, formatCountdown, remainingUntil, shorten } from "@/lib/form-time";
 import { proofPath } from "@/lib/proof";
 import { lockShareText, proofAbsoluteUrl, twitterIntentUrl } from "@/lib/share";
@@ -87,7 +88,7 @@ export function LockSuccessDialog({
           </DialogHeader>
 
           <div className="grid gap-3 px-5 py-4">
-            <div className="overflow-hidden rounded-xl border border-white/8 bg-black/30">
+            <div className="dash-well overflow-hidden">
               {[
                 { key: "Amount", value: `${result.totalAmount} ${result.symbol}` },
                 { key: "Unlocks", value: unlockLabel },
@@ -115,7 +116,7 @@ export function LockSuccessDialog({
                 {result.locks.map((lock) => (
                   <li
                     key={lock.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/20 px-3 py-2 text-xs"
+                    className="dash-well flex items-center justify-between gap-3 px-3 py-2 text-xs"
                   >
                     <span className="font-mono text-white/70">#{lock.id}</span>
                     <span className="text-white">
@@ -127,9 +128,9 @@ export function LockSuccessDialog({
               </ul>
             ) : null}
 
-            <div className="rounded-xl border border-white/8 bg-black/20 px-3.5 py-3">
+            <div className="dash-well px-3.5 py-3">
               <div className="mb-1 text-[0.68rem] font-medium tracking-[0.08em] text-white/45 uppercase">
-                ArcFlow explorer
+                {CONTRACT_LABEL.locker}
               </div>
               <p className="m-0 break-all font-mono text-[0.72rem] leading-relaxed text-white/80">
                 {proofUrl}

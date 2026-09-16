@@ -4,6 +4,7 @@ import { asyncHandler } from "../middleware/async-handler.js";
 import { created, ok } from "../lib/respond.js";
 import { buildUpdate, getById, getByIdOrHash, listRows } from "../lib/query.js";
 import { badRequest } from "../errors.js";
+import { notifyStreamUpserted } from "../lib/notifications-store.js";
 import {
   asAddress,
   asAmount,
@@ -101,6 +102,9 @@ streamsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const { rows } = await query(UPSERT_STREAM, streamValues(requireObject(req.body)));
+    void notifyStreamUpserted(rows[0]).catch((error) => {
+      console.warn("[notifications] stream upsert", error);
+    });
     created(res, rows[0]);
   }),
 );
@@ -124,6 +128,11 @@ streamsRouter.post(
           saved.push(result.rows[0]);
         }
         await client.query("COMMIT");
+        for (const row of saved) {
+          void notifyStreamUpserted(row).catch((error) => {
+            console.warn("[notifications] stream batch", error);
+          });
+        }
         return saved;
       } catch (error) {
         await client.query("ROLLBACK");

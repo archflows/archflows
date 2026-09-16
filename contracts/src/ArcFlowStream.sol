@@ -7,7 +7,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {TokenLib} from "./lib/TokenLib.sol";
 
-/// @title ArcFlowStream
+/// @title arcflows stream
 /// @notice Streamflow-style vesting: linear/cliff/period unlock, cancel, transfer, top-up, batch.
 /// @dev Immutable anti-dump locks stay in ArcFlow.sol. This contract is for allocations and payroll.
 ///      Deployed behind a UUPS proxy: the owner can change the logic, so treat the owner key as

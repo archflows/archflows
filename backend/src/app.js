@@ -18,6 +18,8 @@ import { feesRouter } from "./routes/fees.js";
 import { keysRouter } from "./routes/keys.js";
 import { docsUsersRouter } from "./routes/docs-users.js";
 import { statsRouter } from "./routes/stats.js";
+import { contactsRouter } from "./routes/contacts.js";
+import { notificationsRouter } from "./routes/notifications.js";
 import { mountSwagger } from "./swagger.js";
 import { invalidateCache } from "./lib/ttl-cache.js";
 
@@ -110,6 +112,8 @@ export function createApp() {
   v1.use("/escrow", escrowRouter);
   v1.use("/pools", poolsRouter);
   v1.use("/referrals", referralsRouter);
+  v1.use("/contacts", contactsRouter);
+  v1.use("/notifications", notificationsRouter);
   v1.use("/fees", feesRouter);
   v1.use("/keys", keysRouter);
   v1.use("/docs-users", docsUsersRouter);

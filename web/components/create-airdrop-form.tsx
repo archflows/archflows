@@ -7,6 +7,7 @@ import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { distributorAbi, erc20Abi } from "@/lib/abi";
+import { CONTRACT_LABEL } from "@/lib/brand";
 import { ARCFLOW_DISTRIBUTOR_ADDRESS } from "@/lib/chain";
 import {
   DAY,
@@ -209,7 +210,7 @@ export function CreateAirdropForm() {
 
       <FormShell
         title="Create airdrop campaign"
-        badge="CSV to merkle"
+        badge={CONTRACT_LABEL.airdrop}
         aside={
           <PreviewPanel
             title="Campaign preview"

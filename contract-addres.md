@@ -13,13 +13,13 @@ Gas on Arc is paid in USDC. Fund the deployer from https://faucet.circle.com bef
 
 These are the addresses the frontend reads. Proxy addresses stay stable across upgrades.
 
-| Contract | Type | Address | Frontend env var |
-|---|---|---|---|
-| `ArcFlow` | Immutable, no owner, no upgrade path | `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
-| `ArcFlowStream` | ERC1967 / UUPS proxy | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` | `NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS` |
-| `ArcFlowDistributor` | ERC1967 / UUPS proxy | `0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8` | `NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS` |
-| `ArcFlowEscrow` | ERC1967 / UUPS proxy | `0x528b3E0e78CbD1a4f9aFA011aE374ba12996B2C2` | `NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS` |
-| `ArcFlowStaking` | ERC1967 / UUPS proxy | `0x2627e3f07574F47b2B5bc3EfD774576357658063` | `NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS` |
+| Contract | Label | Type | Address | Frontend env var |
+|---|---|---|---|---|
+| `ArcFlow` | arcflows locker | Immutable, no owner, no upgrade path | `0xbfbc6d4889b21ABFAeDc145aef3760529E3329b6` | `NEXT_PUBLIC_ARCFLOW_ADDRESS` |
+| `ArcFlowStream` | arcflows stream | ERC1967 / UUPS proxy | `0x15f148de4c29C4af03d7d77CC75418669521Adb0` | `NEXT_PUBLIC_ARCFLOW_STREAM_ADDRESS` |
+| `ArcFlowDistributor` | arcflows airdrop | ERC1967 / UUPS proxy | `0xd826aC6cCA47Bb7f4C66DbFDB4a76131De0450c8` | `NEXT_PUBLIC_ARCFLOW_DISTRIBUTOR_ADDRESS` |
+| `ArcFlowEscrow` | arcflows escrow | ERC1967 / UUPS proxy | `0x528b3E0e78CbD1a4f9aFA011aE374ba12996B2C2` | `NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS` |
+| `ArcFlowStaking` | arcflows staking | ERC1967 / UUPS proxy | `0x2627e3f07574F47b2B5bc3EfD774576357658063` | `NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS` |
 
 `ArcFlow` is deployed raw on purpose: a lock an owner could upgrade would not prove anything to holders.
 
