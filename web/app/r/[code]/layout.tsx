@@ -48,6 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
+      site: "@arcflows_app",
+      creator: "@arcflows_app",
       title,
       description,
       images: [

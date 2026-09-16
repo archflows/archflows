@@ -220,8 +220,8 @@ export function ReferralPanel() {
               <a
                 className="btn ghost sm shrink-0"
                 href={`https://x.com/intent/tweet?text=${encodeURIComponent(
-                  "Lock the bag on Arc. Use my ArcFlows invite.",
-                )}&url=${encodeURIComponent(link)}`}
+                  `Lock the bag on Arc. Use my ArcFlows invite.\n\n${link}`,
+                )}`}
                 target="_blank"
                 rel="noreferrer"
               >
