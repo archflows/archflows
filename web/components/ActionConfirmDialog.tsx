@@ -86,7 +86,7 @@ export function ActionConfirmDialog({
             />
             <span className="text-sm leading-relaxed text-white/80">
               I agree to the{" "}
-              <Link href="/docs" className="text-primary underline-offset-4 hover:underline" target="_blank">
+              <Link href="/terms" className="text-primary underline-offset-4 hover:underline" target="_blank">
                 Terms &amp; Conditions
               </Link>{" "}
               and understand this action is irreversible once confirmed on-chain.

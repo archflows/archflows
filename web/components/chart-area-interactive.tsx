@@ -137,6 +137,14 @@ function buildSeries(
   return out;
 }
 
+function ChartWatermark() {
+  return (
+    <div className="dash-chart-watermark" aria-hidden>
+      <span className="dash-chart-watermark-text">ArcFlows</span>
+    </div>
+  );
+}
+
 export function ChartAreaInteractive({
   rows,
   pending,
@@ -215,14 +223,17 @@ export function ChartAreaInteractive({
         {pending ? (
           <div className="h-[250px] animate-pulse rounded-xl bg-muted/40" />
         ) : !hasActivity ? (
-          <div className="flex h-[250px] items-center justify-center rounded-xl bg-black/20 text-sm text-white/80">
-            No lock activity in this window yet.
+          <div className="relative flex h-[250px] items-center justify-center overflow-hidden rounded-xl bg-black/20 text-sm text-white/80">
+            <ChartWatermark />
+            <span className="relative z-10">No lock activity in this window yet.</span>
           </div>
         ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="aspect-auto h-[250px] w-full [&_.recharts-cartesian-axis-tick_text]:fill-slate-400"
-          >
+          <div className="relative h-[250px] w-full overflow-hidden">
+            <ChartWatermark />
+            <ChartContainer
+              config={chartConfig}
+              className="relative z-10 aspect-auto h-[250px] w-full [&_.recharts-cartesian-axis-tick_text]:fill-slate-400"
+            >
             <AreaChart data={filteredData}>
               <defs>
                 <linearGradient id="fillLocks" x1="0" y1="0" x2="0" y2="1">
@@ -281,7 +292,8 @@ export function ChartAreaInteractive({
                 strokeWidth={2.5}
               />
             </AreaChart>
-          </ChartContainer>
+            </ChartContainer>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -73,6 +73,8 @@ export function SiteChrome({ children }: { children: ReactNode }) {
               <HashNavLink href="/#faq">FAQ</HashNavLink>
               <Link href="/docs">Docs</Link>
               <Link href="/litepaper">Litepaper</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms &amp; Conditions</Link>
             </div>
           </div>
 
