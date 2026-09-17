@@ -18,7 +18,7 @@ export const arcFlowFeeAbi = parseAbi([
 export const arcFlowReferralAbi = parseAbi([
   "function referralBalances(address referrer) view returns (uint256)",
   "function referralPlatformBps() view returns (uint16)",
-  "function claimReferral(uint128 amount)",
+  "function referralWallet() view returns (address)",
   "function withdrawReferral(address referrer, uint128 amount)",
   "function withdrawExecutor() view returns (address)",
 ]);
@@ -88,14 +88,27 @@ export function withdrawExecutorAddress() {
 
 export async function referralClaimsEnabled() {
   const lock = config.contracts.lock;
-  if (!lock) return false;
+  if (!lock || !withdrawExecutorWallet()) return false;
   try {
-    const platformBps = await publicClient().readContract({
-      address: lock,
-      abi: arcFlowReferralAbi,
-      functionName: "referralPlatformBps",
-    });
-    return Number(platformBps) > 0;
+    const [platformBps, pool, executor] = await Promise.all([
+      publicClient().readContract({
+        address: lock,
+        abi: arcFlowReferralAbi,
+        functionName: "referralPlatformBps",
+      }),
+      publicClient().readContract({
+        address: lock,
+        abi: arcFlowReferralAbi,
+        functionName: "referralWallet",
+      }),
+      publicClient().readContract({
+        address: lock,
+        abi: arcFlowReferralAbi,
+        functionName: "withdrawExecutor",
+      }),
+    ]);
+    const zero = "0x0000000000000000000000000000000000000000";
+    return Number(platformBps) > 0 && pool.toLowerCase() !== zero && executor.toLowerCase() !== zero;
   } catch {
     return false;
   }

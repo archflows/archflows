@@ -77,3 +77,13 @@ export function parseUsdcInput(value: string) {
 export function bpsToPercent(bps: number) {
   return `${(bps / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 }
+
+/** Must match backend `withdrawalMessage` in `backend/src/lib/chain.js`. */
+export function referralWithdrawalMessage(wallet: string, amount: string, nonce: string) {
+  return [
+    "arcflows referral withdrawal",
+    `Wallet: ${wallet}`,
+    `Amount: ${amount} USDC units`,
+    `Nonce: ${nonce}`,
+  ].join("\n");
+}

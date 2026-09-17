@@ -9,9 +9,8 @@ import {arcflowsLocker as ArcFlow} from "../src/arcflows.sol";
 contract ConfigureLock is Script {
     function run() external {
         address proxy = vm.envAddress("ARCFLOW_PROXY");
-        uint256 pk = vm.envUint("PRIVATE_KEY");
 
-        vm.startBroadcast(pk);
+        vm.startBroadcast();
         ArcFlow locks = ArcFlow(proxy);
 
         address treasury = vm.envOr("ARCFLOW_TREASURY", address(0));

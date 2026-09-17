@@ -58,7 +58,7 @@ export const arcChain = defineChain({
 export const ARC_TESTNET = arcChain;
 export const NETWORK_NAME = arcChain.name;
 
-const ZERO = "0x0000000000000000000000000000000000000000";
+export const ZERO = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 
 function publicAddress(envValue: string | undefined, fallback: `0x${string}`): `0x${string}` {
   const value = (envValue ?? "").trim();

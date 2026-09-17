@@ -69,7 +69,7 @@ export function WithdrawCard({
           Withdraw
         </CardTitle>
         <CardDescription>
-          Claim USDC from the on-chain referral pool. You pay the Arc gas fee in USDC.
+          Claim USDC from the dedicated referral pool. ArcFlow processes the payout for you.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-6">
@@ -131,7 +131,8 @@ export function WithdrawCard({
         </button>
 
         <p className="text-[0.72rem] leading-relaxed text-white/50">
-          This sends an on-chain claim from your wallet. Gas is paid in USDC on Arc.
+          Sign to authorize the payout. USDC is sent from the referral pool wallet to your connected
+          wallet.
         </p>
       </CardContent>
     </Card>

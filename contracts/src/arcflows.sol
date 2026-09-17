@@ -45,7 +45,7 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     address public usdc;
     /// @dev Platform fee sink. Owner may rotate via `setTreasury`.
     address public treasury;
-    /// @dev Legacy referral pool address (display / migration). New fees credit `referralBalances` in-contract.
+    /// @dev Dedicated referral pool wallet. Referral fees land here; claims pull from here via `transferFrom`.
     address public referralWallet;
     /// @dev Share of `LOCK_FEE` attributed to referrers on referred locks, in basis points.
     uint16 public referralRateBps;
@@ -154,25 +154,19 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         referralPlatformBps = 2000;
     }
 
-    /// @notice Claim referral USDC to the connected wallet. The caller pays gas.
-    function claimReferral(uint128 amount) external nonReentrant {
-        if (amount == 0) revert ZeroAmount();
-        if (referralBalances[msg.sender] < amount) revert InsufficientReferralBalance();
-
-        referralBalances[msg.sender] -= amount;
-        _call(usdc, abi.encodeCall(IERC20.transfer, (msg.sender, amount)));
-        emit ReferralWithdrawn(msg.sender, amount);
+    /// @notice Disabled — referral claims are processed by the backend relayer via `withdrawReferral`.
+    function claimReferral(uint128 /* amount */) external pure {
+        revert NotAuthorized();
     }
 
-    /// @notice Pays a referrer from their on-chain balance. Only `withdrawExecutor` may call this.
-    /// @dev Optional relayer path when the platform wants to sponsor gas via the backend.
+    /// @notice Pays a referrer from the referral pool wallet. Only `withdrawExecutor` (backend) may call.
     function withdrawReferral(address referrer, uint128 amount) external nonReentrant {
         if (msg.sender != withdrawExecutor) revert NotAuthorized();
         if (referrer == address(0) || amount == 0) revert ZeroAmount();
         if (referralBalances[referrer] < amount) revert InsufficientReferralBalance();
 
         referralBalances[referrer] -= amount;
-        _call(usdc, abi.encodeCall(IERC20.transfer, (referrer, amount)));
+        _payoutReferral(referrer, amount);
         emit ReferralWithdrawn(referrer, amount);
     }
 
@@ -306,9 +300,10 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
 
         uint128 treasuryAmount = LOCK_FEE - referralAmount;
         if (referralAmount > 0) {
-            uint256 poolBefore = IERC20(usdc).balanceOf(address(this));
-            _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, address(this), referralAmount)));
-            if (IERC20(usdc).balanceOf(address(this)) - poolBefore != referralAmount) revert TransferFailed();
+            if (referralWallet == address(0)) revert ZeroAddress();
+            uint256 poolBefore = IERC20(usdc).balanceOf(referralWallet);
+            _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, referralWallet, referralAmount)));
+            if (IERC20(usdc).balanceOf(referralWallet) - poolBefore != referralAmount) revert TransferFailed();
             referralBalances[referrer] += referralAmount;
             emit ReferralCredited(referrer, referralAmount);
         }
@@ -332,6 +327,14 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
 
     function _push(address token, address to, uint128 amount) internal {
         _call(token, abi.encodeCall(IERC20.transfer, (to, amount)));
+    }
+
+    /// @dev Pulls USDC from `referralWallet` to `to`. The lock contract must be approved by the pool wallet.
+    function _payoutReferral(address to, uint128 amount) internal {
+        if (referralWallet == address(0)) revert ZeroAddress();
+        uint256 poolBefore = IERC20(usdc).balanceOf(referralWallet);
+        _call(usdc, abi.encodeCall(IERC20.transferFrom, (referralWallet, to, amount)));
+        if (IERC20(usdc).balanceOf(referralWallet) + amount != poolBefore) revert TransferFailed();
     }
 
     function _call(address token, bytes memory payload) private {

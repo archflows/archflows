@@ -52,6 +52,7 @@ export const config = {
     escrow: firstEnv(["ARCFLOW_ESCROW_ADDRESS", "NEXT_PUBLIC_ARCFLOW_ESCROW_ADDRESS"]),
     staking: firstEnv(["ARCFLOW_STAKING_ADDRESS", "NEXT_PUBLIC_ARCFLOW_STAKING_ADDRESS"]),
     treasury: firstEnv(["ARCFLOW_TREASURY"]),
+    referralPool: firstEnv(["ARCFLOW_REFERRAL_WALLET"]),
   },
   lockFeeUsdc: "10",
   fees: {
@@ -75,7 +76,7 @@ export const config = {
     // Relayer key — only calls `withdrawReferral` on the lock contract (needs gas USDC, not referral pool).
     withdrawExecutorKey: firstEnv([
       "ARCFLOW_WITHDRAW_EXECUTOR_KEY",
-      "ARCFLOW_FEE_WALLET_KEY",
+      "ARCFLOW_REFERRAL_POOL_KEY",
       "REFERRAL_PAYOUT_PRIVATE_KEY",
     ]),
     // Hot wallet for split-fee rebates. Separate from referral withdrawals.

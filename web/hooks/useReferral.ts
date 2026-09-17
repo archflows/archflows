@@ -1,18 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
-import { arcFlowAbi } from "@/lib/abi";
-import { getReferralOverview, type ReferralOverview } from "@/lib/backend";
-import { ARCFLOW_ADDRESS, MIN_MAX_FEE_PER_GAS, ZERO } from "@/lib/chain";
-import { confirmTx } from "@/lib/tx";
-
-const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
+import { useAccount, useSignMessage } from "wagmi";
+import { getReferralOverview, requestReferralWithdrawal, type ReferralOverview } from "@/lib/backend";
+import { referralWithdrawalMessage } from "@/lib/referral";
 
 export function useReferral() {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
-  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
 
   const [data, setData] = useState<ReferralOverview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,30 +32,31 @@ export function useReferral() {
     void refresh();
   }, [refresh]);
 
-  /** User claims on-chain and pays gas in USDC (Arc native gas). */
+  /** Backend relayer pays gas and pulls USDC from the dedicated referral pool wallet. */
   const withdraw = useCallback(
     async (amountUnits: bigint) => {
       if (!wallet) throw new Error("Connect a wallet first.");
-      if (!publicClient) throw new Error("Arc RPC is not ready.");
-      if (ARCFLOW_ADDRESS === ZERO) throw new Error("Lock contract is not configured.");
 
       setWithdrawing(true);
       try {
-        const hash = await writeContractAsync({
-          address: ARCFLOW_ADDRESS,
-          abi: arcFlowAbi,
-          functionName: "claimReferral",
-          args: [amountUnits],
-          ...gas,
+        const amount = amountUnits.toString();
+        const nonce = String(Date.now());
+        const signature = await signMessageAsync({
+          message: referralWithdrawalMessage(wallet, amount, nonce),
         });
-        await confirmTx(publicClient, hash, { fee: true });
+        const row = await requestReferralWithdrawal({
+          wallet,
+          amount,
+          nonce,
+          signature,
+        });
         await refresh();
-        return { tx_hash: hash, status: "paid" as const };
+        return row;
       } finally {
         setWithdrawing(false);
       }
     },
-    [wallet, publicClient, writeContractAsync, refresh],
+    [wallet, signMessageAsync, refresh],
   );
 
   return { data, loading, withdrawing, isConnected, address, refresh, withdraw };

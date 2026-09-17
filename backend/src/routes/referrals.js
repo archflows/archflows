@@ -79,9 +79,10 @@ referralsRouter.get(
       effectiveBps: Math.round((rateBps * (10_000 - platformBps)) / 10_000),
       minWithdrawUsdc,
       lockFeeUsdc: config.lockFeeUsdc,
+      referralPool: config.contracts.referralPool,
       withdrawExecutor: withdrawExecutorAddress(),
       payoutsEnabled: await referralClaimsEnabled(),
-      withdrawalMode: "claim",
+      withdrawalMode: "relayer",
     });
   }),
 );

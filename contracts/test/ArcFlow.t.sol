@@ -29,6 +29,8 @@ contract ArcFlowTest is Test {
         flow.initializeV2(referralWallet);
         vm.prank(owner);
         flow.initializeV3(withdrawExecutor);
+        vm.prank(referralWallet);
+        usdc.approve(address(flow), type(uint256).max);
         token = new MockERC20(0);
         token.mint(dev, AMOUNT * 10);
         vm.prank(dev);
@@ -249,7 +251,8 @@ contract ArcFlowTest is Test {
 
         assertEq(flow.referralRateBps(), flow.DEFAULT_REFERRAL_RATE_BPS());
         assertEq(flow.referralBalances(referrer), net);
-        assertEq(usdc.balanceOf(address(flow)), net);
+        assertEq(usdc.balanceOf(referralWallet), net);
+        assertEq(usdc.balanceOf(address(flow)), 0);
         assertEq(usdc.balanceOf(treasury), treasuryAmount);
     }
 
@@ -263,7 +266,7 @@ contract ArcFlowTest is Test {
         assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
     }
 
-    function test_ClaimReferral_CallerPaysGas() public {
+    function test_ClaimReferral_DisabledForBackendRelayer() public {
         uint64 nowTs = uint64(block.timestamp);
         vm.prank(dev);
         flow.lockWithReferral(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days, referrer);
@@ -272,11 +275,8 @@ contract ArcFlowTest is Test {
         assertGt(net, 0);
 
         vm.prank(referrer);
+        vm.expectRevert(ArcFlow.NotAuthorized.selector);
         flow.claimReferral(net);
-
-        assertEq(flow.referralBalances(referrer), 0);
-        assertEq(usdc.balanceOf(referrer), net);
-        assertEq(usdc.balanceOf(address(flow)), 0);
     }
 
     function test_WithdrawReferral_OnlyExecutorCanPayOut() public {
@@ -296,6 +296,7 @@ contract ArcFlowTest is Test {
 
         assertEq(flow.referralBalances(referrer), 0);
         assertEq(usdc.balanceOf(referrer), net);
+        assertEq(usdc.balanceOf(referralWallet), 0);
         assertEq(usdc.balanceOf(address(flow)), 0);
     }
 
