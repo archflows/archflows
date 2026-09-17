@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { REFERRAL_OG_SIZE } from "@/lib/referral-og-card";
+import { REFERRAL_OG_SIZE } from "@/lib/referral-og-compose";
+import {
+  referralShareDescription,
+  referralShareTitle,
+  referralShareUrl,
+} from "@/lib/referral-share";
 import { normalizeCode } from "@/lib/referral";
 import { af } from "@/lib/public-env";
 
@@ -20,10 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code: raw } = await params;
   const code = normalizeCode(raw) ?? raw.toUpperCase();
   const site = siteOrigin();
-  const title = `Join ArcFlows · ${code}`;
-  const description =
-    "You've been invited to lock and vest tokens on Arc. Public proof. Fees in USDC.";
-  const url = `${site}/r/${code}`;
+  const title = referralShareTitle(code);
+  const description = referralShareDescription();
+  const url = referralShareUrl(site, code);
   const image = `${site}/r/${code}/opengraph-image`;
 
   return {

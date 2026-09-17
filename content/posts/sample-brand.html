@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1600" />
+    <title>arcflows — sample X card</title>
+    <style>
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-SemiBold.ttf") format("truetype");
+        font-weight: 600;
+        font-display: block;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("/intro/fonts/Sora-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: block;
+      }
+
+      * { box-sizing: border-box; }
+      html,
+      body {
+        margin: 0;
+        width: 1600px;
+        height: 900px;
+        overflow: hidden;
+        background: #050b18;
+        color: #fff;
+        font-family: Sora, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #stage {
+        position: relative;
+        width: 1600px;
+        height: 900px;
+        overflow: hidden;
+      }
+
+      #plate {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      .logo {
+        position: absolute;
+        top: 78px;
+        left: 88px;
+        height: 72px;
+        width: auto;
+        display: block;
+      }
+
+      .copy {
+        position: absolute;
+        left: 88px;
+        top: 292px;
+        width: 740px;
+      }
+
+      .kicker {
+        margin: 0;
+        font-weight: 400;
+        font-size: 56px;
+        line-height: 1;
+        letter-spacing: -0.025em;
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      h1 {
+        margin: 12px 0 0;
+        font-weight: 700;
+        font-size: 112px;
+        line-height: 0.95;
+        letter-spacing: -0.042em;
+        color: #fff;
+      }
+
+      .url {
+        position: absolute;
+        left: 88px;
+        bottom: 72px;
+        font-weight: 400;
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        color: rgba(255, 255, 255, 0.92);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <img id="plate" src="/bahan/brand-scene.png" alt="" />
+      <img class="logo" src="/intro/logo.png" alt="arcflows" />
+      <div class="copy">
+        <p class="kicker">LP LOCK</p>
+        <h1>Is the pad.</h1>
+      </div>
+      <div class="url">arcflows.finance</div>
+    </div>
+    <script>
+      async function ready() {
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((img) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise((resolve) => {
+                  img.onload = resolve;
+                  img.onerror = resolve;
+                })
+          )
+        );
+        window.__ready = true;
+      }
+      ready();
+    </script>
+  </body>
+</html>

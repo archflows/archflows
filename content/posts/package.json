@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "render": "node render.mjs",
-    "render:clips": "node render.mjs clips"
+    "render:clips": "node render.mjs clips",
+    "render:sample": "node render.mjs sample"
   },
   "dependencies": {
     "puppeteer-core": "^25.11.0"

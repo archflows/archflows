@@ -16,7 +16,7 @@ const CLIP = { width: 1920, height: 1080 };
 const FPS = 30;
 
 const args = process.argv.slice(2);
-const mode = args.includes("clips") ? "clips" : "cards";
+const mode = args.includes("clips") ? "clips" : args.includes("sample") ? "sample" : "cards";
 const only = args.find((arg) => arg.startsWith("--only="))?.slice(7);
 
 const MIME = {
@@ -183,6 +183,25 @@ try {
     log(`rendering clips ${CLIP.width}x${CLIP.height} @ ${FPS}fps`);
     const count = await renderClips(browser, port, data);
     log(`wrote ${count} clip(s) to out/`);
+  } else if (mode === "sample") {
+    log(`rendering sample ${CARD.width}x${CARD.height} @2x`);
+    const page = await browser.newPage();
+    page.setDefaultTimeout(20000);
+    await page.setViewport({ ...CARD, deviceScaleFactor: 2 });
+    await page.goto(`http://127.0.0.1:${port}/posts/sample-brand.html`, {
+      waitUntil: "networkidle0",
+    });
+    await page.waitForFunction(() => window.__ready === true, { timeout: 20000 });
+    const error = await page.evaluate(() => window.__buildError);
+    if (error) throw new Error(error);
+    const file = path.join(OUT_DIR, "01-lp-lock-isnt-enough.png");
+    await page.screenshot({
+      path: file,
+      type: "png",
+      clip: { x: 0, y: 0, ...CARD },
+    });
+    await page.close();
+    log(`  01-lp-lock-isnt-enough.png`);
   } else {
     log(`rendering cards ${CARD.width}x${CARD.height}`);
     const count = await renderCards(browser, port, data);

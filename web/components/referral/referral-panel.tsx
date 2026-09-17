@@ -38,6 +38,7 @@ import { WithdrawCard } from "@/components/referral/withdraw-card";
 import { useReferral } from "@/hooks/useReferral";
 import { copyToClipboard } from "@/lib/clipboard";
 import { bpsToPercent, formatUsdc, referralLink } from "@/lib/referral";
+import { referralTweetText } from "@/lib/referral-share";
 import { shorten } from "@/lib/form-time";
 
 const CARD = "@container/card dash-stat-card relative overflow-hidden text-base shadow-none ring-0";
@@ -219,9 +220,7 @@ export function ReferralPanel() {
               </button>
               <a
                 className="btn ghost sm shrink-0"
-                href={`https://x.com/intent/tweet?text=${encodeURIComponent(
-                  `Lock the bag on Arc. Use my ArcFlows invite.\n\n${link}`,
-                )}`}
+                href={`https://x.com/intent/tweet?text=${encodeURIComponent(referralTweetText(link))}`}
                 target="_blank"
                 rel="noreferrer"
               >
