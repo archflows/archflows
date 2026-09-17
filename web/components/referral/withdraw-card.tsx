@@ -49,8 +49,8 @@ export function WithdrawCard({
     try {
       await onWithdraw(parsed);
       notify.success(
-        "Withdrawal sent",
-        `$${formatUsdc(parsed)} USDC is on its way to your wallet.`,
+        "Claim confirmed",
+        `$${formatUsdc(parsed)} USDC was sent to your wallet.`,
       );
       await onDone();
     } catch (err) {
@@ -69,7 +69,7 @@ export function WithdrawCard({
           Withdraw
         </CardTitle>
         <CardDescription>
-          Paid in USDC to the wallet you are connected with. No approval queue.
+          Claim USDC from the on-chain referral pool. You pay the Arc gas fee in USDC.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-6">
@@ -98,8 +98,8 @@ export function WithdrawCard({
         {!payoutsEnabled ? (
           <div className="form-notice form-notice-warn" role="status">
             <div className="form-notice-body">
-              <strong>Payouts paused</strong>
-              <p>The fee wallet is not configured yet. Your balance keeps accruing.</p>
+              <strong>Claims not live yet</strong>
+              <p>On-chain referral claims unlock after the lock contract upgrade.</p>
             </div>
           </div>
         ) : belowMin ? (
@@ -127,12 +127,11 @@ export function WithdrawCard({
           onClick={() => void submit()}
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-          {busy ? "Sending…" : "Withdraw USDC"}
+          {busy ? "Claiming…" : "Claim USDC"}
         </button>
 
         <p className="text-[0.72rem] leading-relaxed text-white/50">
-          You will sign a message to prove you own this wallet. It is not a transaction and
-          costs no gas.
+          This sends an on-chain claim from your wallet. Gas is paid in USDC on Arc.
         </p>
       </CardContent>
     </Card>

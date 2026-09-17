@@ -72,8 +72,14 @@ export const config = {
     platformBps: Number.parseInt(firstEnv(["REFERRAL_PLATFORM_BPS"], "2000"), 10) || 2000,
     // 5 USDC floor, in the 6-decimal view.
     minWithdrawUsdc: firstEnv(["REFERRAL_MIN_WITHDRAW_USDC"], "5000000"),
-    // Hot wallet that holds archFee USDC and signs auto-approved payouts.
-    payoutKey: firstEnv(["ARCFLOW_FEE_WALLET_KEY", "REFERRAL_PAYOUT_PRIVATE_KEY"]),
+    // Relayer key — only calls `withdrawReferral` on the lock contract (needs gas USDC, not referral pool).
+    withdrawExecutorKey: firstEnv([
+      "ARCFLOW_WITHDRAW_EXECUTOR_KEY",
+      "ARCFLOW_FEE_WALLET_KEY",
+      "REFERRAL_PAYOUT_PRIVATE_KEY",
+    ]),
+    // Hot wallet for split-fee rebates. Separate from referral withdrawals.
+    rebateKey: firstEnv(["ARCFLOW_REBATE_WALLET_KEY", "ARCFLOW_FEE_WALLET_KEY"]),
     // Withdrawal signatures go stale so a captured one cannot be replayed later.
     signatureTtlMs: Number.parseInt(firstEnv(["REFERRAL_SIGNATURE_TTL_MS"], "600000"), 10) || 600_000,
   },

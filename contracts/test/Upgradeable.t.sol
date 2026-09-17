@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
+import {arcflowsLocker as ArcFlow} from "../src/arcflows.sol";
 import {ArcFlowStream} from "../src/ArcFlowStream.sol";
 import {Deployers} from "./helpers/Deployers.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -93,12 +93,15 @@ contract UpgradeableTest is Test {
 
     function test_LockOwnerUpgradesAndStateSurvives() public {
         ArcFlow locks = Deployers.lock(owner, address(1), address(2));
+        address referralWallet = makeAddr("referralWallet");
         address v2 = address(new ArcFlowLockV2());
         vm.prank(owner);
-        locks.upgradeToAndCall(v2, "");
+        locks.upgradeToAndCall(v2, abi.encodeCall(ArcFlow.initializeV2, (referralWallet)));
         assertEq(ArcFlowLockV2(address(locks)).version(), "v2");
         assertEq(locks.usdc(), address(1));
         assertEq(locks.treasury(), address(2));
+        assertEq(locks.referralWallet(), referralWallet);
+        assertEq(locks.referralRateBps(), locks.DEFAULT_REFERRAL_RATE_BPS());
         assertEq(locks.owner(), owner);
     }
 

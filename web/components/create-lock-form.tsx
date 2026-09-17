@@ -30,7 +30,9 @@ import {
   toLocalInput,
 } from "@/lib/form-time";
 import { useMounted } from "@/hooks/useMounted";
+import { useReferrerAddress } from "@/hooks/useReferrerAddress";
 import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
+import { buildLockWriteCall } from "@/lib/lock-contract";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
@@ -61,6 +63,7 @@ export function CreateLockForm() {
   const publicClient = usePublicClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
+  const referrer = useReferrerAddress();
   const { writeContractAsync } = useWriteContract();
 
   const [token, setToken] = useState("");
@@ -359,11 +362,19 @@ export function CreateLockForm() {
         allocated += piece;
         if (piece <= 0n) continue;
 
+        const lockCall = buildLockWriteCall(referrer, {
+          token: tokenAddress,
+          beneficiary: target.address,
+          amount: piece,
+          start: 0n,
+          cliff: end,
+          end,
+        });
         const lockHash = await writeContractAsync({
           address: ARCFLOW_ADDRESS,
           abi: arcFlowAbi,
-          functionName: "lock",
-          args: [tokenAddress, target.address, piece, 0n, end, end],
+          functionName: lockCall.functionName,
+          args: lockCall.args,
           ...gas,
         });
         const receipt = await confirmTx(publicClient, lockHash);

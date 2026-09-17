@@ -17,7 +17,7 @@ interface IERC20 {
 ///         After a launchpad create, a dev locks their allocation so it cannot be sold until it unlocks.
 /// @dev Deployed behind a UUPS proxy so the owner can replace this implementation.
 ///      This version still cannot cancel, shorten, or reassign a position.
-contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
+contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     struct Position {
         address token;
         address beneficiary;
@@ -35,10 +35,26 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     /// @notice Flat lock fee, 10 USDC in the ERC-20 6-decimal view. Never native 18-dec units.
     uint128 public constant LOCK_FEE = 10 * 1e6;
 
+    /// @notice Default referral share of `LOCK_FEE` when a lock is attributed to a referrer (15%).
+    uint16 public constant DEFAULT_REFERRAL_RATE_BPS = 1500;
+
+    /// @notice Upper bound for `referralRateBps` (100%).
+    uint16 public constant MAX_REFERRAL_RATE_BPS = 10_000;
+
     /// @dev Arc USDC ERC-20 interface. Same asset as gas; do not send `msg.value` for the fee.
     address public usdc;
-    /// @dev Fee sink. Set at initialize; this implementation does not rotate it.
+    /// @dev Platform fee sink. Owner may rotate via `setTreasury`.
     address public treasury;
+    /// @dev Legacy referral pool address (display / migration). New fees credit `referralBalances` in-contract.
+    address public referralWallet;
+    /// @dev Share of `LOCK_FEE` attributed to referrers on referred locks, in basis points.
+    uint16 public referralRateBps;
+    /// @dev Platform share of the gross referral commission, in basis points (2000 = 20%).
+    uint16 public referralPlatformBps;
+    /// @dev Backend relayer that may call `withdrawReferral` after verifying a user signature.
+    address public withdrawExecutor;
+    /// @dev USDC owed to each referrer from on-chain lock fees. Withdrawn via `withdrawReferral`.
+    mapping(address => uint256) public referralBalances;
 
     uint256 public nextId;
     mapping(uint256 => Position) public positions;
@@ -56,6 +72,9 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     error TransferFailed();
     error NotBeneficiary();
     error NothingToClaim();
+    error InvalidReferralRate();
+    error NotAuthorized();
+    error InsufficientReferralBalance();
 
     event Locked(
         uint256 indexed id,
@@ -68,6 +87,14 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         uint64 end
     );
     event FeePaid(uint256 indexed id, address indexed from, uint128 amount);
+    event ReferralFeePaid(uint256 indexed id, address indexed from, address indexed referrer, uint128 amount);
+    event TreasuryUpdated(address treasury);
+    event ReferralWalletUpdated(address wallet);
+    event ReferralRateUpdated(uint16 rateBps);
+    event ReferralPlatformBpsUpdated(uint16 platformBps);
+    event WithdrawExecutorUpdated(address executor);
+    event ReferralCredited(address indexed referrer, uint128 amount);
+    event ReferralWithdrawn(address indexed referrer, uint128 amount);
     event Claimed(uint256 indexed id, address indexed beneficiary, uint128 amount);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -84,6 +111,71 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         treasury = treasury_;
     }
 
+    /// @notice Initializes referral fee routing on upgraded proxies.
+    function initializeV2(address referralWallet_) external reinitializer(2) {
+        if (referralWallet_ == address(0)) revert ZeroAddress();
+        referralWallet = referralWallet_;
+        referralRateBps = DEFAULT_REFERRAL_RATE_BPS;
+    }
+
+    function setTreasury(address treasury_) external onlyOwner {
+        if (treasury_ == address(0) || treasury_ == address(this)) revert ZeroAddress();
+        treasury = treasury_;
+        emit TreasuryUpdated(treasury_);
+    }
+
+    function setReferralWallet(address wallet_) external onlyOwner {
+        if (wallet_ == address(0)) revert ZeroAddress();
+        referralWallet = wallet_;
+        emit ReferralWalletUpdated(wallet_);
+    }
+
+    function setReferralRateBps(uint16 rateBps_) external onlyOwner {
+        if (rateBps_ > MAX_REFERRAL_RATE_BPS) revert InvalidReferralRate();
+        referralRateBps = rateBps_;
+        emit ReferralRateUpdated(rateBps_);
+    }
+
+    function setReferralPlatformBps(uint16 platformBps_) external onlyOwner {
+        if (platformBps_ > MAX_REFERRAL_RATE_BPS) revert InvalidReferralRate();
+        referralPlatformBps = platformBps_;
+        emit ReferralPlatformBpsUpdated(platformBps_);
+    }
+
+    function setWithdrawExecutor(address executor_) external onlyOwner {
+        if (executor_ == address(0)) revert ZeroAddress();
+        withdrawExecutor = executor_;
+        emit WithdrawExecutorUpdated(executor_);
+    }
+
+    /// @notice Enables in-contract referral balances. `withdrawExecutor_` may be zero if claims are user-paid.
+    function initializeV3(address withdrawExecutor_) external reinitializer(3) {
+        withdrawExecutor = withdrawExecutor_;
+        referralPlatformBps = 2000;
+    }
+
+    /// @notice Claim referral USDC to the connected wallet. The caller pays gas.
+    function claimReferral(uint128 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        if (referralBalances[msg.sender] < amount) revert InsufficientReferralBalance();
+
+        referralBalances[msg.sender] -= amount;
+        _call(usdc, abi.encodeCall(IERC20.transfer, (msg.sender, amount)));
+        emit ReferralWithdrawn(msg.sender, amount);
+    }
+
+    /// @notice Pays a referrer from their on-chain balance. Only `withdrawExecutor` may call this.
+    /// @dev Optional relayer path when the platform wants to sponsor gas via the backend.
+    function withdrawReferral(address referrer, uint128 amount) external nonReentrant {
+        if (msg.sender != withdrawExecutor) revert NotAuthorized();
+        if (referrer == address(0) || amount == 0) revert ZeroAmount();
+        if (referralBalances[referrer] < amount) revert InsufficientReferralBalance();
+
+        referralBalances[referrer] -= amount;
+        _call(usdc, abi.encodeCall(IERC20.transfer, (referrer, amount)));
+        emit ReferralWithdrawn(referrer, amount);
+    }
+
     /// @notice Lock `amount` of `token` for `beneficiary`.
     /// @dev Hard lock: set cliff == end. Linear vest: start <= cliff < end.
     ///      Pass `start = 0` (and `cliff = 0` for a vest) to use `block.timestamp`.
@@ -98,6 +190,32 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         nonReentrant
         returns (uint256 id)
     {
+        return _lock(token, beneficiary, amount, start, cliff, end, address(0));
+    }
+
+    /// @notice Same as `lock`, but routes `referralRateBps` of the fee to `referralWallet` when `referrer` is set.
+    /// @dev Self-referrals are ignored and pay the full fee to `treasury`.
+    function lockWithReferral(
+        address token,
+        address beneficiary,
+        uint128 amount,
+        uint64 start,
+        uint64 cliff,
+        uint64 end,
+        address referrer
+    ) external nonReentrant returns (uint256 id) {
+        return _lock(token, beneficiary, amount, start, cliff, end, referrer);
+    }
+
+    function _lock(
+        address token,
+        address beneficiary,
+        uint128 amount,
+        uint64 start,
+        uint64 cliff,
+        uint64 end,
+        address referrer
+    ) internal returns (uint256 id) {
         if (token == address(0) || beneficiary == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
         if (start == 0) start = uint64(block.timestamp);
@@ -108,7 +226,7 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         if (end <= block.timestamp) revert InvalidSchedule();
         if (end - start < MIN_DURATION) revert InvalidSchedule();
 
-        _takeFee();
+        uint128 referralAmount = _takeFee(referrer);
         uint128 received = _pull(token, msg.sender, amount);
 
         id = nextId++;
@@ -130,6 +248,7 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
 
         emit Locked(id, token, beneficiary, msg.sender, received, start, cliff, end);
         emit FeePaid(id, msg.sender, LOCK_FEE);
+        if (referralAmount > 0) emit ReferralFeePaid(id, msg.sender, referrer, referralAmount);
     }
 
     function claim(uint256 id) external nonReentrant returns (uint128 amount) {
@@ -176,10 +295,27 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
         return uint128((uint256(p.amount) * (uint256(timestamp) - uint256(p.start))) / duration);
     }
 
-    function _takeFee() internal {
-        uint256 before = IERC20(usdc).balanceOf(treasury);
-        _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, treasury, LOCK_FEE)));
-        if (IERC20(usdc).balanceOf(treasury) - before != LOCK_FEE) revert TransferFailed();
+    /// @return referralAmount Net USDC credited to `referralBalances[referrer]` for this lock, if any.
+    function _takeFee(address referrer) internal returns (uint128 referralAmount) {
+        referralAmount = 0;
+        if (referrer != address(0) && referrer != msg.sender && referralRateBps > 0) {
+            uint128 gross = uint128((uint256(LOCK_FEE) * referralRateBps) / 10_000);
+            uint16 platformBps = referralPlatformBps;
+            referralAmount = platformBps > 0 ? uint128((uint256(gross) * (10_000 - platformBps)) / 10_000) : gross;
+        }
+
+        uint128 treasuryAmount = LOCK_FEE - referralAmount;
+        if (referralAmount > 0) {
+            uint256 poolBefore = IERC20(usdc).balanceOf(address(this));
+            _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, address(this), referralAmount)));
+            if (IERC20(usdc).balanceOf(address(this)) - poolBefore != referralAmount) revert TransferFailed();
+            referralBalances[referrer] += referralAmount;
+            emit ReferralCredited(referrer, referralAmount);
+        }
+
+        uint256 treasuryBefore = IERC20(usdc).balanceOf(treasury);
+        _call(usdc, abi.encodeCall(IERC20.transferFrom, (msg.sender, treasury, treasuryAmount)));
+        if (IERC20(usdc).balanceOf(treasury) - treasuryBefore != treasuryAmount) revert TransferFailed();
     }
 
     /// @return received Balance actually gained by this contract, which is what the position is credited.
@@ -207,5 +343,5 @@ contract arcflows is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeab
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /// @dev Reserved so later versions can add state without shifting existing slots.
-    uint256[45] private __gap;
+    uint256[40] private __gap;
 }

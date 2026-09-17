@@ -15,6 +15,14 @@ export const arcFlowFeeAbi = parseAbi([
   "event FeePaid(uint256 indexed id, address indexed from, uint128 amount)",
 ]);
 
+export const arcFlowReferralAbi = parseAbi([
+  "function referralBalances(address referrer) view returns (uint256)",
+  "function referralPlatformBps() view returns (uint16)",
+  "function claimReferral(uint128 amount)",
+  "function withdrawReferral(address referrer, uint128 amount)",
+  "function withdrawExecutor() view returns (address)",
+]);
+
 export const erc20Abi = parseAbi([
   "function transfer(address to, uint256 amount) returns (bool)",
   "function balanceOf(address account) view returns (uint256)",
@@ -37,6 +45,7 @@ const gasOverrides = {
 
 let publicClientRef;
 let payoutClientRef;
+let withdrawExecutorClientRef;
 
 export function publicClient() {
   publicClientRef ??= createPublicClient({
@@ -46,24 +55,66 @@ export function publicClient() {
   return publicClientRef;
 }
 
-export function payoutWallet() {
-  if (payoutClientRef !== undefined) return payoutClientRef;
-  const key = config.referral.payoutKey;
-  if (!key) {
-    payoutClientRef = null;
-    return null;
-  }
+function walletClientFromKey(key) {
+  if (!key) return null;
   const account = privateKeyToAccount(key.startsWith("0x") ? key : `0x${key}`);
-  payoutClientRef = createWalletClient({
+  return createWalletClient({
     account,
     chain: arcChain,
     transport: http(config.rpc, { timeout: 15_000 }),
   });
+}
+
+export function payoutWallet() {
+  if (payoutClientRef !== undefined) return payoutClientRef;
+  payoutClientRef = walletClientFromKey(config.referral.rebateKey) ?? null;
   return payoutClientRef;
 }
 
 export function payoutAddress() {
   return payoutWallet()?.account.address.toLowerCase() ?? null;
+}
+
+export function withdrawExecutorWallet() {
+  if (withdrawExecutorClientRef !== undefined) return withdrawExecutorClientRef;
+  withdrawExecutorClientRef =
+    walletClientFromKey(config.referral.withdrawExecutorKey) ?? null;
+  return withdrawExecutorClientRef;
+}
+
+export function withdrawExecutorAddress() {
+  return withdrawExecutorWallet()?.account.address.toLowerCase() ?? null;
+}
+
+export async function referralClaimsEnabled() {
+  const lock = config.contracts.lock;
+  if (!lock) return false;
+  try {
+    const platformBps = await publicClient().readContract({
+      address: lock,
+      abi: arcFlowReferralAbi,
+      functionName: "referralPlatformBps",
+    });
+    return Number(platformBps) > 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function readReferralBalance(referrer) {
+  const lock = config.contracts.lock;
+  if (!lock) return null;
+  try {
+    const balance = await publicClient().readContract({
+      address: lock,
+      abi: arcFlowReferralAbi,
+      functionName: "referralBalances",
+      args: [referrer],
+    });
+    return BigInt(balance);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -137,7 +188,41 @@ export async function usdcBalanceOf(address) {
   });
 }
 
-/** Moves USDC out of the archFee wallet. Amount is in the 6-decimal ERC-20 view. */
+/** Relays `withdrawReferral` on the lock contract after the user signed the request. */
+export async function withdrawReferralOnChain({ referrer, amount }) {
+  const wallet = withdrawExecutorWallet();
+  const lock = config.contracts.lock;
+  if (!wallet || !lock) {
+    throw new AppError(503, "unavailable", "Referral withdrawals are not configured");
+  }
+
+  const value = BigInt(amount);
+  const onChain = await readReferralBalance(referrer);
+  if (onChain === null) {
+    throw new AppError(503, "unavailable", "Referral balances are not available on-chain yet");
+  }
+  if (onChain < value) {
+    throw badRequest("On-chain referral balance is lower than the requested amount", {
+      onChainUsdc: onChain.toString(),
+    });
+  }
+
+  const hash = await wallet.writeContract({
+    address: lock,
+    abi: arcFlowReferralAbi,
+    functionName: "withdrawReferral",
+    args: [referrer, value],
+    ...gasOverrides,
+  });
+
+  const receipt = await publicClient().waitForTransactionReceipt({ hash, timeout: 60_000 });
+  if (receipt.status !== "success") {
+    throw new AppError(502, "withdraw_failed", "Referral withdrawal transaction reverted");
+  }
+  return hash;
+}
+
+/** Moves USDC out of the rebate wallet. Amount is in the 6-decimal ERC-20 view. */
 export async function sendUsdcPayout({ to, amount }) {
   const wallet = payoutWallet();
   if (!wallet) {

@@ -1,26 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useSignMessage } from "wagmi";
-import {
-  getReferralOverview,
-  requestReferralWithdrawal,
-  type ReferralOverview,
-} from "@/lib/backend";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { arcFlowAbi } from "@/lib/abi";
+import { getReferralOverview, type ReferralOverview } from "@/lib/backend";
+import { ARCFLOW_ADDRESS, MIN_MAX_FEE_PER_GAS, ZERO } from "@/lib/chain";
+import { confirmTx } from "@/lib/tx";
 
-/** Must match `withdrawalMessage()` in backend/src/lib/chain.js byte for byte. */
-function withdrawalMessage(wallet: string, amount: string, nonce: string) {
-  return [
-    "arcflows referral withdrawal",
-    `Wallet: ${wallet}`,
-    `Amount: ${amount} USDC units`,
-    `Nonce: ${nonce}`,
-  ].join("\n");
-}
+const gas = { maxFeePerGas: MIN_MAX_FEE_PER_GAS, maxPriorityFeePerGas: 1n };
 
 export function useReferral() {
   const { address, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
 
   const [data, setData] = useState<ReferralOverview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,29 +37,30 @@ export function useReferral() {
     void refresh();
   }, [refresh]);
 
-  /**
-   * The signature proves the request came from the referrer's wallet. Payouts always land on
-   * that same wallet, so there is no destination for an attacker to redirect.
-   */
+  /** User claims on-chain and pays gas in USDC (Arc native gas). */
   const withdraw = useCallback(
     async (amountUnits: bigint) => {
       if (!wallet) throw new Error("Connect a wallet first.");
+      if (!publicClient) throw new Error("Arc RPC is not ready.");
+      if (ARCFLOW_ADDRESS === ZERO) throw new Error("Lock contract is not configured.");
+
       setWithdrawing(true);
       try {
-        const amount = amountUnits.toString();
-        const nonce = Date.now().toString();
-        const signature = await signMessageAsync({
-          message: withdrawalMessage(wallet, amount, nonce),
+        const hash = await writeContractAsync({
+          address: ARCFLOW_ADDRESS,
+          abi: arcFlowAbi,
+          functionName: "claimReferral",
+          args: [amountUnits],
+          ...gas,
         });
-        const result = await requestReferralWithdrawal({ wallet, amount, nonce, signature });
-        if (!result) throw new Error("Withdrawal was rejected. Check your balance and try again.");
+        await confirmTx(publicClient, hash, { fee: true });
         await refresh();
-        return result;
+        return { tx_hash: hash, status: "paid" as const };
       } finally {
         setWithdrawing(false);
       }
     },
-    [wallet, signMessageAsync, refresh],
+    [wallet, publicClient, writeContractAsync, refresh],
   );
 
   return { data, loading, withdrawing, isConnected, address, refresh, withdraw };

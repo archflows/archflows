@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
+import {arcflowsLocker as ArcFlow} from "../src/arcflows.sol";
 import {ArcFlowStream} from "../src/ArcFlowStream.sol";
 import {ArcFlowDistributor} from "../src/ArcFlowDistributor.sol";
 import {ArcFlowEscrow} from "../src/ArcFlowEscrow.sol";

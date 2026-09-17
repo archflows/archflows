@@ -6,7 +6,13 @@ import { created, ok } from "../lib/respond.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { asCode, generateCode } from "../lib/referral.js";
 import { notifyReferralSignup } from "../lib/notifications-store.js";
-import { assertWithdrawalSignature, payoutAddress, sendUsdcPayout } from "../lib/chain.js";
+import {
+  assertWithdrawalSignature,
+  readReferralBalance,
+  referralClaimsEnabled,
+  withdrawExecutorAddress,
+  withdrawReferralOnChain,
+} from "../lib/chain.js";
 import {
   asAddress,
   asAmount,
@@ -44,14 +50,22 @@ async function balanceOf(wallet, client = null) {
   const run = client ? (text, values) => client.query(text, values) : query;
   const { rows } = await run(
     `SELECT
-       COALESCE((SELECT SUM(net_usdc::numeric) FROM referral_earnings WHERE referrer = $1), 0)::text AS earned,
        COALESCE((SELECT SUM(amount_usdc::numeric) FROM referral_withdrawals
                  WHERE referrer = $1 AND status IN ('pending', 'paid')), 0)::text AS reserved`,
     [wallet],
   );
-  const earned = BigInt(rows[0].earned);
   const reserved = BigInt(rows[0].reserved);
-  return { earned, reserved, available: earned - reserved };
+  const onChain = client ? null : await readReferralBalance(wallet);
+  if (onChain !== null) {
+    return { earned: onChain, reserved, available: onChain - reserved, source: "onchain" };
+  }
+
+  const ledger = await run(
+    `SELECT COALESCE((SELECT SUM(net_usdc::numeric) FROM referral_earnings WHERE referrer = $1), 0)::text AS earned`,
+    [wallet],
+  );
+  const earned = BigInt(ledger.rows[0].earned);
+  return { earned, reserved, available: earned - reserved, source: "ledger" };
 }
 
 referralsRouter.get(
@@ -65,8 +79,9 @@ referralsRouter.get(
       effectiveBps: Math.round((rateBps * (10_000 - platformBps)) / 10_000),
       minWithdrawUsdc,
       lockFeeUsdc: config.lockFeeUsdc,
-      payoutWallet: payoutAddress(),
-      payoutsEnabled: Boolean(payoutAddress()),
+      withdrawExecutor: withdrawExecutorAddress(),
+      payoutsEnabled: await referralClaimsEnabled(),
+      withdrawalMode: "claim",
     });
   }),
 );
@@ -212,7 +227,7 @@ referralsRouter.get(
           (config.referral.rateBps * (10_000 - config.referral.platformBps)) / 10_000,
         ),
         minWithdrawUsdc: config.referral.minWithdrawUsdc,
-        payoutsEnabled: Boolean(payoutAddress()),
+        payoutsEnabled: await referralClaimsEnabled(),
       },
       referredBy: referrer.rows[0] ?? null,
       totals: {
@@ -235,8 +250,8 @@ referralsRouter.get(
 
 /**
  * Auto-approved withdrawal. The balance is reserved inside a transaction (so two parallel
- * requests cannot spend it twice), then USDC leaves the archFee wallet. A failed transfer
- * releases the reservation by moving the row to `failed`.
+ * requests cannot spend it twice), then the backend relays `withdrawReferral` on the lock
+ * contract. A failed relay releases the reservation by moving the row to `failed`.
  */
 referralsRouter.post(
   "/withdrawals",
@@ -281,7 +296,7 @@ referralsRouter.post(
     });
 
     try {
-      const txHash = await sendUsdcPayout({ to: wallet, amount: pendingRow.amount_usdc });
+      const txHash = await withdrawReferralOnChain({ referrer: wallet, amount: pendingRow.amount_usdc });
       const { rows } = await query(
         `UPDATE referral_withdrawals
          SET status = 'paid', tx_hash = $2, updated_at = NOW()

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
+import {arcflowsLocker as ArcFlow} from "../src/arcflows.sol";
 import {ArcFlowStream} from "../src/ArcFlowStream.sol";
 import {ArcFlowDistributor} from "../src/ArcFlowDistributor.sol";
 import {ArcFlowEscrow} from "../src/ArcFlowEscrow.sol";
@@ -20,11 +20,16 @@ contract Upgrade is Script {
         string memory target = vm.envString("ARCFLOW_TARGET");
         bytes32 key = keccak256(bytes(target));
 
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(pk);
+        vm.startBroadcast();
 
         if (key == keccak256("lock")) {
             implementation = address(new ArcFlow());
+            bytes memory initData;
+            if (vm.envOr("ARCFLOW_LOCK_INIT_V3", false)) {
+                address withdrawExecutor = vm.envOr("ARCFLOW_WITHDRAW_EXECUTOR", address(0));
+                initData = abi.encodeCall(ArcFlow.initializeV3, (withdrawExecutor));
+            }
+            UUPSUpgradeable(proxy).upgradeToAndCall(implementation, initData);
         } else if (key == keccak256("stream")) {
             implementation = address(new ArcFlowStream());
         } else if (key == keccak256("distributor")) {
@@ -37,7 +42,9 @@ contract Upgrade is Script {
             revert UnknownTarget(target);
         }
 
-        UUPSUpgradeable(proxy).upgradeToAndCall(implementation, "");
+        if (key != keccak256("lock")) {
+            UUPSUpgradeable(proxy).upgradeToAndCall(implementation, "");
+        }
 
         vm.stopBroadcast();
 

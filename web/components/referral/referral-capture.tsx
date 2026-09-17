@@ -36,12 +36,24 @@ export function ReferralCapture() {
     if (bound.current === attempt) return;
     bound.current = attempt;
 
-    void bindReferral(wallet, code).then((result) => {
-      // Either it stuck or this wallet already had a referrer. Self-referrals come back null.
-      // Nothing is retryable here, so stop holding the code.
-      if (result) forgetCode();
-    });
-  }, [isConnected, address]);
+    let cancelled = false;
+    void (async () => {
+      for (let i = 0; i < 3 && !cancelled; i++) {
+        const result = await bindReferral(wallet, code);
+        if (cancelled) return;
+        if (result) {
+          forgetCode();
+          return;
+        }
+        if (i < 2) await new Promise((resolve) => setTimeout(resolve, 1200 * (i + 1)));
+      }
+      if (!cancelled && bound.current === attempt) bound.current = null;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, address, pathname]);
 
   return null;
 }

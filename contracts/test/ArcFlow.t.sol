@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {arcflows as ArcFlow} from "../src/ArcFlow.sol";
+import {arcflowsLocker as ArcFlow} from "../src/arcflows.sol";
 import {Deployers} from "./helpers/Deployers.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 
@@ -15,6 +15,9 @@ contract ArcFlowTest is Test {
     address dev = makeAddr("dev");
     address stranger = makeAddr("stranger");
     address treasury = makeAddr("treasury");
+    address referralWallet = makeAddr("referralWallet");
+    address withdrawExecutor = makeAddr("withdrawExecutor");
+    address referrer = makeAddr("referrer");
 
     uint128 constant AMOUNT = 1_000_000e18;
 
@@ -22,6 +25,10 @@ contract ArcFlowTest is Test {
         vm.warp(1_700_000_000);
         usdc = new MockERC20(0);
         flow = Deployers.lock(owner, address(usdc), treasury);
+        vm.prank(owner);
+        flow.initializeV2(referralWallet);
+        vm.prank(owner);
+        flow.initializeV3(withdrawExecutor);
         token = new MockERC20(0);
         token.mint(dev, AMOUNT * 10);
         vm.prank(dev);
@@ -225,9 +232,89 @@ contract ArcFlowTest is Test {
     function test_LockChargesFlatTenUsdc() public {
         _hardLock(30 days);
         assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
+        assertEq(usdc.balanceOf(referralWallet), 0);
         assertEq(flow.totalLocked(address(usdc)), 0, "fee must not be counted as locked");
         assertEq(usdc.balanceOf(address(flow)), 0);
         assertEq(usdc.balanceOf(dev), uint256(flow.LOCK_FEE()) * 399);
+    }
+
+    function test_LockWithReferral_CreditsReferrerBalanceInContract() public {
+        uint128 gross = uint128((uint256(flow.LOCK_FEE()) * flow.DEFAULT_REFERRAL_RATE_BPS()) / 10_000);
+        uint128 net = uint128((uint256(gross) * 8000) / 10_000);
+        uint128 treasuryAmount = flow.LOCK_FEE() - net;
+
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        flow.lockWithReferral(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days, referrer);
+
+        assertEq(flow.referralRateBps(), flow.DEFAULT_REFERRAL_RATE_BPS());
+        assertEq(flow.referralBalances(referrer), net);
+        assertEq(usdc.balanceOf(address(flow)), net);
+        assertEq(usdc.balanceOf(treasury), treasuryAmount);
+    }
+
+    function test_LockWithReferral_IgnoresSelfReferral() public {
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        flow.lockWithReferral(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days, dev);
+
+        assertEq(flow.referralBalances(dev), 0);
+        assertEq(usdc.balanceOf(address(flow)), 0);
+        assertEq(usdc.balanceOf(treasury), flow.LOCK_FEE());
+    }
+
+    function test_ClaimReferral_CallerPaysGas() public {
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        flow.lockWithReferral(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days, referrer);
+
+        uint128 net = uint128(flow.referralBalances(referrer));
+        assertGt(net, 0);
+
+        vm.prank(referrer);
+        flow.claimReferral(net);
+
+        assertEq(flow.referralBalances(referrer), 0);
+        assertEq(usdc.balanceOf(referrer), net);
+        assertEq(usdc.balanceOf(address(flow)), 0);
+    }
+
+    function test_WithdrawReferral_OnlyExecutorCanPayOut() public {
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        flow.lockWithReferral(address(token), dev, AMOUNT, nowTs, nowTs + 30 days, nowTs + 30 days, referrer);
+
+        uint128 net = uint128(flow.referralBalances(referrer));
+        assertGt(net, 0);
+
+        vm.prank(stranger);
+        vm.expectRevert(ArcFlow.NotAuthorized.selector);
+        flow.withdrawReferral(referrer, net);
+
+        vm.prank(withdrawExecutor);
+        flow.withdrawReferral(referrer, net);
+
+        assertEq(flow.referralBalances(referrer), 0);
+        assertEq(usdc.balanceOf(referrer), net);
+        assertEq(usdc.balanceOf(address(flow)), 0);
+    }
+
+    function test_OwnerCanUpdateReferralRateAndTreasury() public {
+        address newTreasury = makeAddr("newTreasury");
+
+        vm.startPrank(owner);
+        flow.setReferralRateBps(2000);
+        flow.setTreasury(newTreasury);
+        vm.stopPrank();
+
+        assertEq(flow.referralRateBps(), 2000);
+        assertEq(flow.treasury(), newTreasury);
+    }
+
+    function test_RejectsReferralRateAboveMax() public {
+        vm.prank(owner);
+        vm.expectRevert(ArcFlow.InvalidReferralRate.selector);
+        flow.setReferralRateBps(10_001);
     }
 
     function test_RejectsLockWithoutUsdcFee() public {
