@@ -13,6 +13,7 @@ import "./globals.css";
 
 const sans = Sora({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sora",
 });
 

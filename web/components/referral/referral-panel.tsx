@@ -41,8 +41,10 @@ import { bpsToPercent, formatUsdc, referralLink } from "@/lib/referral";
 import { referralTweetText } from "@/lib/referral-share";
 import { shorten } from "@/lib/form-time";
 
-const CARD = "@container/card dash-stat-card relative overflow-hidden text-base shadow-none ring-0";
-const BADGE = "h-6 border-[var(--dash-border)] bg-sidebar px-2.5 text-[0.7rem] text-white";
+const CARD =
+  "@container/card dash-stat-card relative h-full overflow-hidden text-base shadow-none ring-0 [--card-spacing:--spacing(3)] sm:[--card-spacing:--spacing(4)]";
+const BADGE =
+  "h-5 border-[var(--dash-border)] bg-sidebar px-2 text-[0.62rem] font-medium text-white sm:h-6 sm:px-2.5 sm:text-[0.7rem]";
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -153,11 +155,9 @@ export function ReferralPanel() {
         {stats.map((stat) => (
           <Card key={stat.label} className={CARD}>
             <DashStatCardIcon icon={stat.icon} />
-            <CardHeader className="gap-1 pb-3">
-              <CardDescription className="text-[0.72rem] font-medium tracking-wide text-white/80">
-                {stat.label}
-              </CardDescription>
-              <CardTitle className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+            <CardHeader className="gap-1 pb-2 sm:pb-3">
+              <CardDescription>{stat.label}</CardDescription>
+              <CardTitle className="font-semibold tabular-nums lg:font-bold">
                 {stat.value}
               </CardTitle>
               <CardAction>
@@ -166,9 +166,7 @@ export function ReferralPanel() {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardContent className="pt-0 text-[0.72rem] leading-snug text-white/60">
-              {stat.hint}
-            </CardContent>
+            <CardContent className="mt-auto pt-0">{stat.hint}</CardContent>
           </Card>
         ))}
       </div>

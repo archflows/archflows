@@ -106,7 +106,7 @@ export function ModulePageSkeleton() {
 export function DashboardHomeSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6" aria-busy="true" aria-label="Loading dashboard">
-      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="rounded-xl border border-white/8 bg-black/20 p-4">
             <Bone className="mb-4 h-3 w-24" />

@@ -100,7 +100,9 @@ const nextConfig: NextConfig = {
     qualities: [75, 92, 95],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "recharts", "wagmi", "viem", "@reown/appkit"],
+    // Keep this to icon/chart barrels only. wagmi/viem/appkit here make Next emit
+    // vendor-chunks/@wagmi.js that then go missing after HMR and crash the dashboard.
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
   env: {
     AF_MODE: arcflowMode,

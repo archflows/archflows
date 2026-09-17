@@ -4,35 +4,26 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardAction,
+  CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { StatCardsSkeleton } from "@/components/skeletons";
-import { ARCFLOW_ADDRESS, EXPLORER_URL, NETWORK_NAME } from "@/lib/chain";
+import { ARCFLOW_ADDRESS, EXPLORER_URL } from "@/lib/chain";
 import { arcFlowAbi } from "@/lib/abi";
 import { shorten } from "@/lib/form-time";
 import { useAccount, useReadContract } from "wagmi";
-import {
-  CalendarClockIcon,
-  FileCode2Icon,
-  LockIcon,
-  TrendingDownIcon,
-  TrendingUpIcon,
-  WalletIcon,
-} from "lucide-react";
+import { CalendarClockIcon, FileCode2Icon, LockIcon, WalletIcon } from "lucide-react";
 import { DashStatCardIcon } from "@/components/dash-stat-card-icon";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-const CARD = "@container/card dash-stat-card relative overflow-hidden text-base shadow-none ring-0";
-
-const FOOTER =
-  "flex-col items-start gap-1 border-white/8 bg-transparent";
+const CARD =
+  "@container/card dash-stat-card relative h-full overflow-hidden text-base shadow-none ring-0 [--card-spacing:--spacing(3)] sm:[--card-spacing:--spacing(4)]";
 
 const BADGE =
-  "h-6 border-white/25 bg-white/10 px-2.5 text-[0.7rem] text-white backdrop-blur-sm";
+  "h-5 border-white/25 bg-white/10 px-2 text-[0.62rem] font-medium text-white backdrop-blur-sm sm:h-6 sm:px-2.5 sm:text-[0.7rem]";
 
 export function SectionCards() {
   const { address } = useAccount();
@@ -66,90 +57,54 @@ export function SectionCards() {
     : String(Number(createdCount ?? 0n) + Number(receivedCount ?? 0n));
 
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 px-4 lg:grid-cols-4 lg:px-6">
       <Card className={CARD}>
         <DashStatCardIcon icon={LockIcon} />
-        <CardHeader>
-          <CardDescription className="text-[0.8rem] font-medium tracking-wide text-muted-foreground">
-            Locks created
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-            {created}
-          </CardTitle>
+        <CardHeader className="gap-1 pb-2 sm:pb-3">
+          <CardDescription>Locks created</CardDescription>
+          <CardTitle className="font-semibold tabular-nums lg:font-bold">{created}</CardTitle>
           <CardAction>
             <Badge variant="outline" className={BADGE}>
-              <TrendingUpIcon />
               Live
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className={FOOTER}>
-          <div className="line-clamp-1 flex items-center gap-2 text-[0.95rem] font-medium">
-            Positions you authored <TrendingUpIcon className="size-4 shrink-0" />
-          </div>
-          <div className="text-[0.8rem] leading-snug text-muted-foreground">
-            On-chain creator index
-          </div>
-        </CardFooter>
+        <CardContent className="mt-auto pt-0">Created on-chain</CardContent>
       </Card>
 
       <Card className={CARD}>
         <DashStatCardIcon icon={WalletIcon} />
-        <CardHeader>
-          <CardDescription className="text-[0.8rem] font-medium tracking-wide text-muted-foreground">
-            Locks receiving
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-            {receiving}
-          </CardTitle>
+        <CardHeader className="gap-1 pb-2 sm:pb-3">
+          <CardDescription>Locks receiving</CardDescription>
+          <CardTitle className="font-semibold tabular-nums lg:font-bold">{receiving}</CardTitle>
           <CardAction>
             <Badge variant="outline" className={BADGE}>
-              <TrendingUpIcon />
               Vesting
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className={FOOTER}>
-          <div className="line-clamp-1 flex items-center gap-2 text-[0.95rem] font-medium">
-            Beneficiary positions <TrendingUpIcon className="size-4 shrink-0" />
-          </div>
-          <div className="text-[0.8rem] leading-snug text-muted-foreground">
-            Tokens vesting to this wallet
-          </div>
-        </CardFooter>
+        <CardContent className="mt-auto pt-0">Incoming to this wallet</CardContent>
       </Card>
 
       <Card className={CARD}>
         <DashStatCardIcon icon={CalendarClockIcon} />
-        <CardHeader>
-          <CardDescription className="text-[0.8rem] font-medium tracking-wide text-muted-foreground">
-            Active schedules
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-            {active}
-          </CardTitle>
+        <CardHeader className="gap-1 pb-2 sm:pb-3">
+          <CardDescription>Active schedules</CardDescription>
+          <CardTitle className="font-semibold tabular-nums lg:font-bold">{active}</CardTitle>
           <CardAction>
             <Badge variant="outline" className={BADGE}>
-              <TrendingDownIcon />
               Combined
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className={FOOTER}>
-          <div className="line-clamp-1 text-[0.95rem] font-medium">Created + receiving</div>
-          <div className="text-[0.8rem] leading-snug text-muted-foreground">
-            Total exposure on ArcFlows
-          </div>
-        </CardFooter>
+        <CardContent className="mt-auto pt-0">Created + receiving</CardContent>
       </Card>
 
       <Card className={CARD}>
         <DashStatCardIcon icon={FileCode2Icon} />
-        <CardHeader>
-          <CardDescription className="text-[0.8rem] font-medium tracking-wide text-muted-foreground">
-            Contract
-          </CardDescription>
-          <CardTitle className="text-3xl font-semibold tracking-tight">
+        <CardHeader className="gap-1 pb-2 sm:pb-3">
+          <CardDescription>Contract</CardDescription>
+          <CardTitle className="font-semibold lg:font-bold">
             {notDeployed ? "Pending" : "Live"}
           </CardTitle>
           <CardAction>
@@ -158,25 +113,20 @@ export function SectionCards() {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className={FOOTER}>
-          <div className="text-[0.95rem] font-medium">
-            {notDeployed ? "Deploy ArcFlows first" : NETWORK_NAME}
-          </div>
+        <CardContent className="mt-auto pt-0">
           {notDeployed ? (
-            <div className="text-[0.8rem] leading-snug text-muted-foreground">
-              Vault address not set
-            </div>
+            "Vault address not set"
           ) : (
             <a
               href={`${EXPLORER_URL}/address/${ARCFLOW_ADDRESS}`}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-[0.8rem] leading-snug text-white hover:text-white"
+              className="font-mono font-normal text-white/75 hover:text-white"
             >
               {shorten(ARCFLOW_ADDRESS)}
             </a>
           )}
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

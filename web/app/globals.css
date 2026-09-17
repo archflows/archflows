@@ -2390,17 +2390,78 @@ a.lp-card:hover .lp-card-arrow {
 [data-slot="sidebar-inset"] [data-slot="card"].dash-stat-card,
 [data-slot="card"].dash-stat-card {
   border: 0;
+  min-height: 8.75rem;
   background: var(--bloom);
   box-shadow: none;
 }
 
 [data-slot="card"].dash-stat-card [data-slot="card-description"] {
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+[data-slot="card"].dash-stat-card [data-slot="card-title"] {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: #fff;
+}
+
+[data-slot="card"].dash-stat-card [data-slot="card-content"] {
+  max-width: calc(100% - 2.65rem);
+  font-size: 0.7rem;
+  font-weight: 300;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.5);
+  overflow-wrap: break-word;
+}
+
+[data-slot="card"].dash-stat-card [data-slot="card-action"] [data-slot="badge"] {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+[data-slot="card"].dash-stat-card [data-slot="card-footer"] > div:first-child {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 [data-slot="card"].dash-stat-card [data-slot="card-footer"] > div:last-child,
 [data-slot="card"].dash-stat-card .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.7rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (min-width: 640px) {
+  [data-slot="card"].dash-stat-card {
+    min-height: 9.5rem;
+  }
+
+  [data-slot="card"].dash-stat-card [data-slot="card-title"] {
+    font-size: 1.5rem;
+  }
+
+  [data-slot="card"].dash-stat-card [data-slot="card-description"] {
+    font-size: 0.75rem;
+  }
+
+  [data-slot="card"].dash-stat-card [data-slot="card-content"] {
+    max-width: calc(100% - 3.75rem);
+    font-size: 0.72rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-slot="card"].dash-stat-card [data-slot="card-title"] {
+    font-size: 1.875rem;
+    font-weight: 700;
+  }
 }
 
 [data-slot="card"].dash-stat-card [data-slot="card-header"],
@@ -2413,22 +2474,38 @@ a.lp-card:hover .lp-card-arrow {
 .dash-stat-card-icon {
   pointer-events: none;
   position: absolute;
-  right: 1rem;
-  bottom: 1rem;
+  right: 0.7rem;
+  bottom: 0.7rem;
   z-index: 0;
   display: grid;
   place-items: center;
-  width: 2.85rem;
-  height: 2.85rem;
-  border-radius: 0.7rem;
-  border: 1px solid rgba(77, 138, 255, 0.42);
-  background: rgba(0, 80, 224, 0.16);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(77, 138, 255, 0.28);
+  background: rgba(0, 80, 224, 0.12);
   color: var(--ion);
+  opacity: 0.72;
 }
 
 .dash-stat-card-icon svg {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dash-stat-card-icon {
+    right: 1rem;
+    bottom: 1rem;
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 0.7rem;
+  }
+
+  .dash-stat-card-icon svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
 }
 
 [data-slot="card"].dash-chart-card {
