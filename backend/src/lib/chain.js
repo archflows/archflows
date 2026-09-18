@@ -13,6 +13,7 @@ import { AppError, badRequest } from "../errors.js";
 
 export const arcFlowFeeAbi = parseAbi([
   "event FeePaid(uint256 indexed id, address indexed from, uint128 amount)",
+  "event Locked(uint256 indexed id, address indexed token, address indexed beneficiary, address creator, uint128 amount, uint64 start, uint64 cliff, uint64 end)",
 ]);
 
 export const arcFlowReferralAbi = parseAbi([
@@ -131,18 +132,49 @@ export async function readReferralBalance(referrer) {
 }
 
 /**
- * Confirm the referee really paid a lock fee on Arc before any commission is credited.
- * The report arrives from the browser, so nothing in it is trusted: the fee amount used
- * for the commission is read back out of the `FeePaid` log, never from the request body.
- *
- * @returns fee actually paid, in USDC 6-decimal units, as a string.
+ * Confirm the referee created this lock on Arc. A split batch emits one FeePaid for the
+ * whole create, so fee amount is read per transaction, not per lock id.
  */
-export async function verifyLockFee({ txHash, lockId, referee }) {
+export async function verifyLockCreated({ txHash, lockId, referee }) {
   const arcflow = config.contracts.lock;
   if (!arcflow) {
     throw new AppError(503, "unavailable", "Lock contract address is not configured");
   }
 
+  const receipt = await lockReceipt(txHash);
+  const logs = parseEventLogs({
+    abi: arcFlowFeeAbi,
+    eventName: "Locked",
+    logs: receipt.logs.filter((log) => log.address.toLowerCase() === arcflow.toLowerCase()),
+  });
+  const match = logs.find((log) => String(log.args.id) === String(lockId));
+  if (!match) throw badRequest(`Lock ${lockId} was not created in this transaction`);
+  if (match.args.creator.toLowerCase() !== referee.toLowerCase()) {
+    throw badRequest("This lock was created by a different wallet");
+  }
+}
+
+/** Sum of FeePaid logs from `referee` in one tx. A split pays $15 once; N singles pay N × $10. */
+export async function sumFeePaidInTx({ txHash, referee }) {
+  const arcflow = config.contracts.lock;
+  if (!arcflow) {
+    throw new AppError(503, "unavailable", "Lock contract address is not configured");
+  }
+
+  const receipt = await lockReceipt(txHash);
+  const logs = parseEventLogs({
+    abi: arcFlowFeeAbi,
+    eventName: "FeePaid",
+    logs: receipt.logs.filter((log) => log.address.toLowerCase() === arcflow.toLowerCase()),
+  });
+  const total = logs
+    .filter((log) => log.args.from.toLowerCase() === referee.toLowerCase())
+    .reduce((sum, log) => sum + BigInt(log.args.amount), 0n);
+  if (total <= 0n) throw badRequest("No lock fee was paid in this transaction");
+  return total.toString();
+}
+
+async function lockReceipt(txHash) {
   let receipt;
   try {
     receipt = await publicClient().getTransactionReceipt({ hash: txHash });
@@ -150,20 +182,16 @@ export async function verifyLockFee({ txHash, lockId, referee }) {
     throw badRequest("Transaction not found on Arc");
   }
   if (receipt.status !== "success") throw badRequest("Transaction reverted on Arc");
+  return receipt;
+}
 
-  const logs = parseEventLogs({
-    abi: arcFlowFeeAbi,
-    eventName: "FeePaid",
-    logs: receipt.logs.filter((log) => log.address.toLowerCase() === arcflow.toLowerCase()),
-  });
-
-  const match = logs.find((log) => String(log.args.id) === String(lockId));
-  if (!match) throw badRequest(`No fee was paid for lock ${lockId} in this transaction`);
-  if (match.args.from.toLowerCase() !== referee.toLowerCase()) {
-    throw badRequest("The lock fee in this transaction was paid by a different wallet");
-  }
-
-  return match.args.amount.toString();
+/**
+ * Confirm the referee really paid a lock fee on Arc before any commission is credited.
+ * @returns fee actually paid, in USDC 6-decimal units, as a string.
+ */
+export async function verifyLockFee({ txHash, lockId, referee }) {
+  await verifyLockCreated({ txHash, lockId, referee });
+  return sumFeePaidInTx({ txHash, referee });
 }
 
 /** Signed by the referrer's own wallet so a withdrawal cannot be triggered by anyone else. */
@@ -199,6 +227,14 @@ export async function usdcBalanceOf(address) {
     functionName: "balanceOf",
     args: [address],
   });
+}
+
+/**
+ * Pays a referral withdrawal from the referral pool via `withdrawReferral`.
+ * $10 locks and $15 splits both credit `referralBalances` on-chain the same way.
+ */
+export async function payReferralWithdrawal({ referrer, amount }) {
+  return withdrawReferralOnChain({ referrer, amount });
 }
 
 /** Relays `withdrawReferral` on the lock contract after the user signed the request. */

@@ -6,7 +6,7 @@ import { created, ok } from "../lib/respond.js";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { commission, feePolicy } from "../lib/referral.js";
 import { notifyReferralEarning } from "../lib/notifications-store.js";
-import { payoutAddress, sendUsdcPayout, verifyLockFee } from "../lib/chain.js";
+import { payoutAddress, sendUsdcPayout, verifyLockCreated, sumFeePaidInTx } from "../lib/chain.js";
 import {
   asAddress,
   asEnum,
@@ -101,15 +101,21 @@ feesRouter.post(
     const unique = new Set(entries.map((e) => e.lockId));
     if (unique.size !== entries.length) throw badRequest("locks contains duplicate lock ids");
 
-    // Verified against Arc, one by one. A lock that did not really pay a fee never counts.
+    // Verified against Arc. A split batch pays one fee in one tx — count that tx once.
     const verified = [];
+    const feeByTx = new Map();
     for (const entry of entries) {
-      const feeUsdc = await verifyLockFee({
+      await verifyLockCreated({
         txHash: entry.txHash,
         lockId: entry.lockId,
         referee: wallet,
       });
-      verified.push({ ...entry, feeUsdc });
+      if (!feeByTx.has(entry.txHash)) {
+        feeByTx.set(entry.txHash, await sumFeePaidInTx({ txHash: entry.txHash, referee: wallet }));
+      }
+      const txFee = feeByTx.get(entry.txHash);
+      const alreadyAssigned = verified.some((row) => row.txHash === entry.txHash);
+      verified.push({ ...entry, feeUsdc: alreadyAssigned ? "0" : txFee });
     }
 
     const paidUsdc = verified.reduce((total, v) => total + BigInt(v.feeUsdc), 0n).toString();
@@ -117,6 +123,7 @@ feesRouter.post(
 
     const signup = await query("SELECT referrer FROM referral_signups WHERE referee = $1", [wallet]);
     const referrer = signup.rows[0]?.referrer ?? null;
+    // 15% of the policy fee: $10 lock → $1.50 gross; $15 split → $2.25 gross.
     const split = referrer ? commission(policy) : null;
 
     const settlement = await withTransaction(async (client) => {

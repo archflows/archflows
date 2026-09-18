@@ -78,17 +78,16 @@ export const USDC_DECIMALS = 6;
 /** $10 lock fee in the ERC-20 6-decimal view. Charged by the contract per lock() call. */
 export const LOCK_FEE_UNITS = 10n * 10n ** 6n;
 /**
- * $15 flat price for one create that splits across several unlock wallets. The contract has
- * no batch entry point, so a split of N wallets pays LOCK_FEE_UNITS x N on-chain and the
- * excess is refunded in USDC by the backend once the create settles.
+ * $15 flat price for one create that splits across several unlock wallets.
+ * Charged once on-chain via `lockSplit` / `lockSplitWithReferral`. Referral is 15% of this $15,
+ * same split as a $10 lock: share to the referral pool, rest to the platform treasury.
  */
 export const SPLIT_LOCK_FEE_UNITS = 15n * 10n ** 6n;
 
-/** What a create actually costs the user, after the split rebate. */
+/** What a create costs the user. Split is $15 once; a single destination is $10. */
 export function netCreateFeeUnits(lockCount: number) {
-  const onChain = LOCK_FEE_UNITS * BigInt(Math.max(lockCount, 1));
   if (lockCount <= 1) return LOCK_FEE_UNITS;
-  return onChain < SPLIT_LOCK_FEE_UNITS ? onChain : SPLIT_LOCK_FEE_UNITS;
+  return SPLIT_LOCK_FEE_UNITS;
 }
 
 /** Arc mempool rejects txs below 20 gwei. */

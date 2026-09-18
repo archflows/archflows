@@ -99,8 +99,9 @@ export function ReferralPanel() {
   }
 
   const { account, rates, totals, referees, earnings, withdrawals, referredBy } = data;
-  /** What the referrer keeps on one standard $10 lock, in USDC units. */
-  const perStandardLock = (10_000_000n * BigInt(rates.effectiveBps)) / 10_000n;
+  /** Gross 15% of the fee the referee kept. $10 lock and $15 split. */
+  const perStandardLock = (10_000_000n * BigInt(rates.rateBps)) / 10_000n;
+  const perSplitLock = (15_000_000n * BigInt(rates.rateBps)) / 10_000n;
 
   const stats: {
     label: string;
@@ -180,8 +181,9 @@ export function ReferralPanel() {
             </CardTitle>
             <CardDescription>
               Anyone who opens this link and then creates a lock earns you{" "}
-              {bpsToPercent(rates.effectiveBps)} of the USDC fee they pay — ${" "}
-              {formatUsdc(perStandardLock)} on a standard $10 lock.
+              {bpsToPercent(rates.rateBps)} of the USDC fee they pay — ${" "}
+              {formatUsdc(perStandardLock)} on a $10 lock, ${" "}
+              {formatUsdc(perSplitLock)} on a $15 split.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-6">

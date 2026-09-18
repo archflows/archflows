@@ -35,7 +35,13 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     /// @notice Flat lock fee, 10 USDC in the ERC-20 6-decimal view. Never native 18-dec units.
     uint128 public constant LOCK_FEE = 10 * 1e6;
 
-    /// @notice Default referral share of `LOCK_FEE` when a lock is attributed to a referrer (15%).
+    /// @notice Flat fee for one split create, however many wallets. Same asset/decimals as `LOCK_FEE`.
+    uint128 public constant SPLIT_FEE = 15 * 1e6;
+
+    /// @notice Cap on destinations in `lockSplit`. Matches the backend settlement limit.
+    uint256 public constant MAX_SPLIT = 50;
+
+    /// @notice Default referral share of the fee when a lock is attributed to a referrer (15%).
     uint16 public constant DEFAULT_REFERRAL_RATE_BPS = 1500;
 
     /// @notice Upper bound for `referralRateBps` (100%).
@@ -75,6 +81,8 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
     error InvalidReferralRate();
     error NotAuthorized();
     error InsufficientReferralBalance();
+    error InvalidSplit();
+    error TooManySplits();
 
     event Locked(
         uint256 indexed id,
@@ -201,6 +209,32 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         return _lock(token, beneficiary, amount, start, cliff, end, referrer);
     }
 
+    /// @notice Lock one amount across several beneficiaries. Charges `SPLIT_FEE` once.
+    /// @dev Referral uses the same split as `lockWithReferral`, taken from `SPLIT_FEE` not `LOCK_FEE`.
+    function lockSplit(
+        address token,
+        address[] calldata beneficiaries,
+        uint128[] calldata amounts,
+        uint64 start,
+        uint64 cliff,
+        uint64 end
+    ) external nonReentrant returns (uint256[] memory ids) {
+        return _lockSplit(token, beneficiaries, amounts, start, cliff, end, address(0));
+    }
+
+    /// @notice Same as `lockSplit`, but routes `referralRateBps` of `SPLIT_FEE` to the referrer.
+    function lockSplitWithReferral(
+        address token,
+        address[] calldata beneficiaries,
+        uint128[] calldata amounts,
+        uint64 start,
+        uint64 cliff,
+        uint64 end,
+        address referrer
+    ) external nonReentrant returns (uint256[] memory ids) {
+        return _lockSplit(token, beneficiaries, amounts, start, cliff, end, referrer);
+    }
+
     function _lock(
         address token,
         address beneficiary,
@@ -210,19 +244,62 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         uint64 end,
         address referrer
     ) internal returns (uint256 id) {
-        if (token == address(0) || beneficiary == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
+        (start, cliff, end) = _normalizeSchedule(start, cliff, end);
+        uint128 referralAmount = _takeFee(referrer, LOCK_FEE);
+        id = _writePosition(token, beneficiary, amount, start, cliff, end);
+        emit FeePaid(id, msg.sender, LOCK_FEE);
+        if (referralAmount > 0) emit ReferralFeePaid(id, msg.sender, referrer, referralAmount);
+    }
+
+    function _lockSplit(
+        address token,
+        address[] calldata beneficiaries,
+        uint128[] calldata amounts,
+        uint64 start,
+        uint64 cliff,
+        uint64 end,
+        address referrer
+    ) internal returns (uint256[] memory ids) {
+        uint256 n = beneficiaries.length;
+        if (n < 2 || n != amounts.length) revert InvalidSplit();
+        if (n > MAX_SPLIT) revert TooManySplits();
+        (start, cliff, end) = _normalizeSchedule(start, cliff, end);
+
+        uint128 referralAmount = _takeFee(referrer, SPLIT_FEE);
+        ids = new uint256[](n);
+        for (uint256 i; i < n; ++i) {
+            ids[i] = _writePosition(token, beneficiaries[i], amounts[i], start, cliff, end);
+        }
+        emit FeePaid(ids[0], msg.sender, SPLIT_FEE);
+        if (referralAmount > 0) emit ReferralFeePaid(ids[0], msg.sender, referrer, referralAmount);
+    }
+
+    function _normalizeSchedule(uint64 start, uint64 cliff, uint64 end)
+        internal
+        view
+        returns (uint64, uint64, uint64)
+    {
         if (start == 0) start = uint64(block.timestamp);
         else if (start < block.timestamp) revert InvalidSchedule();
         if (cliff == 0) cliff = start;
         if (cliff < start || end < cliff) revert InvalidSchedule();
-        // A lock that is already fully unlocked is not proof of anything.
         if (end <= block.timestamp) revert InvalidSchedule();
         if (end - start < MIN_DURATION) revert InvalidSchedule();
+        return (start, cliff, end);
+    }
 
-        uint128 referralAmount = _takeFee(referrer);
+    function _writePosition(
+        address token,
+        address beneficiary,
+        uint128 amount,
+        uint64 start,
+        uint64 cliff,
+        uint64 end
+    ) internal returns (uint256 id) {
+        if (token == address(0) || beneficiary == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
         uint128 received = _pull(token, msg.sender, amount);
-
         id = nextId++;
         positions[id] = Position({
             token: token,
@@ -241,8 +318,6 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         totalLocked[token] += received;
 
         emit Locked(id, token, beneficiary, msg.sender, received, start, cliff, end);
-        emit FeePaid(id, msg.sender, LOCK_FEE);
-        if (referralAmount > 0) emit ReferralFeePaid(id, msg.sender, referrer, referralAmount);
     }
 
     function claim(uint256 id) external nonReentrant returns (uint128 amount) {
@@ -289,16 +364,17 @@ contract arcflowsLocker is Initializable, OwnableUpgradeable, ReentrancyGuardUpg
         return uint128((uint256(p.amount) * (uint256(timestamp) - uint256(p.start))) / duration);
     }
 
-    /// @return referralAmount Net USDC credited to `referralBalances[referrer]` for this lock, if any.
-    function _takeFee(address referrer) internal returns (uint128 referralAmount) {
+    /// @return referralAmount Net USDC credited to `referralBalances[referrer]` for this fee, if any.
+    /// @dev Same split for `LOCK_FEE` and `SPLIT_FEE`: 15% of `fee` to the referrer (minus platform cut), rest to treasury.
+    function _takeFee(address referrer, uint128 fee) internal returns (uint128 referralAmount) {
         referralAmount = 0;
-        if (referrer != address(0) && referrer != msg.sender && referralRateBps > 0) {
-            uint128 gross = uint128((uint256(LOCK_FEE) * referralRateBps) / 10_000);
+        if (referrer != address(0) && referrer != msg.sender && referralRateBps > 0 && fee > 0) {
+            uint128 gross = uint128((uint256(fee) * referralRateBps) / 10_000);
             uint16 platformBps = referralPlatformBps;
             referralAmount = platformBps > 0 ? uint128((uint256(gross) * (10_000 - platformBps)) / 10_000) : gross;
         }
 
-        uint128 treasuryAmount = LOCK_FEE - referralAmount;
+        uint128 treasuryAmount = fee - referralAmount;
         if (referralAmount > 0) {
             if (referralWallet == address(0)) revert ZeroAddress();
             uint256 poolBefore = IERC20(usdc).balanceOf(referralWallet);

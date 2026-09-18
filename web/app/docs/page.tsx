@@ -177,9 +177,10 @@ export default function DocsPage() {
           changed. Default is the connected wallet.
         </p>
         <p>
-          A split creates one position per destination, each with its own proof URL and its own
-          fee. Amounts are allocated by the percentages you enter. The last row receives the
-          remainder so units are not lost to rounding.
+          A split creates one position per destination, each with its own proof URL. The create
+          costs a flat <strong>$15 USDC</strong> in one transaction. If the creator was referred,
+          15% of that $15 goes to the referral pool. Amounts are allocated by the percentages you
+          enter. The last row receives the remainder so units are not lost to rounding.
         </p>
         <DocTable
           headers={["Action", "Creator", "Beneficiary", "Anyone else"]}
@@ -337,9 +338,10 @@ export default function DocsPage() {
         <h2>Fees and USDC</h2>
         <p>
           Creating a lock pays a flat <strong>$10 USDC</strong> protocol fee, plus network gas in
-          USDC. A split lock charges $10 per destination. The fee is pulled at creation, paid to
-          the treasury, and never sits inside <code>totalLocked</code>. It cannot be claimed out
-          of a position.
+          USDC. A split lock is <strong>$15 USDC</strong> flat, charged once on-chain however many
+          wallets. If the creator was referred, 15% of that fee goes to the referral pool and the
+          rest to the platform treasury — the same split as a $10 lock. The fee never sits inside{" "}
+          <code>totalLocked</code>. It cannot be claimed out of a position.
         </p>
         <p>
           On Arc, USDC has two interfaces that share one balance. The native view uses 18 decimals

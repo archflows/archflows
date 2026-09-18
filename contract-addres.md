@@ -136,11 +136,20 @@ All five modules are ERC1967 / UUPS proxies. Point the frontend at the proxy add
 
 | Proxy | Implementation |
 |---|---|
-| locker | `0x77CFCa1c13BdB2e0c2d6e7d35aACC81735aA58d9` |
+| locker | `0x44eD0a95e08cda8fc660fE2d97c7d31cf36Acd36` (18 Sep 2026 — `lockSplit` / `SPLIT_FEE` $15) |
 | stream | `0xbba0dCAAF15488f3d3f912e4e54a792f93F4082a` |
 | airdrop | `0x3479604612233beD56c7713cF4275F119032aC6B` |
 | escrow | `0x92d2575B18cC7Bc54F45F15e56F652732f1cC6D3` |
 | staking | `0x333FCd911b76285E349D3806C5bFCE2877D2d4aF` |
+
+**Locker upgrade (18 Sep 2026)** — `lockSplit` / `lockSplitWithReferral`, `SPLIT_FEE` = 15 USDC. Proxy unchanged. Previous impl `0x2d8336d84e85b154932062a1ca8a469516766f46`.
+
+| | |
+|---|---|
+| Proxy | [`0xCD1bEeE5856Cd0c57931258d9621FeB2052B5481`](https://explorer.arc.io/address/0xCD1bEeE5856Cd0c57931258d9621FeB2052B5481) |
+| Implementation | [`0x44eD0a95e08cda8fc660fE2d97c7d31cf36Acd36`](https://explorer.arc.io/address/0x44eD0a95e08cda8fc660fE2d97c7d31cf36Acd36) |
+| Tx impl | [`0x9757f2b9c1be522e0805f5773f7319ff0c3b6085df8523a69b1006b7d3a0ffb0`](https://explorer.arc.io/tx/0x9757f2b9c1be522e0805f5773f7319ff0c3b6085df8523a69b1006b7d3a0ffb0) |
+| Tx upgrade | [`0x540c33e5f0562584879af10c8a0db8ce7b2ffee0d90ddbde1ca7bbf9b20f1c1e`](https://explorer.arc.io/tx/0x540c33e5f0562584879af10c8a0db8ce7b2ffee0d90ddbde1ca7bbf9b20f1c1e) |
 
 | # | Nonce | Contract | Tx hash | Block |
 |---|---|---|---|---|

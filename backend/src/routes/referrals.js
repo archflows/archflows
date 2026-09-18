@@ -11,7 +11,8 @@ import {
   readReferralBalance,
   referralClaimsEnabled,
   withdrawExecutorAddress,
-  withdrawReferralOnChain,
+  payoutAddress,
+  payReferralWithdrawal,
 } from "../lib/chain.js";
 import {
   asAddress,
@@ -24,6 +25,10 @@ import {
 export const referralsRouter = Router();
 
 const MAX_CODE_ATTEMPTS = 5;
+
+async function payoutsEnabled() {
+  return (await referralClaimsEnabled()) || Boolean(payoutAddress());
+}
 
 /** Every wallet that opens the referral page gets a code, created on first view. */
 async function ensureAccount(wallet) {
@@ -55,17 +60,23 @@ async function balanceOf(wallet, client = null) {
     [wallet],
   );
   const reserved = BigInt(rows[0].reserved);
-  const onChain = client ? null : await readReferralBalance(wallet);
-  if (onChain !== null) {
-    return { earned: onChain, reserved, available: onChain - reserved, source: "onchain" };
-  }
-
-  const ledger = await run(
-    `SELECT COALESCE((SELECT SUM(net_usdc::numeric) FROM referral_earnings WHERE referrer = $1), 0)::text AS earned`,
-    [wallet],
-  );
-  const earned = BigInt(ledger.rows[0].earned);
-  return { earned, reserved, available: earned - reserved, source: "ledger" };
+  const [onChain, ledger] = await Promise.all([
+    readReferralBalance(wallet),
+    run(
+      `SELECT COALESCE((SELECT SUM(net_usdc::numeric) FROM referral_earnings WHERE referrer = $1), 0)::text AS earned`,
+      [wallet],
+    ),
+  ]);
+  const fromLedger = BigInt(ledger.rows[0].earned);
+  const fromChain = onChain ?? 0n;
+  // Split referrals live on the ledger (15% of $15). Single locks also credit on-chain.
+  const earned = fromChain > fromLedger ? fromChain : fromLedger;
+  return {
+    earned,
+    reserved,
+    available: earned - reserved,
+    source: fromChain >= fromLedger && onChain !== null ? "onchain" : "ledger",
+  };
 }
 
 referralsRouter.get(
@@ -81,7 +92,7 @@ referralsRouter.get(
       lockFeeUsdc: config.lockFeeUsdc,
       referralPool: config.contracts.referralPool,
       withdrawExecutor: withdrawExecutorAddress(),
-      payoutsEnabled: await referralClaimsEnabled(),
+      payoutsEnabled: await payoutsEnabled(),
       withdrawalMode: "relayer",
     });
   }),
@@ -149,8 +160,8 @@ referralsRouter.post(
   }),
 );
 
-// Commission is credited by POST /v1/fees/settle, which is the only place that establishes
-// how much fee the platform actually kept after any split rebate.
+// Commission is credited by POST /v1/fees/settle against the fee the user kept:
+// $10 for a single lock, $15 flat for a split. Referral is 15% of that amount.
 
 referralsRouter.get(
   "/me",
@@ -228,7 +239,7 @@ referralsRouter.get(
           (config.referral.rateBps * (10_000 - config.referral.platformBps)) / 10_000,
         ),
         minWithdrawUsdc: config.referral.minWithdrawUsdc,
-        payoutsEnabled: await referralClaimsEnabled(),
+        payoutsEnabled: await payoutsEnabled(),
       },
       referredBy: referrer.rows[0] ?? null,
       totals: {
@@ -297,7 +308,7 @@ referralsRouter.post(
     });
 
     try {
-      const txHash = await withdrawReferralOnChain({ referrer: wallet, amount: pendingRow.amount_usdc });
+      const txHash = await payReferralWithdrawal({ referrer: wallet, amount: pendingRow.amount_usdc });
       const { rows } = await query(
         `UPDATE referral_withdrawals
          SET status = 'paid', tx_hash = $2, updated_at = NOW()

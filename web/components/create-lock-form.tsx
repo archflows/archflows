@@ -2,14 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, parseUnits, type TransactionReceipt } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { Loader2 } from "lucide-react";
 import { arcFlowAbi, erc20Abi } from "@/lib/abi";
 import { CONTRACT_LABEL } from "@/lib/brand";
 import {
   ARCFLOW_ADDRESS,
-  LOCK_FEE_UNITS,
   MIN_MAX_FEE_PER_GAS,
   USDC_ADDRESS,
   netCreateFeeUnits,
@@ -32,7 +31,7 @@ import {
 import { useMounted } from "@/hooks/useMounted";
 import { useReferrerAddress } from "@/hooks/useReferrerAddress";
 import { ownsWalletToken, useWalletTokens } from "@/hooks/useWalletTokens";
-import { buildLockWriteCall } from "@/lib/lock-contract";
+import { buildLockWriteCall, buildSplitLockWriteCall } from "@/lib/lock-contract";
 import { WalletConnectButton } from "@/components/WalletConnectButton";
 import { TokenSelect } from "@/components/TokenSelect";
 import { AmountPercentField } from "@/components/AmountPercentField";
@@ -103,11 +102,8 @@ export function CreateLockForm() {
   }, [unlockMode, address, otherWallet, splits]);
 
   const lockCount = Math.max(1, unlockMode === "split" ? splits.length : 1);
-  // The wallet must approve what the contract charges (one fee per lock() call). The user is
-  // only ever priced at `netFeeTotal` — the difference comes back as a USDC rebate.
-  const feeTotal = LOCK_FEE_UNITS * BigInt(unlockMode === "split" ? Math.max(splits.length, 1) : 1);
-  const netFeeTotal = netCreateFeeUnits(unlockMode === "split" ? lockCount : 1);
-  const rebateTotal = feeTotal - netFeeTotal;
+  // Split charges SPLIT_FEE ($15) once on-chain. A single destination still pays LOCK_FEE ($10).
+  const feeTotal = netCreateFeeUnits(unlockMode === "split" ? lockCount : 1);
 
   const { data: symbol } = useReadContract({
     address: tokenAddress,
@@ -353,19 +349,73 @@ export function CreateLockForm() {
 
       setStep("locking");
       let allocated = 0n;
-      let lastLockHash: string | null = null;
-      const created: { id: string; txHash: string }[] = [];
-      const settled: { lockId: string; txHash: string }[] = [];
+      const pieces: { address: `0x${string}`; amount: bigint }[] = [];
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
         const piece = shareAmount(parsedAmount, target.percent, i === targets.length - 1, allocated);
         allocated += piece;
         if (piece <= 0n) continue;
+        pieces.push({ address: target.address, amount: piece });
+      }
 
+      let lastLockHash: string | null = null;
+      const created: { id: string; txHash: string }[] = [];
+      const settled: { lockId: string; txHash: string }[] = [];
+
+      async function recordLocks(lockHash: `0x${string}`, receipt: TransactionReceipt, feeUsdc: string) {
+        lastLockHash = lockHash;
+        const locked = eventArgs<{ id: bigint; beneficiary: `0x${string}`; amount: bigint }>(
+          receipt,
+          arcFlowAbi,
+          "Locked",
+        );
+        for (const [index, ev] of locked.entries()) {
+          created.push({ id: ev.id.toString(), txHash: lockHash });
+          await upsertLock({
+            id: ev.id.toString(),
+            kind: "lock",
+            token: tokenAddress!,
+            beneficiary: ev.beneficiary,
+            creator: address!,
+            amount: ev.amount.toString(),
+            start: nowSec(),
+            cliff: unlockAt,
+            end: unlockAt,
+            feeUsdc: index === 0 ? feeUsdc : "0",
+            txHash: lockHash,
+          });
+          settled.push({ lockId: ev.id.toString(), txHash: lockHash });
+        }
+      }
+
+      if (unlockMode === "split") {
+        const splitCall = buildSplitLockWriteCall(referrer, {
+          token: tokenAddress,
+          beneficiaries: pieces.map((row) => row.address),
+          amounts: pieces.map((row) => row.amount),
+          start: 0n,
+          cliff: end,
+          end,
+        });
+        const lockHash = await writeContractAsync({
+          address: ARCFLOW_ADDRESS,
+          abi: arcFlowAbi,
+          functionName: splitCall.functionName,
+          args: splitCall.args,
+          ...gas,
+        });
+        const receipt = await confirmTx(publicClient, lockHash);
+        await recordLocks(lockHash, receipt, feeTotal.toString());
+      } else {
+        const target = pieces[0];
+        if (!target) {
+          setError("Nothing to lock.");
+          return;
+        }
         const lockCall = buildLockWriteCall(referrer, {
           token: tokenAddress,
           beneficiary: target.address,
-          amount: piece,
+          amount: target.amount,
           start: 0n,
           cliff: end,
           end,
@@ -378,37 +428,11 @@ export function CreateLockForm() {
           ...gas,
         });
         const receipt = await confirmTx(publicClient, lockHash);
-        lastLockHash = lockHash;
-        const locked = eventArgs<{ id: bigint; beneficiary: `0x${string}`; amount: bigint }>(
-          receipt,
-          arcFlowAbi,
-          "Locked",
-        );
-        for (const ev of locked) {
-          created.push({
-            id: ev.id.toString(),
-            txHash: lockHash,
-          });
-          await upsertLock({
-            id: ev.id.toString(),
-            kind: "lock",
-            token: tokenAddress,
-            beneficiary: ev.beneficiary,
-            creator: address,
-            amount: ev.amount.toString(),
-            start: nowSec(),
-            cliff: unlockAt,
-            end: unlockAt,
-            feeUsdc: "10000000",
-            txHash: lockHash,
-          });
-          settled.push({ lockId: ev.id.toString(), txHash: lockHash });
-        }
+        await recordLocks(lockHash, receipt, feeTotal.toString());
       }
 
       if (settled.length > 0) {
-        // Fire-and-forget: this refunds the split overcharge and credits any referral, but a
-        // failure here must never surface as a failure on locks the user already paid for.
+        // Fire-and-forget: credits the referral ledger. On-chain already split the fee.
         void settleLockFees({
           batchId: crypto.randomUUID(),
           wallet: address,
@@ -456,13 +480,15 @@ export function CreateLockForm() {
               ? "Agree & split lock"
               : "Agree & lock"
         }
-        feeUsd={Number(netFeeTotal) / 1e6}
+        feeUsd={Number(feeTotal) / 1e6}
         feeNote={
-          rebateTotal > 0n
-            ? `Charged as $${Number(feeTotal) / 1e6} on-chain (one fee per lock), then $${
-                Number(rebateTotal) / 1e6
-              } is refunded to your wallet in USDC.`
-            : undefined
+          unlockMode === "split"
+            ? referrer
+              ? "Flat $15. Referral is 15% of that $15 — same split as a $10 lock."
+              : "Flat $15 USDC, however many wallets."
+            : referrer
+              ? "Referral is 15% of this $10 fee."
+              : undefined
         }
         summary={[
           { label: "Type", value: "Hard lock" },

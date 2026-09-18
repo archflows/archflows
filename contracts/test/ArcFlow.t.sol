@@ -318,6 +318,67 @@ contract ArcFlowTest is Test {
         flow.setReferralRateBps(10_001);
     }
 
+    function test_LockSplit_ChargesFifteenOnce() public {
+        address walletA = makeAddr("walletA");
+        address walletB = makeAddr("walletB");
+        address[] memory beneficiaries = new address[](2);
+        beneficiaries[0] = walletA;
+        beneficiaries[1] = walletB;
+        uint128[] memory amounts = new uint128[](2);
+        amounts[0] = AMOUNT / 2;
+        amounts[1] = AMOUNT / 2;
+
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        uint256[] memory ids = flow.lockSplit(
+            address(token), beneficiaries, amounts, nowTs, nowTs + 30 days, nowTs + 30 days
+        );
+
+        assertEq(ids.length, 2);
+        assertEq(usdc.balanceOf(treasury), flow.SPLIT_FEE());
+        assertEq(usdc.balanceOf(referralWallet), 0);
+        (,,, uint128 amt0,,,,) = flow.positions(ids[0]);
+        (,,, uint128 amt1,,,,) = flow.positions(ids[1]);
+        assertEq(amt0, AMOUNT / 2);
+        assertEq(amt1, AMOUNT / 2);
+    }
+
+    function test_LockSplitWithReferral_SplitsFifteenLikeATenLock() public {
+        uint128 gross = uint128((uint256(flow.SPLIT_FEE()) * flow.DEFAULT_REFERRAL_RATE_BPS()) / 10_000);
+        uint128 net = uint128((uint256(gross) * 8000) / 10_000);
+        uint128 treasuryAmount = flow.SPLIT_FEE() - net;
+
+        address walletA = makeAddr("walletA");
+        address walletB = makeAddr("walletB");
+        address[] memory beneficiaries = new address[](2);
+        beneficiaries[0] = walletA;
+        beneficiaries[1] = walletB;
+        uint128[] memory amounts = new uint128[](2);
+        amounts[0] = AMOUNT / 4;
+        amounts[1] = AMOUNT / 4;
+
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        flow.lockSplitWithReferral(
+            address(token), beneficiaries, amounts, nowTs, nowTs + 30 days, nowTs + 30 days, referrer
+        );
+
+        assertEq(flow.referralBalances(referrer), net);
+        assertEq(usdc.balanceOf(referralWallet), net);
+        assertEq(usdc.balanceOf(treasury), treasuryAmount);
+    }
+
+    function test_LockSplit_RejectsSingleWallet() public {
+        address[] memory beneficiaries = new address[](1);
+        beneficiaries[0] = dev;
+        uint128[] memory amounts = new uint128[](1);
+        amounts[0] = AMOUNT;
+        uint64 nowTs = uint64(block.timestamp);
+        vm.prank(dev);
+        vm.expectRevert(ArcFlow.InvalidSplit.selector);
+        flow.lockSplit(address(token), beneficiaries, amounts, nowTs, nowTs + 30 days, nowTs + 30 days);
+    }
+
     function test_RejectsLockWithoutUsdcFee() public {
         vm.prank(dev);
         usdc.approve(address(flow), 0);

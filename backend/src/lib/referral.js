@@ -20,9 +20,10 @@ export function asCode(value, field = "code") {
 }
 
 /**
- * Referrer earns `rateBps` of the fee the referee paid; the platform keeps `platformBps`
- * of that commission. Integer math throughout — USDC units are never fractional, and
- * the platform absorbs the rounding dust rather than the referrer.
+ * Referrer earns `rateBps` of the fee the referee actually kept (policy), not of the
+ * on-chain $10 × N. A $10 lock → 15% of $10. A split → 15% of the $15 flat price.
+ * The platform then keeps `platformBps` of that commission. Integer math throughout —
+ * USDC units are never fractional, and the platform absorbs rounding dust.
  */
 export function commission(feeUsdc, { rateBps = config.referral.rateBps, platformBps = config.referral.platformBps } = {}) {
   const fee = BigInt(feeUsdc);
@@ -39,8 +40,8 @@ export function commission(feeUsdc, { rateBps = config.referral.rateBps, platfor
 
 /**
  * What one create should cost, and how much of what was paid on-chain to refund.
- * The contract charges its flat fee per lock() call, so splitting across N wallets pays
- * N x that fee; policy is a flat price per create regardless of N.
+ * The contract charges $10 per single lock() or $15 once per lockSplit().
+ * Policy matches that on-chain fee. Old N×$10 splits still rebate down to $15.
  */
 export function feePolicy({ paidUsdc, lockCount }) {
   const paid = BigInt(paidUsdc);

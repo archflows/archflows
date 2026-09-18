@@ -25,6 +25,8 @@ export function txMessage(err: unknown) {
   if (/SettleFirst/i.test(text)) return "Withdraw vested tokens before transferring.";
   if (/NotTransferable/i.test(text)) return "This stream cannot be transferred.";
   if (/NotTopupable/i.test(text)) return "This stream does not allow top-ups.";
+  if (/InvalidSplit/i.test(text)) return "A split needs at least two wallets.";
+  if (/TooManySplits/i.test(text)) return "Too many wallets in this split.";
   if (/ZeroAmount/i.test(text)) return "Amount must be greater than zero.";
   if (/ZeroAddress/i.test(text)) return "Enter a valid address.";
   if (/InvalidSchedule/i.test(text)) return "This stream has already ended.";

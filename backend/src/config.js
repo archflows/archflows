@@ -58,8 +58,7 @@ export const config = {
   fees: {
     // What the contract charges per lock() call, in USDC 6-decimal units.
     lockUnits: firstEnv(["LOCK_FEE_USDC_UNITS"], "10000000"),
-    // What a single create costs the user, however many wallets they split across.
-    // A split pays lockUnits x N on-chain; the excess is refunded from archFee.
+    // $15 flat for a split create, charged once on-chain. Referral is 15% of this $15.
     splitUnits: firstEnv(["SPLIT_LOCK_FEE_USDC_UNITS"], "15000000"),
   },
   // Arc USDC ERC-20 view: 6 decimals, same asset as gas. Never the native 18-dec view.
@@ -73,14 +72,19 @@ export const config = {
     platformBps: Number.parseInt(firstEnv(["REFERRAL_PLATFORM_BPS"], "2000"), 10) || 2000,
     // 5 USDC floor, in the 6-decimal view.
     minWithdrawUsdc: firstEnv(["REFERRAL_MIN_WITHDRAW_USDC"], "5000000"),
-    // Relayer key — only calls `withdrawReferral` on the lock contract (needs gas USDC, not referral pool).
+    // Relayer key — only calls `withdrawReferral` on the lock contract (needs gas USDC).
     withdrawExecutorKey: firstEnv([
       "ARCFLOW_WITHDRAW_EXECUTOR_KEY",
       "ARCFLOW_REFERRAL_POOL_KEY",
       "REFERRAL_PAYOUT_PRIVATE_KEY",
     ]),
-    // Hot wallet for split-fee rebates. Separate from referral withdrawals.
-    rebateKey: firstEnv(["ARCFLOW_REBATE_WALLET_KEY", "ARCFLOW_FEE_WALLET_KEY"]),
+    // Platform fee wallet key — same wallet as ARCFLOW_TREASURY. Used to refund
+    // leftover rebates from old N×$10 splits. Not a third fee sink.
+    rebateKey: firstEnv([
+      "ARCFLOW_TREASURY_KEY",
+      "ARCFLOW_FEE_WALLET_KEY",
+      "ARCFLOW_REBATE_WALLET_KEY",
+    ]),
     // Withdrawal signatures go stale so a captured one cannot be replayed later.
     signatureTtlMs: Number.parseInt(firstEnv(["REFERRAL_SIGNATURE_TTL_MS"], "600000"), 10) || 600_000,
   },

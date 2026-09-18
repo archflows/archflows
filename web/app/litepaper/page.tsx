@@ -305,9 +305,10 @@ export default function LitepaperPage() {
         <h2>11  Fee design</h2>
         <p>
           ArcFlows charges a flat USDC fee at lock creation, currently ten dollars in the ERC-20
-          six-decimal view, plus network gas in USDC. A split create charges that fee once per
-          destination. The fee is pulled to treasury before the position is written. It never
-          enters <code>totalLocked</code>.
+          six-decimal view, plus network gas in USDC. A split create is fifteen dollars flat,
+          charged once. Referral commission is fifteen percent of that fee, paid to the referral
+          pool; the rest goes to the platform treasury. The fee never enters{" "}
+          <code>totalLocked</code>.
         </p>
         <p>
           Later modules may price per recipient, per streamed dollar, or per reward. None of those
