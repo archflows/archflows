@@ -289,7 +289,12 @@ export function useExplorerData() {
         }
       } catch (e) {
         if (live) {
-          setError(e instanceof Error ? e.message : "Failed to load explorer data");
+          const raw = e instanceof Error ? e.message : "";
+          setError(
+            !raw || raw === "Failed to fetch" || raw.includes("Failed to fetch")
+              ? "Could not load vault activity from Arcscan"
+              : raw,
+          );
           setRows([]);
           setLoading(false);
         }

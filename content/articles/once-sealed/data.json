@@ -1,0 +1,107 @@
+{
+  "site": "arcflows.finance",
+  "handle": "@arcflow",
+  "posts": [
+    {
+      "slug": "cover",
+      "template": "cover",
+      "eyebrow": "Immutable vault",
+      "headline": "Once sealed,\nit *stays sealed.*",
+      "lead": "Tokens leave the wallet the moment you sign. They sit in an immutable vault until the clock allows a claim. Nobody can cancel, shorten, or redirect the position — not even the creator. Holders don’t take a screenshot. They open the proof.",
+      "footer": "arcflows.finance",
+      "note": "Live on Arc · gas in USDC",
+      "bg": "/bahan/lock-banner-16x9.png",
+      "alt": "ArcFlows cover: a blue padlock with silver asterisks. Headline: Once sealed, it stays sealed."
+    },
+    {
+      "slug": "two-promises",
+      "template": "split",
+      "eyebrow": "Know the difference",
+      "headline": "Two locks.\nTwo *promises.*",
+      "columns": [
+        {
+          "kind": "muted",
+          "tag": "LP lock",
+          "title": "The pool stays put",
+          "items": [
+            "Liquidity cannot be pulled",
+            "Handled by the launchpad",
+            "Says nothing about the dev wallet"
+          ]
+        },
+        {
+          "kind": "brand",
+          "tag": "Wallet lock",
+          "title": "The bag cannot move",
+          "items": [
+            "Tokens leave the dev wallet",
+            "Held by an immutable schedule",
+            "Public proof page per position"
+          ]
+        }
+      ],
+      "footer": "arcflows.finance",
+      "note": "Live on Arc · gas in USDC",
+      "alt": "Side-by-side of LP lock versus wallet lock. Wallet lock is ArcFlows: tokens leave the wallet and sit on an immutable schedule."
+    },
+    {
+      "slug": "no-cancel",
+      "template": "statement",
+      "eyebrow": "Immutability",
+      "headline": "No cancel.\nNo *early exit.*",
+      "lead": "After the transaction confirms, nobody can shorten, redirect, or unwind the position. Not the creator. Not an admin. The clock is the only key.",
+      "footer": "arcflows.finance",
+      "note": "Live on Arc · gas in USDC",
+      "alt": "ArcFlows statement card: No cancel. No early exit."
+    },
+    {
+      "slug": "proof",
+      "template": "proof",
+      "eyebrow": "On-chain proof",
+      "headline": "If it is not on\nthis page, it is\n*not locked.*",
+      "amount": "22.4848",
+      "symbol": "USDC",
+      "status": "Hard lock",
+      "duration": "29 days 23 hours 59 min",
+      "ca": "0x41DF...B352",
+      "stats": [
+        { "label": "Unlocks", "value": "15 Oct 2026, 03:40 UTC" },
+        { "label": "Of total supply", "value": "<0.01%" }
+      ],
+      "footer": "arcflows.finance",
+      "lockUrl": "arcflows.finance/lock/12",
+      "note": "No wallet needed to verify",
+      "alt": "ArcFlows public proof card showing amount, unlock time, and contract address read from the vault."
+    },
+    {
+      "slug": "before-you-sign",
+      "template": "shot",
+      "eyebrow": "Before you commit",
+      "headline": "Read it before\nyou *sign.*",
+      "lead": "Every field spelled out first: type, unlock time, duration, beneficiary, amount, fee. No surprises in the signature.",
+      "bullets": ["Exact unlock timestamp", "Beneficiary wallet", "Fee shown up front"],
+      "shot": "/posts/assets/lock-preview.png",
+      "footer": "arcflows.finance",
+      "note": "Immutable once signed",
+      "alt": "Lock preview panel listing type, unlock date, duration, beneficiary, amount, and fee."
+    },
+    {
+      "slug": "modules",
+      "template": "modules",
+      "eyebrow": "Token operations on Arc",
+      "headline": "Lock. Vest.\nStream. *On Arc.*",
+      "lead": "One dashboard for token distribution. Holders verify on-chain, not from a screenshot.",
+      "modules": [
+        { "name": "Token lock", "note": "Sealed until a fixed date", "state": "live" },
+        { "name": "Linear vesting", "note": "Cliff, then per-second", "state": "live" },
+        { "name": "Streams", "note": "Continuous payout", "state": "live" },
+        { "name": "Airdrops", "note": "Claim without instant dump", "state": "soon" },
+        { "name": "Escrow", "note": "Milestone release", "state": "soon" },
+        { "name": "Staking", "note": "Rewards on locked supply", "state": "soon" }
+      ],
+      "footer": "arcflows.finance",
+      "note": "Live on Arc · gas in USDC",
+      "alt": "ArcFlows module grid: token lock, vesting, and streams live. Airdrops, escrow, and staking coming soon."
+    }
+  ]
+}

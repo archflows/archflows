@@ -28,6 +28,13 @@ export const ARC_RPC_URL = af.rpc || (isMainnet ? ARC_MAINNET_RPC : ARC_TESTNET_
 export const ARC_WS_URL = wsFromHttp(ARC_RPC_URL);
 
 export const EXPLORER_URL = isMainnet ? "https://explorer.arc.io" : "https://testnet.arcscan.app";
+/**
+ * Blockscout JSON API origin. Testnet `arcscan.app` 301s to `explorer.testnet.arc.io`
+ * without CORS headers, so browser `fetch()` throws TypeError: Failed to fetch.
+ */
+export const EXPLORER_API_URL = isMainnet
+  ? "https://explorer.arc.io"
+  : "https://explorer.testnet.arc.io";
 export const FAUCET_URL = "https://faucet.circle.com";
 
 export function explorerTxUrl(hash: string) {

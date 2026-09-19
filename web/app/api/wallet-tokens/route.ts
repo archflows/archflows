@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "viem";
-import { EXPLORER_URL } from "@/lib/chain";
+import { EXPLORER_API_URL } from "@/lib/chain";
 
 export type WalletToken = {
   address: `0x${string}`;
@@ -20,7 +20,7 @@ type ArcscanTokenItem = {
   };
 };
 
-const ARCSCAN = `${EXPLORER_URL}/api/v2`;
+const ARCSCAN = `${EXPLORER_API_URL}/api/v2`;
 
 async function fetchPage(address: string, params?: Record<string, string>) {
   const url = new URL(`${ARCSCAN}/addresses/${address}/tokens`);

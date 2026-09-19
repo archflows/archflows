@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Once sealed, it stays sealed. · ArcFlows</title>
+    <style>
+      @font-face {
+        font-family: Sora;
+        src: url("../../intro/fonts/Sora-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("../../intro/fonts/Sora-SemiBold.ttf") format("truetype");
+        font-weight: 600;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: Sora;
+        src: url("../../intro/fonts/Sora-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("../../posts/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-display: swap;
+      }
+
+      :root {
+        --void: #07080c;
+        --ink: #f4f6fb;
+        --dim: #9aa6b8;
+        --mute: #6b7687;
+        --ion: #4d8aff;
+        --line: rgba(255, 255, 255, 0.08);
+        --measure: 46rem;
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: var(--void);
+        color: var(--ink);
+        font-family: Sora, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .cover {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        background: #050814;
+      }
+      .cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .wrap {
+        width: min(var(--measure), calc(100% - 2.5rem));
+        margin: 0 auto;
+        padding: 3.25rem 0 6rem;
+      }
+
+      .kicker {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #9ec2ff;
+        margin: 0 0 1.1rem;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 5vw, 3.35rem);
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+        font-weight: 700;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--ion);
+      }
+      .dek {
+        margin: 1.15rem 0 0;
+        font-size: 1.2rem;
+        line-height: 1.55;
+        color: var(--dim);
+      }
+      .meta {
+        margin: 1.5rem 0 0;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--line);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.8rem;
+        color: var(--mute);
+        letter-spacing: 0.04em;
+        display: flex;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+      }
+
+      article h2 {
+        margin: 2.8rem 0 0.9rem;
+        font-size: 1.45rem;
+        letter-spacing: -0.03em;
+        line-height: 1.25;
+      }
+      article p, article li {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: #d5dbe6;
+      }
+      article p { margin: 0 0 1.1rem; }
+      article ul, article ol {
+        margin: 0 0 1.25rem;
+        padding-left: 1.2rem;
+      }
+      article li + li { margin-top: 0.4rem; }
+      article strong { color: #fff; font-weight: 600; }
+      a { color: var(--ion); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      .pull {
+        margin: 2rem 0;
+        padding: 0 0 0 1.15rem;
+        border-left: 3px solid var(--ion);
+        font-size: 1.35rem;
+        line-height: 1.35;
+        letter-spacing: -0.03em;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      figure {
+        margin: 2rem -0.4rem 2.2rem;
+      }
+      figure img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      figcaption {
+        margin-top: 0.7rem;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        color: var(--mute);
+      }
+
+      .rule {
+        height: 1px;
+        background: var(--line);
+        border: 0;
+        margin: 2.6rem 0;
+      }
+
+      .end {
+        margin-top: 2.4rem;
+        padding-top: 1.4rem;
+        border-top: 1px solid var(--line);
+        color: var(--dim);
+      }
+      .end a { font-weight: 600; }
+
+      @media (max-width: 720px) {
+        .wrap { width: calc(100% - 2rem); padding-top: 2rem; }
+        .pull { font-size: 1.15rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cover">
+      <img src="out/cover.png" alt="Once sealed, it stays sealed. A blue ArcFlows padlock on a navy-to-blue gradient." />
+    </div>
+    <div class="wrap">
+      <p class="kicker">ArcFlows · Live on Arc</p>
+      <h1>Once sealed, it <em>stays sealed.</em></h1>
+      <p class="dek">
+        Tokens leave the wallet the moment you sign. They sit in an immutable vault until the clock allows a claim. Holders don’t take a screenshot. They open the proof.
+      </p>
+      <div class="meta">
+        <span>arcflows.finance</span>
+        <span>·</span>
+        <span>8 min read</span>
+        <span>·</span>
+        <span>September 2026</span>
+      </div>
+
+      <article>
+        <p>
+          Crypto still treats “tokens are locked” as a social claim. Teams post a Discord screenshot. A spreadsheet stands in for a contract. A tweet names a ticker that three other contracts also use. Holders are asked to trust a caption.
+        </p>
+        <p>
+          That is not a lock. That is a story about a lock.
+        </p>
+        <p>
+          Arc is live. Pads are shipping. Duplicate tickers are already a feature of the timeline, which means the contract address is the only identifier that matters. And almost every CA that trends arrives with the same sentence:
+        </p>
+        <p class="pull">“Dev locked. Trust me.”</p>
+        <p>
+          Trust is the wrong primitive. The right one is a vault that already holds the tokens, a clock nobody can move, and a page anyone can open without connecting a wallet.
+        </p>
+        <p>
+          That is ArcFlows. Launchpads create supply. ArcFlows decides when that supply can move.
+        </p>
+
+        <h2>A lock is a withdrawal, not a caption</h2>
+        <p>
+          If the tokens are still sitting in the deployer wallet, they are not locked. They are available. A promise to “not sell until Q3” can be broken in one signature. A PNG of a dashboard is not state. A Google Sheet is not a schedule.
+        </p>
+        <p>
+          A real lock does one irreversible thing at creation: it pulls the ERC-20 out of the creator wallet and into a vault. After that transaction confirms, the bag is no longer the creator’s to dump. Only the named beneficiary can claim, and only when the clock allows.
+        </p>
+        <p>
+          ArcFlows writes that as a position: token, beneficiary, credited amount, start, cliff, end. Credited amount is what the vault actually received. The record does not get a cancel button, a shorten function, or an admin redirect.
+        </p>
+
+        <h2>Two locks people keep mixing up</h2>
+        <p>
+          Liquidity lock and wallet lock are two different promises. Markets still mash them into one word.
+        </p>
+        <figure>
+          <img src="out/two-promises.png" alt="Two locks. Two promises. LP lock keeps the pool in place. Wallet lock keeps the bag from moving." />
+          <figcaption>LP lock is the pad. Wallet lock is ArcFlows.</figcaption>
+        </figure>
+        <p>
+          An LP lock stops a pool from being pulled. That belongs to the launchpad. It says nothing about the leftover allocation or the dev buy still sitting in a wallet. A token can have the first and still get dumped on you.
+        </p>
+        <p>
+          Wallet lock is the other job. Tokens leave the wallet. They sit under an immutable schedule. Every position publishes a proof URL. If a pad sent 100% of supply into LP, lock the leftover — the bag that can still hit the market — not the pool the pad already sealed.
+        </p>
+
+        <h2>Once it is written, it cannot move</h2>
+        <p>
+          A position that the creator can unwind is not proof of anything. It is a pause button with better branding.
+        </p>
+        <figure>
+          <img src="out/no-cancel.png" alt="No cancel. No early exit." />
+          <figcaption>After confirm, the clock is the only key.</figcaption>
+        </figure>
+        <p>
+          ArcFlows does not offer that path on vault principal. There is no admin cancel. No early exit. No “just this once” for the team that changed its mind. Parameters that change later apply only to future creates. Existing positions stay as written.
+        </p>
+        <p>
+          Two shapes cover the jobs that matter on day one.
+        </p>
+        <ul>
+          <li><strong>Hard lock.</strong> Nothing is claimable until the unlock timestamp. Then the remaining amount can be claimed in full. This is the anti-dump primitive: a public, dated commitment over a specific balance.</li>
+          <li><strong>Linear vest.</strong> Zero until the cliff, then release every second until end. Team, investors, advisors. Repeat claims are allowed. A vest that would already be liquid at confirm is rejected, so a proof page cannot advertise a lock while most of the bag is already spendable.</li>
+        </ul>
+        <p>
+          A lock that is already over is not proof of anything. The contract refuses it.
+        </p>
+
+        <h2>Proof is a URL, not a screenshot</h2>
+        <p>
+          Duplicate tickers make a tweet an unreliable identifier. A screenshot of a dashboard is not live state. If holders cannot check amount, beneficiary, and unlock time without asking the team, the lock exists only for the creator.
+        </p>
+        <figure>
+          <img src="out/proof.png" alt="If it is not on this page, it is not locked." />
+          <figcaption>Every position publishes. No wallet needed to view it.</figcaption>
+        </figure>
+        <p>
+          Every ArcFlows position gets a public page. Amount, token, beneficiary, countdown, claimed, claimable — read from the contract. Share the URL and the card unfurls the same fields. The operational rule for the market is simple:
+        </p>
+        <p class="pull">If it is not on that page, it is not locked.</p>
+        <p>
+          An explorer lists activity by lock id, wallet, token, and transaction, so a holder who was never sent the link can still search.
+        </p>
+
+        <h2>Read it before you sign</h2>
+        <p>
+          After you sign, the schedule cannot move. So the preview has to be boringly complete.
+        </p>
+        <figure>
+          <img src="out/before-you-sign.png" alt="Read it before you sign. Lock preview with type, unlock time, duration, beneficiary, amount, and fee." />
+          <figcaption>Type, unlock, destination, amount, fee — then the wallet prompt.</figcaption>
+        </figure>
+        <p>
+          Pick the token from the connected wallet. Set the amount. Choose the date. Choose who receives the unlock: yourself, another address, or a split. Approve and lock in the same flow. The last dollars of USDC are left for the protocol fee and gas, so MAX does not drain the balance you still need to sign.
+        </p>
+        <p>
+          The fee is USDC, charged at creation. Ten dollars for a lock. Fifteen dollars flat for a split. It never enters the locked balance and cannot be claimed out of it. Referral, when it applies, is a cut of that fee — not of the vault.
+        </p>
+
+        <h2>Why this belongs on Arc</h2>
+        <p>
+          On Arc, gas is USDC. There is no second token to source before the one transaction that matters. Native gas and the USDC ERC-20 are the same asset with two decimal views. Applications should show a single USDC figure. ArcFlows charges the fee in the ERC-20 view. Gas is paid in the native view. Same dollars.
+        </p>
+        <p>
+          Finality is sub-second. The preview you signed is the position that appears. A lock can be posted next to a contract address in the same beat as a create, not after a multi-block wait. Predictable dollar fees make proof a habit instead of a trade against a volatile gas token.
+        </p>
+
+        <h2>The rest of the surface</h2>
+        <p>
+          Locks and vesting are the core. Adjacent modules reuse the same rule: they must not create an admin path over vault principal that already exists.
+        </p>
+        <figure>
+          <img src="out/modules.png" alt="Lock. Vest. Stream. On Arc." />
+          <figcaption>Live: lock, vest, stream. Coming: airdrop, escrow, staking.</figcaption>
+        </figure>
+        <p>
+          Streams pay continuously. Airdrops, escrow, and staking extend the same dashboard without weakening the rule that existing vault principal cannot be moved by an admin.
+        </p>
+        <p>
+          There is no ArcFlows coin. No emission. No promised airdrop of a protocol token. Users pay USDC. That is the commercial surface.
+        </p>
+
+        <h2>What this is not</h2>
+        <ul>
+          <li>Not a launchpad, AMM, or chart.</li>
+          <li>Not an LP lock. That is the pad.</li>
+          <li>Not a custodian beyond the smart contract.</li>
+          <li>Not a guarantee that a token is safe. A lock covers the deposited balance. It does not cap total supply, un-honeypot a token, or freeze a malicious mint.</li>
+        </ul>
+        <p>
+          Verify the canonical deployment you are asked to approve. Treat unaudited bytecode with caution. A public proof page is evidence of a schedule, not of a project’s quality.
+        </p>
+
+        <hr class="rule" />
+
+        <p>
+          Markets discount claims they cannot check. ArcFlows makes the check cheap: a URL, a vault, a clock. Arc makes the act of writing that vault cheap and final.
+        </p>
+        <p>
+          Once sealed, it stays sealed. Stop posting screenshots. Start posting proof.
+        </p>
+
+        <p class="end">
+          Open a position at <a href="https://arcflows.finance">arcflows.finance</a>.
+          Product detail lives in the <a href="https://arcflows.finance/docs">docs</a>
+          and <a href="https://arcflows.finance/litepaper">litepaper</a>.
+        </p>
+      </article>
+    </div>
+  </body>
+</html>
